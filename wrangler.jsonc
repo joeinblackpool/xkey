@@ -1,0 +1,13 @@
+{
+  // XKey (xkey.co.uk): free SEO & AI search check.
+  "name": "xkey",
+  "main": "src/index.js",
+  "compatibility_date": "2026-09-01",
+  "routes": [
+    { "pattern": "xkey.co.uk", "custom_domain": true },
+    { "pattern": "www.xkey.co.uk", "custom_domain": true }
+  ],
+  "kv_namespaces": [{ "binding": "STATE", "id": "c677314f15644c22873e1098406a5c69" }],
+  "triggers": { "crons": ["*/15 * * * *"] },
+  "observability": { "enabled": true }
+}
