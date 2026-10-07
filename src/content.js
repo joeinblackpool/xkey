@@ -30,6 +30,9 @@ const TOOLS = [
   ["/plagiarism-checker", "Plagiarism checker", "Find copies of your text across the web – no word limit."],
   ["/anchor-text-checker", "Anchor text checker", "Grade every link on a page and generate better anchors."],
   ["/local-search-checker", "Local search checker", "See Google results as they appear in any UK town."],
+  ["/ai-meta-description-generator", "AI title & description writer", "AI reads your page and writes titles and descriptions that fit Google."],
+  ["/bulk-seo-checker", "Bulk SEO checker", "Score up to 20 websites at once and download a CSV."],
+  ["/seo-badge", "SEO score badge", "Show your score on your site – it updates itself weekly."],
 ];
 export const toolCards = (except) => `<div class="grid">${TOOLS.filter(([p]) => p !== except).map(([p, t, d]) => `<a class="card" href="${p}"><p class="ct">${t}</p><p>${d}</p></a>`).join("")}</div>`;
 
@@ -412,8 +415,51 @@ export const PAGES = [
     faqs: [["Is this the same as a rank tracker?", "It shows you the live results so you can see where you appear. Paid rank trackers automate this across hundreds of searches; doing it by hand for your few most important searches costs nothing and follows Google's rules."], ["Why don't I see the map pack?", "Google only shows the map pack when it thinks the search is local. Try adding the type of business, such as 'plumber' rather than 'plumbing'."]],
   },
   {
+    path: "/ai-meta-description-generator", crumb: "AI title & description writer", parent: ["/seo-tools", "SEO tools"], title: "AI Meta Description Generator | Free, No Sign-Up",
+    desc: "Free AI meta description and title generator: we read your page and write three titles and three descriptions sized for Google. No sign-up, no email.",
+    h1: "AI meta description and title generator", eyebrow: "AI · Free · No sign-up", app: "XKey AI meta description generator",
+    lead: "Give us a page address or a few lines about the page. AI reads it and writes three titles and three meta descriptions – each measured in pixels so it fits in Google.",
+    form: "aiwriter",
+    sections: `<h2>How does the AI meta description generator work?</h2>
+<p>If you enter an address, we read the page's current title, description, main heading and text. The AI – Meta's Llama model, running on Cloudflare's network – then writes three titles and three descriptions in British English around your main keyword and town. We measure every suggestion in pixels the way Google displays it, so you can see at a glance which ones fit.</p>
+<h2>Can I trust what the AI writes?</h2>
+<p>Use it as a first draft. We tell the AI never to invent prices, awards or reviews, but AI can still get details wrong – so read every word and make sure it's true for your business before you use it. Google's guidance is clear that AI-written content is fine when it's accurate and helpful to people.</p>
+<h2>What makes a good meta description?</h2>
+<ul><li>It describes what's actually on the page – Google rewrites descriptions that don't match.</li><li>It leads with the benefit to the searcher, not your company history.</li><li>It ends with a reason to click: a price, a guarantee, "book online", "free quote".</li><li>It's unique to the page and roughly 120 to 155 characters long.</li></ul>
+<p>Check how your result looks with the <a href="/title-tag-checker">title tag checker</a>, or write tags by hand with the <a href="/meta-tag-generator">meta tag generator</a>.</p>`,
+    faqs: [["Is the AI writer really free?", "Yes – no sign-up, no email and no credits to buy. There's a fair-use limit of 30 uses an hour per connection, and a daily cap so the free service stays available for everyone."], ["Is my page text stored?", "No. The page is read, sent to the AI to write your suggestions, and then discarded."]],
+  },
+  {
+    path: "/bulk-seo-checker", crumb: "Bulk SEO checker", parent: ["/seo-tools", "SEO tools"], title: "Bulk SEO Checker | Check 20 Websites at Once, Free",
+    desc: "Free bulk SEO checker: paste up to 20 web addresses and get SEO and AI search scores, failed checks and titles side by side, with a CSV download.",
+    h1: "Bulk SEO checker", eyebrow: "Free · No sign-up", app: "XKey bulk SEO checker",
+    lead: "Check up to 20 pages or websites in one go – your own pages, a client list or a whole page of competitors – and download the results as a spreadsheet.",
+    form: "bulk",
+    sections: `<h2>What does the bulk SEO checker show?</h2>
+<p>For every address you get the overall SEO score, the AI search readiness score, the number of failed checks, the word count and the page title – the same engine as our <a href="/">free SEO check</a>, run on each page. Click any row for the full report with fixes, or download everything as a CSV for Excel or Google Sheets.</p>
+<h2>Who is it for?</h2>
+<ul><li><strong>Business owners</strong> checking their most important pages at once.</li><li><strong>Web designers and agencies</strong> reviewing a list of client sites before a call.</li><li><strong>Anyone researching a market</strong> – paste the ten sites on page one for your search and see who's well optimised.</li></ul>
+<h2>How is this different from the website audit?</h2>
+<p>The bulk checker runs the full single-page check – including AI readiness and speed signals – on pages you choose, across any websites. The <a href="/website-audit">website audit</a> crawls one site from its home page to find site-wide problems such as broken links and duplicate titles.</p>`,
+    faqs: [["Why is the limit 20?", "Each check fetches a page and its supporting files, so 20 at a time keeps the tool fast and free for everyone. Run another batch whenever you like."]],
+  },
+  {
+    path: "/seo-badge", crumb: "SEO score badge", parent: ["/seo-tools", "SEO tools"], title: "Free SEO Score Badge for Your Website | XKey",
+    desc: "Show visitors your website is well built: add a free XKey SEO score badge that updates itself weekly. Copy one line of code – no sign-up.",
+    h1: "Free SEO score badge for your website", eyebrow: "Free · Updates itself", app: "XKey SEO score badge",
+    lead: "Proud of your score? Add a small badge to your footer that shows your current XKey SEO score and updates itself every week.",
+    form: "badge",
+    sections: `<h2>How does the badge work?</h2>
+<p>The badge is a small image served by XKey. The first time it's shown, we check your home page in the background and remember the score; after that we re-check about once a week, so the number stays honest. Clicking the badge opens your full, up-to-date report.</p>
+<h2>Where should I put it?</h2>
+<p>Most sites put it in the footer, next to payment or trade-association logos. Web designers often add it to the sites they build to show clients the work is search-ready.</p>
+<h2>Does the badge slow my site down?</h2>
+<p>No. It's a tiny image (under 1 kB) served from Cloudflare's network and cached, with no scripts and no cookies.</p>`,
+    faqs: [["What if my score drops?", "The badge always shows your real score. If it drops, the linked report shows exactly what changed and how to fix it – or remove the badge at any time."]],
+  },
+  {
     path: "/seo-tools", crumb: "SEO tools", title: "Free SEO Tools | No Sign-Up, No Email, No Subscription",
-    desc: "27 free SEO tools with no sign-up, no email and no subscription: SEO check, site audit, meta tag and sitemap generators, keyword ideas and more.",
+    desc: "30 free SEO tools with no sign-up, no email and no subscription: SEO check, site audit, meta tag and sitemap generators, keyword ideas and more.",
     h1: "Free SEO tools", eyebrow: "No sign-up", lead: "Every tool is free, with no account, no email and no subscription. The generators and counters run in your browser, so they're unlimited and nothing you type leaves your device.",
     sections: `<h2>Which SEO tool should I start with?</h2><p>Start with the <a href="/">free SEO check</a> on your most important page – it covers everything below in one report. Then run the <a href="/website-audit">website audit</a> to catch site-wide problems, and turn on <a href="/seo-monitoring">weekly monitoring</a> so nothing breaks unnoticed.</p><h2>Are these SEO tools really free?</h2><p>Yes. No sign-up, no trial and no limits beyond fair-use rate limits that stop abuse. XKey is paid for by <a href="https://icework.co.uk" rel="noopener">IceWork</a>, who build websites, as a useful free service.</p><h2>Do the single-topic tools run a different check?</h2><p>The checkers for speed, schema, sitemaps, security, mobile and local SEO run the full check and open your report at that section, so you never miss a bigger problem elsewhere on the page.</p>`, tools: true,
   },

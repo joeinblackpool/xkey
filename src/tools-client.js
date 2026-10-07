@@ -394,4 +394,64 @@ export function toolsApp() {
     a.removeAttribute("aria-disabled");
     $("ls-note").textContent = "Opens Google in a new tab showing results for “" + q + "” as seen from " + canon.replace(/,/g, ", ") + ".";
   });
+
+  // ---- AI title & description writer
+  var af = $("ai-form");
+  if (af) af.addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var out = $("ai-out"), btn = af.querySelector("button[type=submit]");
+    btn.disabled = true; out.innerHTML = "<p>Writing… this takes a few seconds.</p>";
+    fetch("/api/ai-snippet", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ url: val("ai-url"), about: $("ai-about").value, keyword: val("ai-kw"), town: val("ai-town") }) })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (j.error) { out.innerHTML = '<p class="s-fail">' + esc(j.error) + "</p>"; return; }
+        var row = function (x, max) { return '<li style="display:block;padding:10px 0;border-bottom:1px solid var(--line)"><span>' + esc(x.t) + '</span> <span class="small" style="color:' + col(x.px <= max, x.px <= max * 1.07) + '">' + x.px + " px</span> <button type=\"button\" class=\"btn ghost ai-cp\" style=\"padding:4px 12px;font-size:14px\" data-t=\"" + esc(x.t) + '">Copy</button></li>'; };
+        out.innerHTML = (j.current ? '<p class="small"><strong>Now:</strong> ' + esc(j.current.title || "(no title)") + " — " + esc(j.current.desc || "(no description)") + "</p>" : "") +
+          "<h3>Titles</h3><ul style=\"list-style:none;padding:0;margin:0\">" + j.titles.map(function (x) { return row(x, 580); }).join("") + "</ul>" +
+          "<h3 style=\"margin-top:18px\">Meta descriptions</h3><ul style=\"list-style:none;padding:0;margin:0\">" + j.descriptions.map(function (x) { return row(x, 990); }).join("") + "</ul>" +
+          '<p class="small">Written by AI – check every word is true for your business before using it. Press "Write with AI" again for new ideas.</p>';
+        out.querySelectorAll(".ai-cp").forEach(function (b) { b.addEventListener("click", function () { var t = b.getAttribute("data-t"); (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { b.textContent = "Copied"; }, function () { b.textContent = "Select and copy"; }); }); });
+      })
+      .catch(function () { out.innerHTML = '<p class="s-fail">Something went wrong – please try again.</p>'; })
+      .then(function () { btn.disabled = false; });
+  });
+
+  // ---- bulk SEO checker
+  var bk = $("bk-form");
+  if (bk) bk.addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var urls = $("bk-urls").value.split(/\s+/).filter(function (x) { return /\./.test(x); }), seen = {};
+    urls = urls.filter(function (u) { u = u.toLowerCase(); if (seen[u]) return false; seen[u] = 1; return true; }).slice(0, 20);
+    var out = $("bk-out"); if (!urls.length) { out.innerHTML = '<p class="s-warn">Add at least one web address.</p>'; return; }
+    var res = urls.map(function () { return null; }), next = 0, done = 0;
+    var draw = function () {
+      out.innerHTML = '<p class="small">' + done + " of " + urls.length + " checked</p>" + '<div class="tablewrap"><table><thead><tr><th>Page</th><th>SEO</th><th>AI</th><th>Failed</th><th>Words</th><th>Title</th></tr></thead><tbody>' + urls.map(function (u, i) {
+        var r = res[i]; if (!r) return "<tr><td>" + esc(u) + '</td><td colspan="5" class="small">Waiting…</td></tr>';
+        if (r.error) return "<tr><td>" + esc(u) + '</td><td colspan="5" class="s-fail">' + esc(r.error) + "</td></tr>";
+        return '<tr><td style="overflow-wrap:anywhere"><a href="/seo-checker?url=' + encodeURIComponent(r.url) + '">' + esc(r.url.replace(/^https?:\/\/(www\.)?/, "")) + '</a></td><td><b style="color:' + col(r.score >= 90, r.score >= 70) + '">' + r.score + "</b></td><td>" + r.aiScore + "</td><td>" + r.counts.fail + "</td><td>" + r.facts.words + '</td><td class="small">' + esc((r.facts.title || "").slice(0, 60)) + "</td></tr>";
+      }).join("") + "</tbody></table></div>" + (done === urls.length ? '<p><button type="button" class="btn ghost" id="bk-csv">Download CSV</button></p>' : "");
+      var c = $("bk-csv"); if (c) c.onclick = function () {
+        var cell = function (v) { v = String(v == null ? "" : v); if (/^[=+\-@\t\r]/.test(v)) v = "'" + v; return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+        var rows = [["url", "seo_score", "ai_score", "failed", "warnings", "words", "title"]].concat(res.map(function (r, i) { return r && !r.error ? [r.url, r.score, r.aiScore, r.counts.fail, r.counts.warn, r.facts.words, r.facts.title] : [urls[i], "error", (r && r.error) || ""]; }));
+        var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["﻿" + rows.map(function (r) { return r.map(cell).join(","); }).join("\r\n")], { type: "text/csv" })); a.download = "xkey-bulk-check.csv"; document.body.appendChild(a); a.click(); a.remove();
+      };
+    };
+    var work = function () {
+      if (next >= urls.length) return; var i = next++;
+      fetch("/api/check?url=" + encodeURIComponent(urls[i])).then(function (r) { return r.json(); }).then(function (j) { res[i] = j.error ? { error: j.error } : j; }, function () { res[i] = { error: "Couldn't be checked" }; })
+        .then(function () { done++; draw(); work(); });
+    };
+    draw(); work(); work(); work();
+  });
+
+  // ---- score badge
+  live("bd-form", function () {
+    var site = val("bd-site").replace(/^https?:\/\//i, "").replace(/\/.*$/, "").toLowerCase();
+    if (!site) { $("bd-prev").innerHTML = '<span class="small">Enter your website to see your badge.</span>'; $("bd-code").textContent = ""; return; }
+    var img = "https://xkey.co.uk/badge.svg?site=" + encodeURIComponent(site);
+    var code = '<a href="https://xkey.co.uk/seo-checker?url=' + encodeURIComponent(site) + '" title="SEO score checked by XKey"><img src="' + img + '" alt="XKey SEO score" height="22"></a>';
+    $("bd-prev").innerHTML = '<img src="/badge.svg?site=' + encodeURIComponent(site) + '" alt="XKey SEO score" height="22">';
+    $("bd-code").textContent = code;
+  });
+  copyBtn("bd-copy", "bd-code");
 }

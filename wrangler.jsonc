@@ -8,6 +8,7 @@
     { "pattern": "www.xkey.co.uk", "custom_domain": true }
   ],
   "kv_namespaces": [{ "binding": "STATE", "id": "c677314f15644c22873e1098406a5c69" }],
+  "ai": { "binding": "AI" },
   "triggers": { "crons": ["*/15 * * * *"] },
   "observability": { "enabled": true }
 }

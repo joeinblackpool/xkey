@@ -5,7 +5,7 @@ import { toolsApp } from "./tools-client.js";
 import { OG_PNG } from "./og.js";
 import { handleChecker, rateLimited, AUDIT_JS, REPORT_JS, COMPARE_JS, overOnce, cmpForm, over } from "../engine/checker-ui.js";
 import { createMonitor, runMonitor, getMonitor, validId, dashboard, runDueMonitors } from "../engine/monitor.js";
-import { robotsAllows, pixelWidth, normaliseUrl, fetchRobots, crawlStart, crawlBatch, fetchHtml } from "../engine/checker.js";
+import { robotsAllows, pixelWidth, normaliseUrl, fetchRobots, crawlStart, crawlBatch, fetchHtml, runCheck } from "../engine/checker.js";
 import { summarisePage } from "./page-parse.js";
 
 const BY_PATH = Object.fromEntries(PAGES.map((p) => [p.path, p]));
@@ -100,6 +100,14 @@ Contact | /contact | Phone, email and opening hours</textarea>
 <p style="margin:16px 0 0"><button class="btn" type="submit">Check difficulty</button></p><div id="kd-out" aria-live="polite"></div></form><script src="/assets/tools.js" defer></script>`,
   localserp: () => `<form class="tool" id="ls-form"><div class="row"><div style="flex:2 1 240px"><label for="ls-q">What would a customer search?</label><input id="ls-q" type="text" value="emergency plumber"></div><div style="flex:1 1 160px"><label for="ls-town">Town or city</label><input id="ls-town" type="text" value="Blackpool"></div><div style="flex:1 1 150px"><label for="ls-region">Nation</label><select id="ls-region"><option>England</option><option>Scotland</option><option>Wales</option><option>Northern Ireland</option></select></div></div>
 <p style="margin:16px 0 4px"><a class="btn" id="ls-go" target="_blank" rel="noopener">See Google results from there</a></p><p class="small" id="ls-note" aria-live="polite"></p></form><script src="/assets/tools.js" defer></script>`,
+  aiwriter: () => `<form class="tool" id="ai-form"><label for="ai-url">Page address (optional – we'll read the page)</label><input id="ai-url" type="text" inputmode="url" placeholder="https://yoursite.co.uk/services">
+<label for="ai-about">…or describe the page</label><textarea id="ai-about" style="min-height:90px;font-family:inherit;font-size:16px" placeholder="Family-run plumbers in Blackpool. Boiler repairs, servicing and emergency callouts, Gas Safe registered, no callout fee."></textarea>
+<div class="row"><div style="flex:2 1 220px"><label for="ai-kw">Main keyword</label><input id="ai-kw" type="text" placeholder="boiler repair"></div><div style="flex:1 1 160px"><label for="ai-town">Town (optional)</label><input id="ai-town" type="text" placeholder="Blackpool"></div></div>
+<p style="margin:16px 0 0"><button class="btn" type="submit">Write with AI</button></p><div id="ai-out" aria-live="polite"></div></form><script src="/assets/tools.js" defer></script>`,
+  bulk: () => `<form class="tool" id="bk-form"><label for="bk-urls">Web addresses – one per line, up to 20</label><textarea id="bk-urls" spellcheck="false" placeholder="yoursite.co.uk&#10;competitor.co.uk&#10;yoursite.co.uk/services"></textarea>
+<p style="margin:16px 0 0"><button class="btn" type="submit">Check them all</button></p><div id="bk-out" aria-live="polite"></div></form><script src="/assets/tools.js" defer></script>`,
+  badge: () => `<form class="tool" id="bd-form"><label for="bd-site">Your website</label><input id="bd-site" type="text" inputmode="url" placeholder="yoursite.co.uk">
+<p style="margin:16px 0 6px;font-weight:600">Preview</p><div id="bd-prev"></div><p style="margin:16px 0 6px;font-weight:600">Code to paste into your site</p><pre class="out" id="bd-code"></pre><button class="btn" type="button" id="bd-copy">Copy</button></form><script src="/assets/tools.js" defer></script>`,
 };
 
 // crawlers offered by the robots tester: [token(s) in fallback order, label, purpose]
@@ -177,6 +185,40 @@ export const selfFetch = (env, ctx) => async (inp, init = {}) => {
   return new Response((rest.method || "GET").toUpperCase() === "HEAD" ? null : res.body, { status: res.status, headers });
 };
 
+// ---------- score badge
+const badgeSvg = (score) => {
+  const right = score == null ? "checked" : `${score}/100`, col = score == null ? "#0a6f6a" : score >= 90 ? "#1a7f37" : score >= 70 ? "#9a6700" : "#cf222e";
+  const lw = 106, rw = score == null ? 62 : 58;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${lw + rw}" height="22" role="img" aria-label="SEO score: ${right} by XKey"><title>SEO score: ${right} – checked by XKey (xkey.co.uk)</title><rect width="${lw}" height="22" rx="4" fill="#0e1726"/><rect x="${lw - 4}" width="${rw + 4}" height="22" rx="4" fill="${col}"/><rect x="${lw - 4}" width="4" height="22" fill="${col}"/><g fill="#fff" font-family="Verdana,DejaVu Sans,sans-serif" font-size="11"><text x="8" y="15">XKey SEO score</text><text x="${lw + rw / 2}" y="15" text-anchor="middle" font-weight="bold">${right}</text></g></svg>`;
+};
+
+// ---------- AI title & description writer (Workers AI, free daily allocation)
+async function aiSnippet(env, ctx, b) {
+  const kw = String(b.keyword || "").slice(0, 80).trim(), town = String(b.town || "").slice(0, 60).trim();
+  let about = String(b.about || "").slice(0, 1500).trim(), page = null;
+  if (b.url && String(b.url).trim()) {
+    try { const r = await fetchHtml(String(b.url).trim(), selfFetch(env, ctx)); if (r.status === 200 && r.html) page = summarisePage(r.html, r.url); else return { error: `That page returned HTTP ${r.status || "error"}.` }; }
+    catch (e) { return { error: (e && e.message) || "Couldn't reach that page." }; }
+    about = `Current title: ${page.title}\nCurrent description: ${page.desc}\nMain heading: ${page.h1.join(" / ")}\nPage text: ${page.text.slice(0, 2500)}`;
+  }
+  if (!about && !kw) return { error: "Enter a page address, or describe the page." };
+  const prompt = `You write search-result snippets for UK small business websites. Use British English. Be specific and honest: never invent prices, awards, reviews or claims that aren't in the information given.
+Write 3 page titles (each under 60 characters, main keyword near the start${town ? ", include the town" : ""}) and 3 meta descriptions (each 120 to 155 characters, plain benefit plus a call to action).
+Main keyword: ${kw || "(choose from the page)"}${town ? `\nTown: ${town}` : ""}
+About the page:
+${about}
+Reply with JSON only, exactly in this shape: {"titles":["...","...","..."],"descriptions":["...","...","..."]}`;
+  let out;
+  try { out = await env.AI.run("@cf/meta/llama-3.1-8b-instruct-fast", { messages: [{ role: "user", content: prompt }], max_tokens: 600, temperature: 0.6 }); }
+  catch (e) { return { error: "The AI writer is busy or has reached today's free limit – please try again later." }; }
+  const text = String((out && (out.response ?? out.result?.response)) || "");
+  let j = null; try { j = JSON.parse((text.match(/\{[\s\S]*\}/) || ["{}"])[0]); } catch {}
+  const clean = (a) => (Array.isArray(a) ? a : []).map((x) => String(x).replace(/\s+/g, " ").replace(/^["']|["']$/g, "").trim()).filter(Boolean).slice(0, 3);
+  const titles = clean(j && j.titles).map((t) => ({ t, px: pixelWidth(t, 20) })), descriptions = clean(j && j.descriptions).map((t) => ({ t, px: pixelWidth(t, 14) }));
+  if (!titles.length && !descriptions.length) return { error: "The AI didn't return usable suggestions – please try again." };
+  return { titles, descriptions, current: page ? { title: page.title, desc: page.desc } : null };
+}
+
 const JS = "text/javascript; charset=utf-8", TXT = "text/plain; charset=utf-8", HTMLT = "text/html; charset=utf-8";
 
 const worker = {
@@ -190,6 +232,13 @@ const worker = {
         if (await rateLimited(request, "robotstest", 2000)) return Response.json({ error: "Too many tests this hour." }, { status: 429 });
         let body; try { body = JSON.parse((await request.text()).slice(0, 250_000)); } catch { return Response.json({ error: "Bad request" }, { status: 400 }); }
         return Response.json(robotsTest(body || {}), { headers: { "cache-control": "no-store" } });
+      }
+      if (url.pathname === "/api/ai-snippet") {
+        if (!env || !env.AI) return Response.json({ error: "The AI writer isn't available here." }, { status: 503 });
+        if (await rateLimited(request, "ai", 30)) return Response.json({ error: "You've used the AI writer a lot this hour – please try again later." }, { status: 429 });
+        if (await over(`ai-day/${Math.floor(Date.now() / 86_400_000)}`, 400)) return Response.json({ error: "The AI writer has reached today's free limit – please try again tomorrow." }, { status: 429 });
+        let body; try { body = JSON.parse((await request.text()).slice(0, 20_000)); } catch { return Response.json({ error: "Bad request" }, { status: 400 }); }
+        return Response.json(await aiSnippet(env, c, body || {}), { headers: { "cache-control": "no-store" } });
       }
       if (url.pathname.startsWith("/api/monitor")) {
         if (!env || !env.STATE) return send("Monitoring isn't available here.", TXT, 503);
@@ -229,6 +278,15 @@ const worker = {
       case "/favicon.ico": return Response.redirect(`${url.origin}/favicon.svg`, 301);
       case "/og.png": return send(OG_BYTES, "image/png", 200, "public, max-age=86400");
       case `/${INDEXNOW_KEY}.txt`: return send(INDEXNOW_KEY, TXT);
+      case "/badge.svg": {
+        let t; try { t = normaliseUrl(url.searchParams.get("site") || ""); } catch { return send(badgeSvg(null), "image/svg+xml", 200, "public, max-age=3600"); }
+        const host = t.hostname.replace(/^www\./, "");
+        const saved = env && env.STATE ? await env.STATE.get("badge:" + host, "json") : null;
+        if ((!saved || Date.now() - saved.t > 7 * 86_400_000) && env && env.STATE && !(await over(`badge-run/${host}/${Math.floor(Date.now() / 86_400_000)}`, 1))) {
+          c.waitUntil(runCheck(t.origin + "/", selfFetch(env, c)).then((r) => env.STATE.put("badge:" + host, JSON.stringify({ s: r.score, t: Date.now() }), { expirationTtl: 60 * 86_400 })).catch(() => {}));
+        }
+        return send(badgeSvg(saved && saved.s), "image/svg+xml", 200, "public, max-age=21600");
+      }
       case "/api/page": {
         let t; try { t = normaliseUrl(url.searchParams.get("url")); } catch (e) { return Response.json({ error: e.message }, { status: 400 }); }
         if (await rateLimited(request, "page", 600)) return Response.json({ error: "Too many requests from your connection this hour." }, { status: 429 });
