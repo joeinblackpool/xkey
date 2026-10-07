@@ -49,6 +49,38 @@ export function compareApp() {
         '<p><a class="btn" href="/seo-checker?url=' + encodeURIComponent(me.url) + '">See your full report and fixes</a></p>';
     }
     h += '<p class="small">Each site is checked on the single page entered. Compare like with like – home page with home page. Scores are a guide, not a guarantee of rankings.</p>';
+    h += '<div id="cmp-gap"></div>';
     document.getElementById("cmp-out").innerHTML = h;
+    topicGap();
+  }
+  // Topic gap: phrases competitors use repeatedly that your page never mentions. Needs /api/page (XKey); skipped quietly elsewhere.
+  function topicGap() {
+    var box = document.getElementById("cmp-gap"); if (!box || urls.length < 2) return;
+    var STOP = " a an and are as at be but by can do for from has have he her his i if in into is it its me my no not of on or our she so than that the their them then there these they this to too up us was we were what when which who will with you your yours i'm it's don't you're we're also more most all any each just get got how why where who's here out over about only other some such very can't will'll new use used using one two per via may might must should would could been being both own same ";
+    var words = function (t) { return (String(t).toLowerCase().match(/[\p{L}\p{N}][\p{L}\p{N}'’-]*/gu) || []).map(function (w) { return w.replace(/[’]/g, "'"); }); };
+    var phrases = function (t) {
+      var w = words(t), c = {};
+      for (var n = 1; n <= 3; n++) for (var i = 0; i + n <= w.length; i++) {
+        var g = w.slice(i, i + n); if (STOP.indexOf(" " + g[0] + " ") >= 0 || STOP.indexOf(" " + g[n - 1] + " ") >= 0) continue;
+        if (n === 1 && (g[0].length < 4 || /^\d+$/.test(g[0]))) continue;
+        var k = g.join(" "); c[k] = (c[k] || 0) + 1;
+      }
+      return c;
+    };
+    box.innerHTML = "<h2>Topic gap</h2><p>Reading the pages…</p>";
+    Promise.all(urls.map(function (u) { return fetch("/api/page?url=" + encodeURIComponent(u)).then(function (r) { if (r.status === 404) throw new Error("none"); return r.json(); }).then(function (j) { return j.error ? null : j; }, function () { return null; }); })).then(function (pages) {
+      if (!pages[0]) { box.innerHTML = ""; return; }
+      var mine = words(pages[0].title + " " + pages[0].h1.join(" ") + " " + pages[0].text).join(" ");
+      var gap = {};
+      pages.slice(1).forEach(function (p, i) {
+        if (!p) return; var c = phrases(p.title + " " + p.h1.join(" ") + " " + p.text);
+        Object.keys(c).forEach(function (k) { if (c[k] < 2 || (" " + mine + " ").indexOf(" " + k + " ") >= 0) return; var g = gap[k] || (gap[k] = { n: 0, sites: [] }); g.n += c[k]; g.sites.push(i + 1); });
+      });
+      var list = Object.keys(gap).map(function (k) { return [k, gap[k]]; });
+      // prefer phrases both competitors use, then longer phrases, then frequency; drop single words already inside a listed phrase
+      list.sort(function (a, b) { return b[1].sites.length - a[1].sites.length || b[1].n * b[0].split(" ").length - a[1].n * a[0].split(" ").length; });
+      var picked = []; list.forEach(function (x) { if (picked.length >= 24) return; if (picked.some(function (p) { return p[0].indexOf(x[0]) >= 0 || x[0].indexOf(p[0]) >= 0; })) return; picked.push(x); });
+      box.innerHTML = "<h2>Topic gap: what competitors cover that you don't</h2>" + (picked.length ? '<p class="small">Words and phrases each competitor uses at least twice that never appear on your page. Not every one belongs on your page – pick the ones your customers would genuinely want answered.</p><ul class="chg">' + picked.map(function (x) { return "<li><strong>" + esc(x[0]) + '</strong> <span class="small">– used ' + x[1].n + "× by " + x[1].sites.map(function (s) { return "competitor " + s; }).join(" and ") + "</span></li>"; }).join("") + "</ul>" : "<p>No gaps – your page already covers every topic your competitors repeat.</p>");
+    });
   }
 }

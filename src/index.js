@@ -19,7 +19,7 @@ const TOOLS_JS = `var W=${JSON.stringify(W)};(${toolsApp.toString()})();`;
 // ---------- forms
 const input = (id, name, ph, extra = "") => `<label for="${id}" class="sr">Website address</label><input id="${id}" name="${name}" type="text" inputmode="url" autocomplete="url" placeholder="${ph}" required${extra}>`;
 const FORMS = {
-  check: (p) => `<form class="ck-form" action="/seo-checker" method="get" role="search">${input("ck-url", "url", "yourwebsite.co.uk")}${p.focus ? `<input type="hidden" name="focus" value="${p.focus}">` : ""}<button class="btn" type="submit">${p.path === "/" ? "Check my site" : "Run free check"}</button></form><p class="small">Free, no sign-up. Checks one page in about 20 seconds. We fetch it like a search engine and don't keep your content.</p>`,
+  check: (p) => `<form class="ck-form" action="/seo-checker" method="get" role="search">${input("ck-url", "url", "yourwebsite.co.uk")}${p.focus ? `<input type="hidden" name="focus" value="${p.focus}">` : ""}<button class="btn" type="submit">${p.path === "/" ? "Check my site" : "Run free check"}</button></form><p class="small">Free, no sign-up. Checks one page in about 20 seconds. We fetch it like a search engine and don't keep your content.</p><div id="recent"></div><script src="/assets/tools.js" defer></script>`,
   audit: () => `<form class="ck-form" action="/site-audit" method="get" role="search">${input("au-url", "url", "yourwebsite.co.uk")}<button class="btn" type="submit">Audit my site</button></form><p class="small">Crawls up to 250 pages. Keep the tab open while it runs (usually one to three minutes).</p>`,
   compare: (p) => cmpForm(esc, p.prefill || []),
   monitor: () => `<form class="ck-form" action="/api/monitor" method="post">${input("mo-url", "url", "yourwebsite.co.uk")}<button class="btn" type="submit">Start free monitoring</button></form><p class="small">No account or email needed – you'll get a private dashboard link to bookmark.</p>`,
@@ -98,6 +98,8 @@ Contact | /contact | Phone, email and opening hours</textarea>
 <p style="margin:12px 0 0"><strong>Step 1:</strong> <a class="btn ghost" id="kd-google" href="https://www.google.co.uk/search" target="_blank" rel="noopener">Search Google</a></p>
 <label for="kd-urls"><strong>Step 2:</strong> paste the addresses of the page-one results (up to 10, one per line – skip ads and maps)</label><textarea id="kd-urls" spellcheck="false" placeholder="https://example.co.uk/page"></textarea>
 <p style="margin:16px 0 0"><button class="btn" type="submit">Check difficulty</button></p><div id="kd-out" aria-live="polite"></div></form><script src="/assets/tools.js" defer></script>`,
+  localserp: () => `<form class="tool" id="ls-form"><div class="row"><div style="flex:2 1 240px"><label for="ls-q">What would a customer search?</label><input id="ls-q" type="text" value="emergency plumber"></div><div style="flex:1 1 160px"><label for="ls-town">Town or city</label><input id="ls-town" type="text" value="Blackpool"></div><div style="flex:1 1 150px"><label for="ls-region">Nation</label><select id="ls-region"><option>England</option><option>Scotland</option><option>Wales</option><option>Northern Ireland</option></select></div></div>
+<p style="margin:16px 0 4px"><a class="btn" id="ls-go" target="_blank" rel="noopener">See Google results from there</a></p><p class="small" id="ls-note" aria-live="polite"></p></form><script src="/assets/tools.js" defer></script>`,
 };
 
 // crawlers offered by the robots tester: [token(s) in fallback order, label, purpose]
@@ -126,7 +128,7 @@ const guideCards = () => `<div class="grid">${GUIDES.map((g) => `<a class="card"
 const CTA = `<div class="cta"><p class="ct" style="font-size:26px">Run a free SEO check now</p><p>About 50 checks covering Google, AI search, speed, security and local SEO. No sign-up.</p><form class="ck-form" action="/seo-checker" method="get" role="search"><label for="cta-url" class="sr">Website address</label><input id="cta-url" name="url" type="text" inputmode="url" placeholder="yourwebsite.co.uk" required><button class="btn" type="submit">Check my site</button></form></div>`;
 const MAKER = `<div class="maker"><p><strong>Want the fixes done for you?</strong> XKey is made by <a href="https://icework.co.uk/?utm_source=xkey&amp;utm_medium=referral" rel="noopener">IceWork</a>, a web studio in ${BRAND.town}. IceWork builds fast, search-ready websites – a 3-page site including domain and a year's hosting is £${BRAND.price} all in.</p></div>`;
 
-const INSTANT = new Set(["title", "robots", "llms", "meta", "og", "sitemap", "words", "keywords", "titles", "robotsgen", "schemagen"]);
+const INSTANT = new Set(["title", "robots", "llms", "meta", "og", "sitemap", "words", "keywords", "titles", "robotsgen", "schemagen", "localserp"]);
 const freeStrip = (f) => `<ul class="free" aria-label="What free means here"><li>No cost</li><li>No sign-up</li><li>No email</li><li>No subscription</li><li>${INSTANT.has(f) ? "Unlimited – runs in your browser" : "No limits for normal use"}</li></ul>`;
 function render(p) {
   const form = p.form ? FORMS[p.form](p) : "";

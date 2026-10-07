@@ -160,6 +160,39 @@ export function auditApp() {
     render(all, html, issues, score);
   }
 
+  // Force-directed map of internal links, computed in the browser (no libraries).
+  function drawMap(pages) {
+    var box = $("au-map"), urls = pages.map(function (r) { return r.url; }).slice(0, 250), index = {};
+    urls.forEach(function (u, i) { index[u] = i; });
+    var edges = [], inDeg = urls.map(function () { return 0; });
+    urls.forEach(function (u, i) { var src = state.inbound.get(u); if (src) src.forEach(function (f) { if (index[f] != null && index[f] !== i) { edges.push([index[f], i]); inDeg[i]++; } }); });
+    var W = 900, H = 600, n = urls.length;
+    if (!n) { box.innerHTML = "<p>No pages to map.</p>"; return; }
+    var P = urls.map(function (u, i) { var a = i * 2.39996, r = 20 * Math.sqrt(i + 1); return { x: W / 2 + r * Math.cos(a), y: H / 2 + r * Math.sin(a), vx: 0, vy: 0 }; });
+    var damp = Math.max(1, edges.length / n), k = Math.sqrt(W * H / n) * 0.55, iters = n > 150 ? 220 : 320;
+    for (var it = 0; it < iters; it++) {
+      var t = 1 - it / iters;
+      for (var i = 0; i < n; i++) for (var j = i + 1; j < n; j++) {
+        var dx = P[i].x - P[j].x, dy = P[i].y - P[j].y, d2 = dx * dx + dy * dy + 0.01, f = k * k / d2;
+        P[i].vx += dx * f; P[i].vy += dy * f; P[j].vx -= dx * f; P[j].vy -= dy * f;
+      }
+      edges.forEach(function (e) { var a = P[e[0]], b = P[e[1]], dx = b.x - a.x, dy = b.y - a.y, d = Math.sqrt(dx * dx + dy * dy) + 0.01, f = d / k / damp; a.vx += dx * f; a.vy += dy * f; b.vx -= dx * f; b.vy -= dy * f; });
+      P.forEach(function (p) { p.vx += (W / 2 - p.x) * 0.02; p.vy += (H / 2 - p.y) * 0.02; var v = Math.sqrt(p.vx * p.vx + p.vy * p.vy) || 1, cap = 30 * t + 1; p.x += p.vx / v * Math.min(v, cap); p.y += p.vy / v * Math.min(v, cap); p.vx = p.vy = 0; p.x = Math.max(12, Math.min(W - 12, p.x)); p.y = Math.max(12, Math.min(H - 12, p.y)); });
+    }
+    // fit the layout to the frame
+    var x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    P.forEach(function (p) { x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); y0 = Math.min(y0, p.y); y1 = Math.max(y1, p.y); });
+    var sc = Math.min((W - 60) / Math.max(1, x1 - x0), (H - 60) / Math.max(1, y1 - y0));
+    P.forEach(function (p) { p.x = 30 + (p.x - x0) * sc + (W - 60 - (x1 - x0) * sc) / 2; p.y = 30 + (p.y - y0) * sc + (H - 60 - (y1 - y0) * sc) / 2; });
+    var home = urls.reduce(function (h, u, i) { var d = (state.seen.get(u) || {}).depth; return d === 0 ? i : h; }, -1);
+    var colour = function (u, i) { var d = (state.seen.get(u) || {}).depth; return i === home ? "#0a6f6a" : !inDeg[i] ? "#cf222e" : d != null && d >= 4 ? "#d4a72c" : "#5b7fa6"; };
+    var svg = '<svg viewBox="0 0 ' + W + " " + H + '" class="au-svg" role="img" aria-label="Site map of ' + n + ' pages" style="width:100%;height:auto;background:var(--card);border:1px solid var(--line);border-radius:12px">' +
+      edges.map(function (e) { var a = P[e[0]], b = P[e[1]]; return '<line x1="' + a.x.toFixed(1) + '" y1="' + a.y.toFixed(1) + '" x2="' + b.x.toFixed(1) + '" y2="' + b.y.toFixed(1) + '" stroke="var(--line)" stroke-width="0.6"/>'; }).join("") +
+      urls.map(function (u, i) { var r = Math.min(n > 100 ? 8 : 12, 3 + Math.sqrt(inDeg[i]) * 0.9); return '<a href="' + safeHref(u) + '" target="_blank" rel="noopener nofollow"><circle cx="' + P[i].x.toFixed(1) + '" cy="' + P[i].y.toFixed(1) + '" r="' + r.toFixed(1) + '" fill="' + colour(u, i) + '"><title>' + esc(short(u)) + " – " + inDeg[i] + " internal link" + (inDeg[i] === 1 ? "" : "s") + " in</title></circle></a>"; }).join("") + "</svg>";
+    var orphans = urls.filter(function (u, i) { return !inDeg[i] && i !== home; });
+    box.innerHTML = svg + '<p class="small">' + n + " pages, " + edges.length + " internal links." + (orphans.length ? " " + orphans.length + " orphan page" + (orphans.length === 1 ? "" : "s") + ": " + orphans.slice(0, 10).map(function (u) { return esc(short(u)); }).join(", ") + (orphans.length > 10 ? "…" : "") : " No orphan pages.") + " Hover over a dot to see the page; click to open it.</p>";
+  }
+
   function render(all, html, issues, score) {
     var pg = $("au-progress"); if (pg) pg.remove();
     var errors = all.filter(function (r) { return r.status >= 400 || r.status === 0; }).length;
@@ -179,8 +212,10 @@ export function auditApp() {
       }).join("") : "<p>No site-wide issues found – excellent.</p>") +
       '<h2>All pages</h2><div class="tablewrap"><table class="au-table"><thead><tr><th>Page</th><th>Status</th><th>Title</th><th>Words</th><th>Depth</th><th>Time</th></tr></thead><tbody>' +
       all.slice().sort(function (a, b) { return a.url < b.url ? -1 : a.url > b.url ? 1 : 0; }).map(function (r) { var d = (state.seen.get(r.url) || {}).depth; return '<tr><td><a href="' + safeHref(r.url) + '" target="_blank" rel="noopener nofollow">' + esc(short(r.url)) + '</a></td><td class="' + (r.status === 200 ? "s-pass" : r.status >= 300 && r.status < 400 ? "s-warn" : "s-fail") + '">' + esc(r.status || r.error) + "</td><td>" + esc(String(r.title || r.type || (r.redirect && ("→ " + short(r.redirect))) || "").slice(0, 70)) + "</td><td>" + esc(r.words != null ? r.words : "") + "</td><td>" + (d == null ? "–" : esc(d)) + "</td><td>" + (typeof r.ms === "number" ? (r.ms / 1000).toFixed(2) + "s" : "") + "</td></tr>"; }).join("") + "</tbody></table></div>" +
+      '<h2 class="noprint">Visual site map</h2><p class="noprint small">How your pages link together. Bigger dots have more internal links pointing at them. <span style="color:#cf222e">●</span> orphan (nothing links to it) · <span style="color:#d4a72c">●</span> 4+ clicks deep · <span style="color:#0a6f6a">●</span> home page</p><div class="noprint"><button type="button" class="btn ghost" id="au-map-btn">Show interactive site map</button><div id="au-map"></div></div>' +
       '<p class="small">Crawled ' + all.length + " URLs in " + Math.round((Date.now() - state.startedAt) / 1000) + " s, following links from the home page and the XML sitemap" + (state.blocked.size ? "; " + state.blocked.size + " URL(s) were skipped because robots.txt disallows them" : ", respecting robots.txt") + ". Scores are a guide, not a guarantee of rankings.</p>";
     $("au-report").innerHTML = h;
+    $("au-map-btn").onclick = function () { this.remove(); drawMap(html); };
     $("au-print").onclick = function () { document.querySelectorAll(".au-issue").forEach(function (d) { d.open = true; }); window.print(); };
     $("au-csv").onclick = function () {
       var rows = [["url", "status", "redirect", "title", "title_px", "description", "h1", "words", "depth", "ms", "noindex", "canonical", "images_no_alt", "json_ld", "inbound_links", "in_sitemap"]];

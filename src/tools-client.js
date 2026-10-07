@@ -367,4 +367,31 @@ export function toolsApp() {
       });
     });
   }
+
+  // ---- your recent checks (stored only in this browser)
+  var rc = $("recent");
+  if (rc) {
+    var list = []; try { list = JSON.parse(localStorage.getItem("seo_recent") || "[]"); } catch (e) {}
+    if (list.length) {
+      var ago = function (t) { var m = Math.round((Date.now() - t) / 60000); return m < 60 ? m + " min ago" : m < 1440 ? Math.round(m / 60) + " h ago" : Math.round(m / 1440) + " days ago"; };
+      rc.innerHTML = '<p class="ct" style="font-size:17px;margin-top:18px">Your recent checks</p><ul class="recent">' + list.slice(0, 6).map(function (x) {
+        var host = x.u; try { host = new URL(x.u).hostname.replace(/^www\./, ""); } catch (e) {}
+        return '<li><a href="/seo-checker?url=' + encodeURIComponent(x.u) + '">' + esc(host) + '</a> <b style="color:' + col(x.s >= 90, x.s >= 70) + '">' + x.s + '</b> <span class="small">' + ago(x.t) + "</span></li>";
+      }).join("") + '</ul><p class="small">Saved only in this browser. <a href="#" id="recent-clear">Clear</a></p>';
+      $("recent-clear").addEventListener("click", function (ev) { ev.preventDefault(); try { localStorage.removeItem("seo_recent"); } catch (e) {} rc.innerHTML = ""; });
+    }
+  }
+
+  // ---- local Google results link (opens in the visitor's own browser)
+  live("ls-form", function () {
+    var q = val("ls-q"), town = val("ls-town"), region = $("ls-region").value, a = $("ls-go");
+    if (!q || !town) { a.removeAttribute("href"); a.setAttribute("aria-disabled", "true"); $("ls-note").textContent = "Enter a search and a town."; return; }
+    var canon = town.replace(/\s*,\s*/g, ",").replace(/^\w/, function (c) { return c.toUpperCase(); }) + "," + region + ",United Kingdom";
+    var KEYS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+    var b64 = btoa(unescape(encodeURIComponent(canon)));
+    var uule = "w+CAIQICI" + KEYS.charAt(canon.length % 64) + b64;
+    a.href = "https://www.google.co.uk/search?q=" + encodeURIComponent(q) + "&gl=uk&hl=en&pws=0&uule=" + encodeURIComponent(uule);
+    a.removeAttribute("aria-disabled");
+    $("ls-note").textContent = "Opens Google in a new tab showing results for “" + q + "” as seen from " + canon.replace(/,/g, ", ") + ".";
+  });
 }

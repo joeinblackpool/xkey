@@ -49,6 +49,7 @@ export function checkerLanding(esc, BUSINESS) {
 </div></div></section>
 <section><div class="wrap prose"><h2>Why check AI search readiness?</h2><p>More and more people ask AI assistants for recommendations instead of scrolling search results. Those tools can only recommend businesses they can read and understand. A site that blocks AI crawlers, hides its business details or never answers questions directly is invisible to them, even if it ranks on Google.</p>
 <h2>How the score works</h2><p>Each check is weighted by how much it affects rankings, from <strong>critical</strong> (such as being indexable at all) down to <strong>low</strong>. Passes earn full marks, warnings half. Your fix list is sorted so the changes with the biggest effect come first.</p>
+<h2>More free SEO tools</h2><p>We also run <a href="https://xkey.co.uk/">XKey</a>, a free SEO toolkit with no sign-up: meta tag, sitemap, robots.txt and schema generators, a keyword difficulty checker, a plagiarism checker and more.</p>
 <h2>Want it fixed for you?</h2><p>Every website ${BUSINESS.name} builds is designed to pass these checks. See our <a href="/pricing">£${BUSINESS.price} website package</a> or our <a href="/seo">SEO service in ${BUSINESS.town}</a>.</p></div></section>`;
 }
 
@@ -89,6 +90,15 @@ function reportApp() {
   if (pr) pr.onclick = function (ev) { ev.preventDefault(); window.print(); };
   var fo = (location.search.match(/[?&]focus=([a-z-]{2,40})(&|$)/) || [])[1], fe = fo && document.getElementById(fo);
   if (fe && !location.hash) fe.scrollIntoView();
+  // remember this report on the visitor's own device (no account, nothing sent to us)
+  try {
+    var ring = document.querySelector(".ck-head .ring"), sc = ring && (ring.getAttribute("aria-label") || "").match(/\d+/), vb = document.getElementById("vitals");
+    if (sc && vb) {
+      var list = JSON.parse(localStorage.getItem("seo_recent") || "[]").filter(function (x) { return x.u !== vb.getAttribute("data-url"); });
+      list.unshift({ u: vb.getAttribute("data-url"), s: +sc[0], t: Date.now() });
+      localStorage.setItem("seo_recent", JSON.stringify(list.slice(0, 12)));
+    }
+  } catch (e) {}
   var box = document.getElementById("vitals"); if (!box) return;
   var e = function (s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
   var cat = { FAST: ["Good", "s-pass"], AVERAGE: ["Needs work", "s-warn"], SLOW: ["Poor", "s-fail"] };

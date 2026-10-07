@@ -29,6 +29,7 @@ const TOOLS = [
   ["/keyword-difficulty-checker", "Keyword difficulty checker", "How hard is page one? We grade the pages that rank now."],
   ["/plagiarism-checker", "Plagiarism checker", "Find copies of your text across the web – no word limit."],
   ["/anchor-text-checker", "Anchor text checker", "Grade every link on a page and generate better anchors."],
+  ["/local-search-checker", "Local search checker", "See Google results as they appear in any UK town."],
 ];
 export const toolCards = (except) => `<div class="grid">${TOOLS.filter(([p]) => p !== except).map(([p, t, d]) => `<a class="card" href="${p}"><p class="ct">${t}</p><p>${d}</p></a>`).join("")}</div>`;
 
@@ -397,8 +398,22 @@ export const PAGES = [
     faqs: [["How many links should a page have?", "There's no fixed limit. Link wherever it genuinely helps a visitor, and make sure every important page is linked from somewhere in your content, not only the menu."], ["Do menu and footer links count?", "Yes, but Google understands they're site-wide navigation. Links within the main content carry more context, so we show those separately."]],
   },
   {
+    path: "/local-search-checker", crumb: "Local search checker", parent: ["/seo-tools", "SEO tools"], title: "Local SERP Checker | See Google From Any UK Town, Free",
+    desc: "Free local SERP checker: see Google search results as they appear in any UK town or city, without a VPN or sign-up. Check your local rankings in seconds.",
+    h1: "Local search checker: see Google from any UK town", eyebrow: "Instant tool · Unlimited", app: "XKey local search checker",
+    lead: "Google shows different results in different places. Type a search and a town to open Google exactly as people there see it – handy for checking where you rank across your service area.",
+    form: "localserp",
+    sections: `<h2>Why do Google results change by location?</h2>
+<p>For anything with local intent – plumbers, cafés, solicitors, "near me" searches – Google ranks businesses close to the searcher higher, and shows a map pack of nearby businesses. So your position in Blackpool can be completely different from your position in Preston, even for the same words. Searching from your own office only ever shows you one of those pictures.</p>
+<h2>How does this local search checker work?</h2>
+<p>We build a Google search link with a location setting (the same <code>uule</code> parameter search professionals use), plus settings that switch off personalisation. The search runs in your own browser, from Google directly – we don't scrape or store anything – so the results are as real as they get. If Google doesn't recognise a place name, it falls back to your own location: try the main town name, spelled as on a map.</p>
+<h2>How do I improve my local rankings?</h2>
+<ul><li>Complete and verify your <strong>Google Business Profile</strong>, with the right categories and service areas.</li><li>Keep your <strong>name, address and phone</strong> identical on your website, profile and directories.</li><li>Add <strong>LocalBusiness structured data</strong> – our <a href="/schema-generator">schema generator</a> writes it for you.</li><li>Create genuinely useful pages for the towns you serve, and earn reviews from real customers.</li><li>Check your site with the <a href="/local-seo-checker">local SEO checker</a>.</li></ul>`,
+    faqs: [["Is this the same as a rank tracker?", "It shows you the live results so you can see where you appear. Paid rank trackers automate this across hundreds of searches; doing it by hand for your few most important searches costs nothing and follows Google's rules."], ["Why don't I see the map pack?", "Google only shows the map pack when it thinks the search is local. Try adding the type of business, such as 'plumber' rather than 'plumbing'."]],
+  },
+  {
     path: "/seo-tools", crumb: "SEO tools", title: "Free SEO Tools | No Sign-Up, No Email, No Subscription",
-    desc: "26 free SEO tools with no sign-up, no email and no subscription: SEO check, site audit, meta tag and sitemap generators, keyword ideas and more.",
+    desc: "27 free SEO tools with no sign-up, no email and no subscription: SEO check, site audit, meta tag and sitemap generators, keyword ideas and more.",
     h1: "Free SEO tools", eyebrow: "No sign-up", lead: "Every tool is free, with no account, no email and no subscription. The generators and counters run in your browser, so they're unlimited and nothing you type leaves your device.",
     sections: `<h2>Which SEO tool should I start with?</h2><p>Start with the <a href="/">free SEO check</a> on your most important page – it covers everything below in one report. Then run the <a href="/website-audit">website audit</a> to catch site-wide problems, and turn on <a href="/seo-monitoring">weekly monitoring</a> so nothing breaks unnoticed.</p><h2>Are these SEO tools really free?</h2><p>Yes. No sign-up, no trial and no limits beyond fair-use rate limits that stop abuse. XKey is paid for by <a href="https://icework.co.uk" rel="noopener">IceWork</a>, who build websites, as a useful free service.</p><h2>Do the single-topic tools run a different check?</h2><p>The checkers for speed, schema, sitemaps, security, mobile and local SEO run the full check and open your report at that section, so you never miss a bigger problem elsewhere on the page.</p>`, tools: true,
   },
@@ -492,7 +507,7 @@ export const PAGES = [
     sections: `<h2>What we collect</h2><p>When you run a check we receive the web address you entered and your IP address. We use the IP address only for short-term rate limiting to stop abuse; it's held in a temporary cache for about an hour.</p>
 <h2>Reports</h2><p>Finished reports are cached for up to an hour so repeat views are fast. We don't store the content of the pages we check.</p>
 <h2>Monitoring</h2><p>If you start monitoring, we store the web address and a weekly summary of the check results so we can show your history. Anyone with the dashboard link can view it. To have a monitor deleted, email us with the link.</p>
-<h2>Cookies</h2><p>XKey doesn't set advertising or tracking cookies.</p>
+<h2>Cookies and your browser</h2><p>XKey doesn't set advertising or tracking cookies. To show "Your recent checks", your browser keeps a short list of the addresses you checked and their scores – it stays on your device, is never sent to us, and you can clear it with one click.</p>
 <h2>Your rights</h2><p>You can contact us about your data at <a href="mailto:iceworks@f1rst.co.uk">iceworks@f1rst.co.uk</a>, or complain to the Information Commissioner's Office at <a href="https://ico.org.uk/" rel="noopener">ico.org.uk</a>.</p>`,
   },
 ];
