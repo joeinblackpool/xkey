@@ -4,7 +4,7 @@ import { MONITOR_CSS } from "../engine/monitor.js";
 
 export const BRAND = { name: "XKey", fullName: "XKey", domain: "xkey.co.uk", tagline: "Free SEO & AI search check", maker: "IceWork", makerUrl: "https://icework.co.uk", email: "iceworks@f1rst.co.uk", price: 350, town: "Blackpool" };
 export const SITE = `https://${BRAND.domain}`;
-export const UPDATED = "2026-10-06";
+export const UPDATED = "2026-10-07";
 
 export const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
@@ -57,12 +57,13 @@ export const FAVICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 
 function jsonld(p) {
   const url = SITE + p.path;
   const g = [
-    { "@type": "Organization", "@id": `${SITE}/#org`, name: BRAND.name, url: `${SITE}/`, logo: `${SITE}/favicon.svg`, email: BRAND.email, parentOrganization: { "@type": "Organization", name: BRAND.maker, url: BRAND.makerUrl } },
+    { "@type": "Organization", "@id": `${SITE}/#org`, name: BRAND.name, url: `${SITE}/`, logo: `${SITE}/favicon.svg`, email: BRAND.email, parentOrganization: { "@type": "Organization", "@id": "https://icework.co.uk/#business", name: BRAND.maker, url: BRAND.makerUrl + "/" } },
     { "@type": "WebSite", "@id": `${SITE}/#site`, url: `${SITE}/`, name: BRAND.name, publisher: { "@id": `${SITE}/#org` }, inLanguage: "en-GB" },
     p.app ? { "@type": "WebApplication", "@id": `${url}#app`, name: p.app, url, applicationCategory: "BusinessApplication", operatingSystem: "Any (web browser)", isAccessibleForFree: true, dateModified: UPDATED, offers: { "@type": "Offer", price: "0", priceCurrency: "GBP" }, publisher: { "@id": `${SITE}/#org` } }
       : p.article ? { "@type": "Article", "@id": `${url}#page`, headline: p.h1, description: p.desc, url, dateModified: UPDATED, datePublished: UPDATED, author: { "@id": `${SITE}/#org` }, publisher: { "@id": `${SITE}/#org` }, inLanguage: "en-GB" }
       : { "@type": "WebPage", "@id": `${url}#page`, url, name: p.title, description: p.desc, isPartOf: { "@id": `${SITE}/#site` }, dateModified: UPDATED },
   ];
+  if (p.itemList) g.push({ "@type": "ItemList", name: "Free SEO tools", itemListElement: p.itemList.map(([path, name], i) => ({ "@type": "ListItem", position: i + 1, name, url: SITE + path })) });
   if (p.path !== "/") g.push({ "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: `${SITE}/` }, ...(p.parent ? [{ "@type": "ListItem", position: 2, name: p.parent[1], item: SITE + p.parent[0] }] : []), { "@type": "ListItem", position: p.parent ? 3 : 2, name: p.crumb, item: url }] });
   return JSON.stringify({ "@context": "https://schema.org", "@graph": g }).replace(/</g, "\\u003c");
 }
@@ -71,7 +72,7 @@ export function layout(p) {
   const url = SITE + p.path;
   const nav = NAV.map(([h, t]) => `<li><a href="${h}"${h === p.path ? ' aria-current="page"' : ""}>${t}</a></li>`).join("");
   const crumbs = p.path === "/" ? "" : `<nav class="crumbs wrap" aria-label="Breadcrumb"><a href="/">Home</a> / ${p.parent ? `<a href="${p.parent[0]}">${esc(p.parent[1])}</a> / ` : ""}${esc(p.crumb || "")}</nav>`;
-  const maker = p.noindex ? `<div class="wrap"><div class="maker noprint"><p><strong>Want these fixed for you?</strong> XKey is made by <a href="${BRAND.makerUrl}/?utm_source=xkey&amp;utm_medium=report" rel="noopener">${BRAND.maker}</a>, a ${BRAND.town} web studio. IceWork builds fast websites that pass every check here – a 3-page site with domain and a year's hosting is £${BRAND.price} all in.</p></div></div>` : "";
+  const maker = p.noindex ? `<div class="wrap"><div class="maker noprint"><p><strong>Want these fixed for you?</strong> XKey is made by <a href="${BRAND.makerUrl}/" rel="noopener">${BRAND.maker}</a>, a ${BRAND.town} web studio. IceWork builds fast websites that pass every check here – a 3-page site with domain and a year's hosting is £${BRAND.price} all in.</p></div></div>` : "";
   return `<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(p.title)}</title><meta name="description" content="${esc(p.desc)}"><link rel="canonical" href="${url}">
 <meta name="robots" content="${p.noindex ? "noindex,follow" : "index,follow,max-image-preview:large"}">

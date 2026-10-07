@@ -240,8 +240,9 @@ export function analyse(f) {
   C("H1 heading", "critical", P(h1s.length === 1 && h1 && (h1Overlap > 0 || !titleWords.length), h1s.length === 1 || (h1s.length > 1 && h1)), h1s.length ? [h1s.length > 1 ? `${h1s.length} H1 headings – one clear H1 is best practice.` : `“${h1}”`, h1 && !h1Overlap && titleWords.length ? "The H1 shares no keywords with the title." : null, !h1 ? "The H1 is empty." : null] : "No H1 heading.", "Use one H1 that states the page topic with its main keyword.");
   let skipped = 0; for (let i = 1; i < hs.length; i++) if (hs[i][0] > hs[i - 1][0] + 1) skipped++;
   const emptyH = hs.filter((x) => !x[1]).length;
-  const tooMany = hs.length > Math.max(12, wc / 40);
-  C("Heading structure", "medium", P(!skipped && !tooMany && !emptyH && hs.length >= 2, !tooMany && skipped <= 2), [`${hs.length} headings for ${wc} words${tooMany ? " – a lot for the amount of text" : ""}.`, skipped ? `${skipped} skipped level(s), e.g. H2 → H4.` : "Levels are in order.", emptyH ? `${emptyH} empty heading(s).` : null], "Use H2s for main sections and H3s inside them, without skipping levels.");
+  const faqH = (body.match(/<summary\b[^>]*>\s*<h[2-6]\b/gi) || []).length; // FAQ questions in <details> are expected to be many and short
+  const tooMany = hs.length - faqH > Math.max(12, wc / 40);
+  C("Heading structure", "medium", P(!skipped && !tooMany && !emptyH && hs.length >= 2, skipped <= 2 && hs.length - faqH <= Math.max(20, wc / 15)), [`${hs.length} headings for ${wc} words${tooMany ? " – a lot for the amount of text" : ""}.`, skipped ? `${skipped} skipped level(s), e.g. H2 → H4.` : "Levels are in order.", emptyH ? `${emptyH} empty heading(s).` : null], "Use H2s for main sections and H3s inside them, without skipping levels.");
   const codeRatio = raw.length ? Math.round((bodyText.length / raw.length) * 100) : 0;
   C("Text-to-code ratio", "low", P(codeRatio >= 10, codeRatio >= 5), `${codeRatio}% of the HTML is visible text.`, "Trim unused markup, inline scripts and builder bloat.");
 
