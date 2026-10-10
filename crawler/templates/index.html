@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Website Crawler{% endblock %}
+{% block body %}
+<div class="card">
+ <h1>Website crawler</h1>
+ <p class="sub">Crawl a whole website and get an SEO issues report, a score out of 100, and a spreadsheet of every page: titles, descriptions, headings, word counts, links, contact details and product prices.</p>
+ <form method="post" action="{{ url_for('start') }}">
+  <label for="url">Website address</label>
+  <input id="url" name="url" placeholder="yourwebsite.co.uk" value="{{ form.url or '' }}" required inputmode="url">
+  <label for="max_pages">Maximum pages (1 to {{ hard_max }})</label>
+  <input id="max_pages" name="max_pages" type="number" min="1" max="{{ hard_max }}" value="{{ form.max_pages or default_max }}">
+
+  <details {% if form.path or form.products_only %}open{% endif %}>
+   <summary>Product directory options</summary>
+   <label for="path">Only this section of the site</label>
+   <input id="path" name="path" placeholder="/products/" value="{{ form.path or '' }}">
+   <label class="check"><input type="checkbox" name="products_only" value="1" {% if form.products_only %}checked{% endif %}>
+    Only save product pages (name, price, SKU, brand, stock)</label>
+  </details>
+
+  <details {% if form.competitor %}open{% endif %}>
+   <summary>Compare with a competitor</summary>
+   <label for="competitor">Competitor's website address</label>
+   <input id="competitor" name="competitor" placeholder="competitor.co.uk" value="{{ form.competitor or '' }}" inputmode="url">
+   <p class="muted">Both sites are crawled with the same settings and shown side by side.</p>
+  </details>
+
+  {% if email_on %}
+  <details {% if form.watch_email %}open{% endif %}>
+   <summary>Email me when the site changes</summary>
+   <label for="watch_email">Your email</label>
+   <input id="watch_email" name="watch_email" type="email" placeholder="you@yourbusiness.co.uk" value="{{ form.watch_email or '' }}">
+   <label for="every_days">How often</label>
+   <select id="every_days" name="every_days">
+    <option value="7" {% if form.every_days != '30' %}selected{% endif %}>Every week</option>
+    <option value="30" {% if form.every_days == '30' %}selected{% endif %}>Every month</option>
+   </select>
+   <p class="muted">We re-crawl the site (up to {{ schedule_max }} pages) and email you new broken pages, price changes, stock changes and new or removed pages. We'll send a confirmation link first, and every email has a stop link.</p>
+  </details>
+  {% endif %}
+
+  <button type="submit">Start crawl</button>
+  {% if error %}<div class="err">{{ error }}</div>{% endif %}
+ </form>
+ <p class="muted" style="margin-top:16px">The crawler follows robots.txt and waits a few seconds between pages so it doesn't overload anyone's site. That's about 4 seconds per page, so large sites take a while. You can leave the page and come back.</p>
+</div>
+{% endblock %}

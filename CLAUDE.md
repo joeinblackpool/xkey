@@ -9,7 +9,8 @@ Free SEO & AI search checker for UK businesses, made by IceWork (icework.co.uk).
 
 ## Website crawler (crawler/)
 - Python/Flask app (`crawler/`), NOT part of the Worker: Render runs it from `render.yaml` (rootDir `crawler`), planned at crawler.xkey.co.uk. Wrangler ignores the folder.
-- Crawls one site (robots.txt respected, 2.5–5.5 s between pages, max 10,000 rows) and exports an SEO/product CSV. Run locally: `cd crawler && pip install -r requirements.txt && python app.py`.
+- Crawls one site (robots.txt respected, 2.5–5.5 s between pages, max 10,000 rows): SEO issues report + score, Excel/CSV/Google Sheets, product data, competitor compare, emailed re-crawls (needs SMTP settings on Render). Run locally: `cd crawler && pip install -r requirements.txt && python app.py`. Details: `crawler/README.md`.
+- `REQUIRE_EMAIL` (email before download) exists but stays OFF: it breaks the "no email" rule below unless Joe says otherwise.
 
 ## Layout
 - `src/` – XKey pages (`content.js`), shell/styles (`site.js`), routing + APIs (`index.js`), browser tools (`tools-client.js`, served as /assets/tools.js), page parser (`page-parse.js`), OG image (`og.js`).

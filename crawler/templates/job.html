@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Crawling {{ host }}{% endblock %}
+{% block body %}
+<div class="card">
+ <h1>{{ host }}</h1>
+ <p class="sub" id="state">Starting...</p>
+ <div class="bar"><div id="fill"></div></div>
+ <div class="muted" id="count"></div>
+ <div id="actions">
+  {% if locked %}
+  <a class="btn" href="{{ url_for('unlock', job_id=job_id) }}">Get the spreadsheets</a>
+  {% else %}
+  <a class="btn" href="{{ url_for('download', job_id=job_id, kind='xlsx') }}">Excel</a>
+  <a class="btn secondary" href="{{ url_for('download', job_id=job_id, kind='csv') }}">CSV</a>
+  <a class="btn secondary" href="{{ url_for('download', job_id=job_id, kind='issues') }}">Issues CSV</a>
+  {% endif %}
+  <form method="post" action="{{ url_for('stop', job_id=job_id) }}" style="display:inline" id="stopform">
+   <button class="btn secondary" type="submit">Stop</button></form>
+ </div>
+ {% if not locked %}
+ <details>
+  <summary>Open in Google Sheets</summary>
+  <p class="muted">In a new Google Sheet, paste this into cell A1. It pulls in the page data and refreshes about every hour while this crawl's results are kept ({{ retention }} hours).</p>
+  <code id="sheets">=IMPORTDATA("{{ sheet_url }}")</code>
+  <p><button class="btn secondary" type="button" onclick="navigator.clipboard.writeText(document.getElementById('sheets').textContent)">Copy formula</button></p>
+ </details>
+ {% endif %}
+ {% if compare_id %}<p><a href="{{ url_for('compare_page', compare_id=compare_id) }}">Back to the comparison</a></p>{% endif %}
+</div>
+
+<div class="card" id="report" hidden>
+ <div class="row" style="align-items:center">
+  <div style="flex:0 0 auto"><div class="score" id="score"></div><div class="muted">SEO score / 100</div></div>
+  <div><table id="stats"></table></div>
+ </div>
+ <h2>Issues found</h2>
+ <table id="issue-counts"></table>
+ <h2>Worst problems first</h2>
+ <table id="issues"></table>
+ <p class="muted" id="issues-more"></p>
+</div>
+
+<div class="card"><h2 style="margin-top:0">Activity</h2><pre id="log"></pre></div>
+
+<script>
+const jobUrl = {{ url_for('job_status', job_id=job_id)|tojson }};
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function showReport(r){
+  document.getElementById('report').hidden = false;
+  document.getElementById('score').textContent = r.summary.Score;
+  const keys = ['Pages crawled','Broken pages','Average words per page','Average response (ms)','Products found','Average price'];
+  document.getElementById('stats').innerHTML = keys.map(k => `<tr><th>${k}</th><td class="num">${esc(r.summary[k])}</td></tr>`).join('');
+  const counts = Object.entries(r.summary.issue_counts);
+  document.getElementById('issue-counts').innerHTML = counts.length
+    ? '<tr><th>Issue</th><th class="num">Pages</th></tr>' + counts.map(([k,v]) => `<tr><td>${esc(k)}</td><td class="num">${v}</td></tr>`).join('')
+    : '<tr><td>No issues found. Nice work.</td></tr>';
+  document.getElementById('issues').innerHTML = r.top_issues.length
+    ? '<tr><th>Severity</th><th>Issue</th><th>Page</th></tr>' + r.top_issues.map(i => `<tr><td class="sev-${i.Severity}">${i.Severity}</td><td>${esc(i.Issue)}${i.Detail ? '<br><span class="muted">'+esc(i.Detail)+'</span>' : ''}${i['Found On'] && i['Found On'] !== 'N/A' ? '<br><span class="muted">Linked from '+esc(i['Found On'])+'</span>' : ''}</td><td>${esc(i.URL)}</td></tr>`).join('')
+    : '';
+  document.getElementById('issues-more').textContent = r.total_issues > r.top_issues.length
+    ? `Showing ${r.top_issues.length} of ${r.total_issues}. The full list is in the Excel file and the Issues CSV.` : '';
+}
+async function poll(){
+  try{
+    const d = await (await fetch(jobUrl)).json();
+    document.getElementById('fill').style.width = Math.min(100, 100*d.pages_done/d.max_pages) + '%';
+    document.getElementById('count').textContent = `${d.pages_done} / ${d.max_pages} rows saved, ${d.pages_fetched} pages checked` + (d.state==='running' ? ` (${d.queued} more queued)` : '');
+    const labels = {pending:'Starting...', running:'Crawling...', finished:'Finished. ', stopped:'Stopped. ', failed:'Failed: '};
+    document.getElementById('state').textContent = (labels[d.state]||d.state) + (d.state==='running' ? '' : d.message);
+    const log = document.getElementById('log'); log.textContent = d.log.join('\n'); log.scrollTop = log.scrollHeight;
+    if (d.report) showReport(d.report);
+    if (d.state==='pending' || d.state==='running') setTimeout(poll, 2000);
+    else { const f = document.getElementById('stopform'); if (f) f.style.display='none'; }
+  }catch(e){ setTimeout(poll, 5000); }
+}
+poll();
+</script>
+{% endblock %}

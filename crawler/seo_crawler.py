@@ -55,7 +55,7 @@ COLUMNS = [
     "URL", "Status", "Title", "Title Length", "Meta Description",
     "Meta Description Length", "H1", "H1 Count", "Canonical", "Meta Robots",
     "Word Count", "Internal Links", "External Links", "Images Missing Alt",
-    "Emails", "Phones", "Response Time (ms)",
+    "Emails", "Phones", "Response Time (ms)", "Found On",
     # Product data, read from schema.org markup (JSON-LD / microdata) or
     # Open Graph product tags. N/A on pages that aren't product pages.
     "Product Name", "Price", "Currency", "SKU", "Brand", "Availability",
@@ -448,6 +448,8 @@ class Crawler:
                     self.log(f"Could not analyse {url}: {exc}")
                     row, links = dict.fromkeys(COLUMNS, MISSING), []
                     row["URL"], row["Status"] = final_url, resp.status_code
+                # The page that linked here (N/A for the start page and sitemap URLs).
+                row["Found On"] = referers.get(url) or MISSING
                 is_product = row.get("Product Name", MISSING) != MISSING or row.get("Price", MISSING) != MISSING
                 if is_product or not self.products_only:
                     writer.writerow(row)

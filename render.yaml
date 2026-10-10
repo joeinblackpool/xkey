@@ -21,3 +21,25 @@ services:
         value: "3"
       - key: JOB_RETENTION_HOURS
         value: "48"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: PUBLIC_URL
+        value: https://crawler.xkey.co.uk
+      # Optional extras. Fill these in on Render (Environment tab), never in code:
+      # SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, MAIL_FROM
+      #   -> turns on "email me when the site changes"
+      # REQUIRE_EMAIL=1 -> ask for an email before downloads
+      # ADMIN_PASSWORD -> download leads at /admin/leads.csv (user "admin")
+      # Scheduled re-crawls and leads are stored in DATA_DIR. On the free plan
+      # that disk is wiped on every deploy; on a paid plan add a Render disk
+      # mounted at /var/data and set DATA_DIR=/var/data.
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: MAIL_FROM
+        sync: false

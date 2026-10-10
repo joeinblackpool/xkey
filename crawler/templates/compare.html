@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}{{ host_a }} vs {{ host_b }}{% endblock %}
+{% block body %}
+<div class="card">
+ <h1>{{ host_a }} vs {{ host_b }}</h1>
+ <p class="sub" id="state">Crawling both sites...</p>
+ <div class="row">
+  <div><strong>{{ host_a }}</strong><div class="bar"><div id="fill-a"></div></div><div class="muted" id="count-a"></div>
+   <a href="{{ url_for('job_page', job_id=job_a) }}">Full report</a></div>
+  <div><strong>{{ host_b }}</strong><div class="bar"><div id="fill-b"></div></div><div class="muted" id="count-b"></div>
+   <a href="{{ url_for('job_page', job_id=job_b) }}">Full report</a></div>
+ </div>
+ <table id="cmp" style="margin-top:16px"></table>
+ {% if locked %}
+ <a class="btn" id="dl" hidden href="{{ url_for('unlock', job_id=job_a, next=url_for('compare_page', compare_id=compare_id)) }}">Get the comparison spreadsheet</a>
+ {% else %}
+ <a class="btn" id="dl" hidden href="{{ url_for('compare_download', compare_id=compare_id) }}">Download comparison (Excel)</a>
+ {% endif %}
+</div>
+<script>
+const url = {{ url_for('compare_status', compare_id=compare_id)|tojson }};
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+async function poll(){
+  try{
+    const d = await (await fetch(url)).json();
+    for (const k of ['a','b']) {
+      const j = d[k];
+      document.getElementById('fill-'+k).style.width = Math.min(100, 100*j.pages_done/j.max_pages) + '%';
+      document.getElementById('count-'+k).textContent = `${j.pages_done} / ${j.max_pages} rows, ${j.state}`;
+    }
+    if (d.rows) {
+      document.getElementById('cmp').innerHTML = `<tr><th></th><th class="num">${esc(d.host_a)}</th><th class="num">${esc(d.host_b)}</th></tr>` +
+        d.rows.map(([m,a,b,w]) => `<tr><th>${esc(m)}</th><td class="num ${w==='a'?'win':''}">${esc(a)}</td><td class="num ${w==='b'?'win':''}">${esc(b)}</td></tr>`).join('');
+    }
+    if (d.done) { document.getElementById('state').textContent = 'Both crawls finished. Green marks the better result.'; document.getElementById('dl').hidden = false; }
+    else setTimeout(poll, 3000);
+  }catch(e){ setTimeout(poll, 5000); }
+}
+poll();
+</script>
+{% endblock %}
