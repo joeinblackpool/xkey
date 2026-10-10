@@ -1,9 +1,14 @@
 // Phone checks (iPhone 13, Pixel 7): no sideways scroll, no text overflow, tap targets >= 44px.
-// Needs Playwright and the site served on :8789. Run: node xkey/test/mobile.mjs
-import { chromium, devices } from "playwright";
+// Needs Playwright. Run: node test/mobile.mjs (starts the site locally if nothing is on :8789)
+import { need, serve } from "./lib.mjs";
+const { chromium, devices } = await need("playwright");
 const { PAGES } = await import("../src/index.js");
+// Use a server already running on :8789 (e.g. wrangler dev), otherwise start the local one.
+let site = null;
+try { await fetch("http://localhost:8789/"); } catch { site = await serve(8789); }
 const paths = PAGES.map((p) => p.path);
 const b = await chromium.launch();
+let total = 0;
 for (const dev of ["iPhone 13", "Pixel 7"]) {
   const ctx = await b.newContext({ ...devices[dev] });
   let problems = 0;
@@ -28,5 +33,8 @@ for (const dev of ["iPhone 13", "Pixel 7"]) {
     await page.close();
   }
   console.log(`${dev}: ${paths.length} pages, ${problems} problems`);
+  total += problems;
 }
 await b.close();
+if (site) await site.close();
+process.exit(total ? 1 : 0);

@@ -6,7 +6,8 @@ export function compareApp() {
   if (!root) return;
   var urls = JSON.parse(root.getAttribute("data-urls") || "[]");
   var esc = function (s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
-  var host = function (u) { try { return new URL(u).hostname.replace(/^www\./, ""); } catch (e) { return u; } };
+  // Site name, plus the page path when it isn't the home page, so two pages on one site can be told apart.
+  var host = function (u) { try { var x = new URL(u); return x.hostname.replace(/^www\./, "") + (x.pathname !== "/" ? x.pathname.replace(/\/$/, "") : ""); } catch (e) { return u; } };
   var col = function (s) { return s >= 90 ? "#1a7f37" : s >= 70 ? "#9a6700" : "#cf222e"; };
   var results = urls.map(function () { return null; });
   root.innerHTML = '<div class="vit">' + urls.map(function (u, i) { return '<div id="cmp-' + i + '"><small>' + (i ? "Competitor " + i : "Your site") + '</small><b>' + esc(host(u)) + '</b><small class="cmp-state">Checking…</small></div>'; }).join("") + '</div><div id="cmp-out"></div>';

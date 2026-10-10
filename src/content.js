@@ -818,6 +818,8 @@ Sitemap: https://yourdomain.co.uk/sitemap.xml</code></pre>
     h1: "Contact XKey", lead: "Questions, feedback or found a bug? Email us any time – we aim to reply within 24 hours.",
     sections: `<p><a class="btn" href="mailto:iceworks@f1rst.co.uk?subject=XKey">Email iceworks@f1rst.co.uk</a></p><p>XKey is run by IceWork, Blackpool, Lancashire, UK.</p>
 <h2>What should I include when reporting a problem?</h2><p>The web address you checked, what you expected and what the report said. A screenshot helps. If a check seems wrong for your site, tell us – it's the fastest way for us to improve the tool.</p>
+<h2>What can I ask about?</h2><p>Anything to do with XKey: a check that gave a result you don't understand, a tool that didn't work, an idea for a new tool, or a question about what a report means for your site. We read every message ourselves – there's no ticket system and no chatbot – and we reply from the same address. We don't need an account, a phone number or any details beyond your email to help.</p>
+<h2>Is there a phone number?</h2><p>Not for XKey. Email lets us look at the page you're asking about before we reply, so you get a proper answer rather than a guess. If your question is about getting a website built or repaired, IceWork's own site has its contact details.</p>
 <h2>Can you fix my website for me?</h2><p>XKey's tools are free for everyone. If you'd like the fixes done for you, <a href="https://icework.co.uk" rel="noopener">IceWork</a> builds and repairs websites for UK businesses – just mention XKey when you get in touch.</p>`,
   },
   {
