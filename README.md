@@ -5,4 +5,5 @@ A single Cloudflare Worker: every push to `main` builds and deploys automaticall
 
 - `src/` – XKey pages, tools and routing
 - `engine/` – the SEO checker engine, shared with icework.co.uk (copied from joeinblackpool/FleaBag `src/`; keep the two in step)
+- `crawler/` – Python website crawler (CSV export), hosted separately on Render via `render.yaml`
 - `test/check.mjs` – pre-deploy checks: `node test/check.mjs`

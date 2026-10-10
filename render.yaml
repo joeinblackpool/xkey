@@ -1,0 +1,23 @@
+# Render Blueprint: in Render, choose New > Blueprint and pick the GitHub
+# repo joeinblackpool/xkey. Render reads this file and runs the Python
+# crawler in crawler/ as its own service. It does not touch the Worker.
+services:
+  - type: web
+    name: seo-crawler
+    runtime: python
+    rootDir: crawler
+    # "free" works for trying it out, but free services go to sleep after
+    # about 15 minutes with no visitors, which stops long crawls. Change to
+    # "starter" (paid) for crawls of thousands of pages.
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    # One process with threads: crawl jobs are tracked in memory.
+    startCommand: gunicorn -w 1 --threads 8 --timeout 120 -b 0.0.0.0:$PORT app:app
+    healthCheckPath: /healthz
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: MAX_CONCURRENT_JOBS
+        value: "3"
+      - key: JOB_RETENTION_HOURS
+        value: "48"
