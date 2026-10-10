@@ -10,12 +10,15 @@
   <label for="max_pages">Maximum pages (1 to {{ hard_max }})</label>
   <input id="max_pages" name="max_pages" type="number" min="1" max="{{ hard_max }}" value="{{ form.max_pages or default_max }}">
 
-  <details {% if form.path or form.products_only %}open{% endif %}>
+  <details {% if form.path or form.products_only or form.product_list %}open{% endif %}>
    <summary>Product directory options</summary>
    <label for="path">Only this section of the site</label>
    <input id="path" name="path" placeholder="/products/" value="{{ form.path or '' }}">
+   <label class="check"><input type="checkbox" name="product_list" value="1" {% if form.product_list %}checked{% endif %}>
+    <span><strong>Full product list, fast</strong> – every product address in the shop's sitemap, with names and product codes, in a minute or two. No prices.</span></label>
    <label class="check"><input type="checkbox" name="products_only" value="1" {% if form.products_only %}checked{% endif %}>
-    Only save product pages (name, price, SKU, brand, stock)</label>
+    <span>Visit product pages for prices (name, price, SKU, brand, stock) – about 4 seconds a page</span></label>
+   <p class="muted">Big shops can have tens of thousands of products. Get the full list first, then visit one section (for example <code>/boilers/</code>) for prices.</p>
   </details>
 
   <details {% if form.competitor %}open{% endif %}>

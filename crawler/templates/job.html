@@ -45,8 +45,17 @@
 <script>
 const jobUrl = {{ url_for('job_status', job_id=job_id)|tojson }};
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let MODE = 'crawl';
 function showReport(r){
   document.getElementById('report').hidden = false;
+  if (MODE === 'list') {
+    document.querySelector('#report .row > div').hidden = true;
+    document.getElementById('stats').innerHTML = `<tr><th>Addresses listed</th><td class="num">${esc(r.summary['Pages crawled'])}</td></tr>`;
+    document.getElementById('issue-counts').innerHTML = '<tr><td>This list comes from the site\'s sitemaps, so pages weren\'t visited and there\'s no SEO score. Download it as Excel or CSV above. For prices, start a new crawl with "Visit product pages for prices" and a section of the site.</td></tr>';
+    document.getElementById('issues').innerHTML = ''; document.getElementById('issues-more').textContent = '';
+    document.querySelectorAll('#report h2').forEach(h => h.hidden = true);
+    return;
+  }
   document.getElementById('score').textContent = r.summary.Score;
   const keys = ['Pages crawled','Broken pages','Average words per page','Average response (ms)','Products found','Average price'];
   document.getElementById('stats').innerHTML = keys.map(k => `<tr><th>${k}</th><td class="num">${esc(r.summary[k])}</td></tr>`).join('');
@@ -63,9 +72,13 @@ function showReport(r){
 async function poll(){
   try{
     const d = await (await fetch(jobUrl)).json();
+    MODE = d.mode || 'crawl';
     document.getElementById('fill').style.width = Math.min(100, 100*d.pages_done/d.max_pages) + '%';
-    document.getElementById('count').textContent = `${d.pages_done} / ${d.max_pages} rows saved, ${d.pages_fetched} pages checked` + (d.state==='running' ? ` (${d.queued} more queued)` : '');
-    const labels = {pending:'Starting...', running:'Crawling...', finished:'Finished. ', stopped:'Stopped. ', failed:'Failed: '};
+    document.getElementById('count').textContent = MODE === 'list'
+      ? `${d.pages_done.toLocaleString('en-GB')} addresses listed from ${d.pages_fetched} sitemap files`
+      : `${d.pages_done} / ${d.max_pages} rows saved, ${d.pages_fetched} pages checked` + (d.state==='running' ? ` (${d.queued} more queued)` : '');
+    if (MODE === 'list' && d.state === 'running') document.getElementById('fill').style.width = '50%';
+    const labels = {pending:'Starting...', running: MODE === 'list' ? 'Reading the sitemaps...' : 'Crawling...', finished:'Finished. ', stopped:'Stopped. ', failed:'Failed: '};
     document.getElementById('state').textContent = (labels[d.state]||d.state) + (d.state==='running' ? '' : d.message);
     const log = document.getElementById('log'); log.textContent = d.log.join('\n'); log.scrollTop = log.scrollHeight;
     if (d.report) showReport(d.report);

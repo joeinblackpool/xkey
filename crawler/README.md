@@ -24,6 +24,11 @@ crawler.xkey.co.uk. It is separate from the Cloudflare Worker.
 - **Product directories.** "Only this section" (e.g. `/products/`) and
   "Only save product pages" give one row per product with name, price,
   currency, SKU, brand, stock and image (from schema.org / Open Graph data).
+- **Full product list, fast.** Reads the shop's sitemaps (product sitemaps
+  first) and lists every product address with a name and product code taken
+  from the address – up to 200,000 rows in a minute or two, without visiting
+  the pages. Addresses robots.txt disallows are left out. Prices need a normal
+  products-only crawl of a section.
 - **Competitor compare.** Crawls two sites with the same settings and shows
   them side by side, best result in green, with an Excel download.
 - **Email me when the site changes** (needs SMTP, below). Weekly or monthly

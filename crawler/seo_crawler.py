@@ -50,6 +50,36 @@ warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
 
 DEFAULT_MAX_PAGES = 10000
 HARD_MAX_PAGES = 10000  # the web app never allows more than this
+# "Full product list" mode reads the site's sitemaps instead of visiting pages,
+# so it can list far more rows quickly without loading the site.
+LIST_MAX_ROWS = 200000
+LISTED = "Listed from sitemap"
+
+
+def name_from_url(url):
+    """Best-guess product name from a web address: '/p/prowarm-mat-200w/p/100031' -> 'Prowarm Mat 200W'."""
+    segs = [s for s in urlparse(url).path.split("/") if s]
+    slugs = [s for s in segs if "-" in s or "_" in s]
+    if not slugs:
+        return MISSING
+    words = [w for w in re.split(r"[-_]+", max(slugs, key=len)) if w]
+    def fix(w):
+        if w.isalpha():
+            return w.capitalize()
+        if re.fullmatch(r"\d+(\.\d+)?[a-z]{1,2}", w, re.I):
+            return w.upper()
+        return w
+    name = " ".join(fix(w) for w in words)
+    return re.sub(r"\.(html?|php|aspx?)$", "", name, flags=re.I) or MISSING
+
+
+def code_from_url(url):
+    """Product code when the address ends in one, e.g. '/p/100031' -> '100031'."""
+    segs = [s for s in urlparse(url).path.split("/") if s]
+    if segs and re.fullmatch(r"[A-Za-z]{0,4}\d{3,}[A-Za-z0-9]*", segs[-1]):
+        return segs[-1]
+    m = re.search(r"-(\d{4,})(?:\.html?)?$", segs[-1]) if segs else None
+    return m.group(1) if m else MISSING
 
 COLUMNS = [
     "URL", "Status", "Title", "Title Length", "Meta Description",
@@ -75,6 +105,8 @@ EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
 PHONE_RE = re.compile(r"(?:\+\d{1,3}[\s.-]?)?(?:\(\d{2,4}\)[\s.-]?)?\d{2,4}[\s.-]\d{3,4}[\s.-]?\d{3,4}")
 RETRY_STATUSES = {429, 500, 502, 503, 504}
 BACKOFF_SCHEDULE = [30, 60, 120, 240]
+# Errors that won't fix themselves by waiting: give up straight away instead of backing off.
+PERMANENT_ERRORS = ("TooManyRedirects", "InvalidURL", "MissingSchema", "InvalidSchema", "InvalidHeader")
 MISSING = "N/A"
 
 
@@ -210,7 +242,8 @@ class Crawler:
 
     def __init__(self, start_url, output_csv, max_pages=DEFAULT_MAX_PAGES,
                  min_delay=2.5, max_delay=5.5, backoff_schedule=None,
-                 timeout=30, log_fn=None, path_prefix=None, products_only=False):
+                 timeout=30, log_fn=None, path_prefix=None, products_only=False,
+                 sitemap_list=False):
         self.start_url = normalize_url(start_url) or start_url
         # Only follow/save URLs whose path starts with this, e.g. "/products/".
         prefix = (path_prefix or "").strip()
@@ -219,9 +252,12 @@ class Crawler:
         self.path_prefix = prefix if prefix not in ("", "/") else None
         # Save a row only when the page has product data.
         self.products_only = bool(products_only)
+        # List every URL in the sitemaps (product sitemaps when products_only) without visiting pages.
+        self.sitemap_list = bool(sitemap_list)
         self.pages_fetched = 0
+        self.last_error = None
         self.output_csv = output_csv
-        self.max_pages = max(1, min(int(max_pages), HARD_MAX_PAGES))
+        self.max_pages = LIST_MAX_ROWS if self.sitemap_list else max(1, min(int(max_pages), HARD_MAX_PAGES))
         self.min_delay, self.max_delay = min_delay, max(max_delay, min_delay)
         self.backoff = backoff_schedule if backoff_schedule is not None else BACKOFF_SCHEDULE
         self.timeout = timeout
@@ -274,6 +310,10 @@ class Crawler:
                 retry_after = int(value) if value.isdigit() else None
             except requests.RequestException as exc:
                 reason = type(exc).__name__
+                if reason in PERMANENT_ERRORS:
+                    self.last_error = reason
+                    self.log(f"Skipping {url}: {'redirect loop' if reason == 'TooManyRedirects' else reason}.")
+                    return None, 0
             if attempt >= len(self.backoff):
                 self.log(f"Giving up on {url} after {attempt} retries ({reason}).")
                 return None, 0
@@ -308,7 +348,13 @@ class Crawler:
                     continue
                 soup = BeautifulSoup(resp.content, "html.parser")
                 if soup.find("sitemapindex"):
-                    sitemaps += [loc.get_text(strip=True) for loc in soup.select("sitemap > loc")]
+                    children = [loc.get_text(strip=True) for loc in soup.select("sitemap > loc")]
+                    if self.products_only:
+                        # Product sitemaps first, so product rows start arriving straight away.
+                        children.sort(key=lambda u: 0 if "product" in u.lower() else 1)
+                        sitemaps = children + sitemaps
+                    else:
+                        sitemaps += children
                 else:
                     found += [loc.get_text(strip=True) for loc in soup.select("url > loc")]
             except Exception:
@@ -398,6 +444,87 @@ class Crawler:
         return not self.path_prefix or urlparse(url).path.startswith(self.path_prefix)
 
     # ----------------------------------------------------------------- main
+    def _sitemap_roots(self):
+        root = f"{urlparse(self.start_url).scheme}://{urlparse(self.start_url).netloc}"
+        try:
+            maps = list(self.robots._parser_for(self.start_url).site_maps() or [])
+        except Exception:
+            maps = []
+        return maps or [root + "/sitemap.xml"]
+
+    def _get_sitemap(self, url):
+        """Return the sitemap's text (handles .gz), or None."""
+        import gzip
+        try:
+            resp = self.session.get(url, headers=build_headers(), timeout=max(self.timeout, 60))
+        except requests.RequestException as exc:
+            self.log(f"Could not read sitemap {url}: {type(exc).__name__}")
+            return None
+        if resp.status_code != 200:
+            self.log(f"Sitemap {url} returned HTTP {resp.status_code}")
+            return None
+        data = resp.content
+        if data[:2] == b"\x1f\x8b":
+            try:
+                data = gzip.decompress(data)
+            except OSError:
+                return None
+        return data.decode("utf-8", "replace")
+
+    def run_sitemap_list(self, handle, writer):
+        """Write one row per URL listed in the site's sitemaps; never visits the pages."""
+        loc = re.compile(r"<loc>\s*(?:<!\[CDATA\[)?\s*([^<\s\]]+)", re.I)
+        pending, seen_maps, page_maps = self._sitemap_roots(), set(), []
+        # 1) Walk sitemap indexes to find the sitemaps that list pages.
+        while pending and len(seen_maps) < 200 and not self.stop_event.is_set():
+            sm = pending.pop(0)
+            if sm in seen_maps:
+                continue
+            seen_maps.add(sm)
+            text = self._get_sitemap(sm)
+            self.pages_fetched += 1
+            if text is None:
+                continue
+            if re.search(r"<sitemapindex", text, re.I):
+                children = loc.findall(text)
+                self.log(f"Sitemap index {sm} lists {len(children)} sitemaps.")
+                pending += children
+            else:
+                page_maps.append((sm, text))
+        if self.products_only:
+            prod = [(u, t) for u, t in page_maps if "product" in u.lower()]
+            if prod:
+                self.log(f"Using the {len(prod)} product sitemap(s) of {len(page_maps)}.")
+                page_maps = prod
+        # 2) One row per listed URL.
+        seen, skipped = set(), 0
+        for sm, text in page_maps:
+            if self.stop_event.is_set() or self.pages_done >= self.max_pages:
+                break
+            added = 0
+            for url in loc.findall(text):
+                if self.pages_done >= self.max_pages:
+                    break
+                url = normalize_url(url) or url
+                if url in seen or not self.in_scope(url):
+                    continue
+                seen.add(url)
+                if not self.robots.can_fetch(url):
+                    skipped += 1
+                    continue
+                row = dict.fromkeys(COLUMNS, MISSING)
+                row.update({"URL": url, "Status": LISTED, "Found On": sm,
+                            "Product Name": name_from_url(url), "SKU": code_from_url(url)})
+                writer.writerow(row)
+                self.pages_done += 1
+                added += 1
+            handle.flush()
+            self.log(f"{sm}: {added} listed. Total so far: {self.pages_done}.")
+        if skipped:
+            self.log(f"Left out {skipped} addresses that robots.txt asks crawlers not to visit.")
+        self.max_pages = max(self.pages_done, 1)
+        self.queued = 0
+
     def run(self):
         self.state = "running"
         handle = None
@@ -409,15 +536,19 @@ class Crawler:
                 self.min_delay = delay
 
             queue, seen = deque([self.start_url]), {self.start_url}
-            for link in self.sitemap_urls(self.max_pages):
+            for link in ([] if self.sitemap_list else self.sitemap_urls(self.max_pages)):
                 link = normalize_url(link)
                 if link and self.in_scope(link) and link not in seen:
                     seen.add(link)
                     queue.append(link)
             scope = f" inside {self.path_prefix}" if self.path_prefix else ""
             what = "product rows" if self.products_only else "pages"
-            self.log(f"Crawling {self.start_url}{scope} (limit {self.max_pages} {what}, "
-                     f"{len(queue)} URLs queued incl. sitemap).")
+            if self.sitemap_list:
+                self.log(f"Listing every {'product' if self.products_only else 'page'} address in the sitemaps of "
+                         f"{self.start_url}{scope} (pages are not visited, so this is quick).")
+            else:
+                self.log(f"Crawling {self.start_url}{scope} (limit {self.max_pages} {what}, "
+                         f"{len(queue)} URLs queued incl. sitemap).")
             # Safety net when only product pages are saved: don't fetch forever.
             fetch_limit = self.max_pages * 3 if self.products_only else self.max_pages
 
@@ -425,6 +556,9 @@ class Crawler:
             writer = csv.DictWriter(handle, fieldnames=COLUMNS)
             writer.writeheader()
             referers = {}
+            if self.sitemap_list:
+                queue.clear()
+                self.run_sitemap_list(handle, writer)
 
             while (queue and self.pages_done < self.max_pages
                    and self.pages_fetched < fetch_limit and not self.stop_event.is_set()):
@@ -433,8 +567,16 @@ class Crawler:
                 if not self.robots.can_fetch(url):
                     self.log(f"Skipping (robots.txt disallows): {url}")
                     continue
+                self.last_error = None
                 resp, elapsed = self.fetch(url, referers.get(url))
                 if resp is None:
+                    if self.last_error == "TooManyRedirects" and not self.products_only:
+                        row = dict.fromkeys(COLUMNS, MISSING)
+                        row["URL"], row["Status"] = url, "Redirect loop"
+                        row["Found On"] = referers.get(url) or MISSING
+                        writer.writerow(row)
+                        handle.flush()
+                        self.pages_done += 1
                     continue
                 final_url = normalize_url(resp.url) or url
                 if _host(final_url) != self.site:
@@ -482,7 +624,11 @@ class Crawler:
                     self.state = "failed"
                     self.message = "Could not load any pages (site unreachable or blocked)."
                 elif self.pages_done == 0:
-                    self.message = "Finished, but no matching pages were found."
+                    self.message = ("No addresses found in the site's sitemaps." if self.sitemap_list
+                                    else "Finished, but no matching pages were found.")
+                elif self.sitemap_list:
+                    self.message = (f"Listed {self.pages_done:,} {'products' if self.products_only else 'pages'} "
+                                    f"from the sitemaps.")
                 elif self.pages_done >= self.max_pages:
                     self.message = "Reached the page limit."
                 else:
@@ -493,7 +639,7 @@ class Crawler:
             if handle:
                 handle.close()
             self.session.close()
-            self.log(f"{self.message} {self.pages_done} pages written to {self.output_csv}")
+            self.log(f"{self.message} {self.pages_done:,} rows ready to download.")
         return self.pages_done
 
 

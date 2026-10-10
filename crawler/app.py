@@ -133,17 +133,18 @@ def safe_next(value, fallback):
     return value if value and value.startswith("/") and not value.startswith("//") else fallback
 
 
-def make_crawler(job_id, url, max_pages, path, products_only, out_dir=JOBS_DIR):
+def make_crawler(job_id, url, max_pages, path, products_only, out_dir=JOBS_DIR, sitemap_list=False):
     delays = (0.01, 0.02) if FAST_TEST else (2.5, 5.5)
     return Crawler(url, os.path.join(out_dir, f"{job_id}.csv"), max_pages,
                    min_delay=delays[0], max_delay=delays[1],
                    backoff_schedule=[1, 2] if FAST_TEST else None,
-                   path_prefix=path or None, products_only=products_only)
+                   path_prefix=path or None, products_only=products_only,
+                   sitemap_list=sitemap_list)
 
 
-def start_job(url, max_pages, path, products_only, ip, compare_id=None):
+def start_job(url, max_pages, path, products_only, ip, compare_id=None, sitemap_list=False):
     job_id = uuid.uuid4().hex
-    crawler = make_crawler(job_id, url, max_pages, path, products_only)
+    crawler = make_crawler(job_id, url, max_pages, path, products_only, sitemap_list=sitemap_list)
     jobs[job_id] = {"crawler": crawler, "created": time.time(), "url": url, "ip": ip,
                     "compare_id": compare_id, "report": None}
     threading.Thread(target=crawler.run, daemon=True).start()
@@ -226,12 +227,15 @@ def index():
 def start():
     cleanup_old_jobs()
     form = {k: (request.form.get(k) or "").strip() for k in
-            ("url", "max_pages", "path", "products_only", "competitor", "watch_email", "every_days")}
+            ("url", "max_pages", "path", "products_only", "product_list", "competitor", "watch_email", "every_days")}
     try:
         max_pages = max(1, min(int(form["max_pages"] or DEFAULT_MAX_PAGES), HARD_MAX_PAGES))
     except ValueError:
         max_pages = DEFAULT_MAX_PAGES
     path, products_only = form["path"][:200], form["products_only"] == "1"
+    product_list = form["product_list"] == "1"
+    if product_list:
+        products_only = True
 
     try:
         target = validate_target(form["url"])
@@ -255,9 +259,9 @@ def start():
         if sum(1 for j in running if j["ip"] == ip) + needed > MAX_JOBS_PER_VISITOR:
             return render_form(form, "You already have crawls running. Please wait for them to finish.", 429)
         compare_id = uuid.uuid4().hex if competitor else None
-        job_a = start_job(target, max_pages, path, products_only, ip, compare_id)
+        job_a = start_job(target, max_pages, path, products_only, ip, compare_id, sitemap_list=product_list)
         if competitor:
-            job_b = start_job(competitor, max_pages, path, products_only, ip, compare_id)
+            job_b = start_job(competitor, max_pages, path, products_only, ip, compare_id, sitemap_list=product_list)
             compares[compare_id] = {"a": job_a, "b": job_b, "created": time.time()}
 
     if watch_email and mailer.configured():
@@ -296,6 +300,7 @@ def job_status(job_id):
         except Exception as exc:  # a report problem must not break progress
             c.log(f"Could not build the report: {exc}")
     return jsonify(state=c.state, message=c.message, pages_done=c.pages_done,
+                   mode="list" if c.sitemap_list else "crawl",
                    pages_fetched=c.pages_fetched, max_pages=c.max_pages, queued=c.queued,
                    log=list(c.recent_log)[-15:], report=report)
 

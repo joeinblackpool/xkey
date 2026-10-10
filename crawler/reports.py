@@ -68,6 +68,9 @@ def find_issues(rows):
                     if r.get("Meta Description", MISSING) != MISSING)
 
     for row in rows:
+        if row.get("Status") == "Redirect loop":
+            add("High", "Redirect loop", row, "The page keeps redirecting and never loads")
+            continue
         status = _int(row.get("Status"))
         if status >= 500:
             add("High", "Server error", row, f"HTTP {status}")
@@ -179,6 +182,8 @@ def write_xlsx(rows, path, issues=None, summary=None, site=""):
 
     issues = find_issues(rows) if issues is None else issues
     summary = summarise(rows, issues) if summary is None else summary
+    if len(rows) > 20000:
+        return _write_xlsx_large(rows, path, issues, summary, site)
     wb = Workbook()
     bold = Font(bold=True)
     head_fill = PatternFill("solid", fgColor="DCE6F8")
@@ -297,3 +302,46 @@ if __name__ == "__main__":
     print(f"Score: {info['Score']}/100 from {info['Pages crawled']} pages")
     for name, count in info["issue_counts"].items():
         print(f"  {count:5d}  {name}")
+
+
+def _write_xlsx_large(rows, path, issues, summary, site):
+    """Same three sheets, written in openpyxl's streaming mode so big lists fit in a small server's memory."""
+    from openpyxl import Workbook
+    from openpyxl.cell import WriteOnlyCell
+    from openpyxl.styles import Font
+    wb = Workbook(write_only=True)
+    bold = Font(bold=True)
+
+    def head(ws, values):
+        cells = []
+        for v in values:
+            c = WriteOnlyCell(ws, value=v)
+            c.font = bold
+            cells.append(c)
+        ws.append(cells)
+
+    ws = wb.create_sheet("Summary")
+    ws.append(["Site", site])
+    for key, value in summary.items():
+        if key != "issue_counts":
+            ws.append([key, value])
+    ws.append([])
+    head(ws, ["Issue", "Pages affected"])
+    for issue, count in summary["issue_counts"].items():
+        ws.append([issue, count])
+
+    ws = wb.create_sheet("Issues")
+    ws.freeze_panes = "A2"
+    head(ws, ISSUE_COLUMNS)
+    for item in issues:
+        ws.append([_cell(item.get(h, "")) for h in ISSUE_COLUMNS])
+
+    header = list(rows[0].keys()) if rows else []
+    # Drop columns that are empty in every row (e.g. SEO fields in a sitemap product list).
+    header = [h for h in header if any(r.get(h, MISSING) not in (MISSING, "") for r in rows[:5000])] or header
+    ws = wb.create_sheet("Pages")
+    ws.freeze_panes = "A2"
+    head(ws, header)
+    for row in rows:
+        ws.append([_cell(row.get(h, "")) for h in header])
+    wb.save(path)
