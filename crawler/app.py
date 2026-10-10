@@ -473,7 +473,8 @@ def run_due_schedules():
         changes = reports.diff_crawls(old_rows, new_rows) if old_rows else None
         stop_link = f"{PUBLIC_URL}/watch/stop/{sched['token']}" if PUBLIC_URL else ""
         body = (f"XKey re-crawled {sched['url']} ({len(new_rows)} pages). "
-                f"SEO score: {summary['Score']}/100.\n\n"
+                + (f"SEO score: {summary['Score']}/100.\n\n" if summary["Score"] != reports.MISSING
+                   else "No SEO score: no pages could be read.\n\n")
                 + ("This is the first crawl, so there's nothing to compare yet. "
                    "Next time we'll list what changed." if changes is None
                    else reports.diff_as_text(changes))

@@ -72,6 +72,10 @@ def find_issues(rows):
             add("High", "Redirect loop", row, "The page keeps redirecting and never loads")
             continue
         status = _int(row.get("Status"))
+        if status in (401, 403, 429) or 200 < status < 300:
+            add("High", "Blocked by the site", row,
+                f"HTTP {status} – the site's bot protection or firewall didn't let the crawler read this page")
+            continue
         if status >= 500:
             add("High", "Server error", row, f"HTTP {status}")
             continue
@@ -133,8 +137,9 @@ def find_issues(rows):
 
 def site_score(rows, issues):
     """0-100. Average points lost per page, scaled so ~25 points/page = 0."""
-    if not rows:
-        return 0
+    # No score when no page could actually be read (blocked, all errors, or a sitemap-only list).
+    if not rows or not any(_is_html_page(r) for r in rows):
+        return MISSING
     lost = sum(WEIGHTS[i["Severity"]] for i in issues)
     return max(0, round(100 * (1 - min(1.0, lost / len(rows) / 25))))
 

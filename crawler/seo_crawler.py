@@ -256,6 +256,8 @@ class Crawler:
         self.sitemap_list = bool(sitemap_list)
         self.pages_fetched = 0
         self.last_error = None
+        self.pages_readable = 0   # 200 responses with HTML
+        self.blocked = []         # (url, status) answers that look like bot protection
         self.output_csv = output_csv
         self.max_pages = LIST_MAX_ROWS if self.sitemap_list else max(1, min(int(max_pages), HARD_MAX_PAGES))
         self.min_delay, self.max_delay = min_delay, max(max_delay, min_delay)
@@ -590,6 +592,13 @@ class Crawler:
                     self.log(f"Could not analyse {url}: {exc}")
                     row, links = dict.fromkeys(COLUMNS, MISSING), []
                     row["URL"], row["Status"] = final_url, resp.status_code
+                ctype = resp.headers.get("Content-Type", "").lower()
+                if resp.status_code == 200 and "html" in ctype:
+                    self.pages_readable += 1
+                elif resp.status_code in (401, 403, 429) or 200 < resp.status_code < 300:
+                    self.blocked.append((final_url, resp.status_code))
+                    self.log(f"Blocked: {final_url} answered HTTP {resp.status_code} "
+                             f"(looks like the site's bot protection).")
                 # The page that linked here (N/A for the start page and sitemap URLs).
                 row["Found On"] = referers.get(url) or MISSING
                 is_product = row.get("Product Name", MISSING) != MISSING or row.get("Price", MISSING) != MISSING
@@ -623,6 +632,13 @@ class Crawler:
                 if self.pages_fetched == 0:
                     self.state = "failed"
                     self.message = "Could not load any pages (site unreachable or blocked)."
+                elif not self.sitemap_list and self.pages_readable == 0 and self.blocked:
+                    self.state = "failed"
+                    code = self.blocked[0][1]
+                    self.message = (f"The site blocked the crawler (HTTP {code}). Its bot protection isn't letting "
+                                    f"automated visitors read pages right now, so there's nothing to report. "
+                                    f"Try again later. For a shop, \"Full product list, fast\" may still work "
+                                    f"because it only reads the sitemaps.")
                 elif self.pages_done == 0:
                     self.message = ("No addresses found in the site's sitemaps." if self.sitemap_list
                                     else "Finished, but no matching pages were found.")

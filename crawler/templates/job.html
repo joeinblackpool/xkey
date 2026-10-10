@@ -56,7 +56,7 @@ function showReport(r){
     document.querySelectorAll('#report h2').forEach(h => h.hidden = true);
     return;
   }
-  document.getElementById('score').textContent = r.summary.Score;
+  document.getElementById('score').textContent = (r.summary.Score === 'N/A' ? '–' : r.summary.Score);
   const keys = ['Pages crawled','Broken pages','Average words per page','Average response (ms)','Products found','Average price'];
   document.getElementById('stats').innerHTML = keys.map(k => `<tr><th>${k}</th><td class="num">${esc(r.summary[k])}</td></tr>`).join('');
   const counts = Object.entries(r.summary.issue_counts);
