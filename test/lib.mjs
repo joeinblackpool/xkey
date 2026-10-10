@@ -20,7 +20,8 @@ export async function need(name) {
   for (const root of roots) {
     try {
       const req = createRequire(path.join(root, "noop.js"));
-      return await import(pathToFileURL(req.resolve(name)).href);
+      const m = await import(pathToFileURL(req.resolve(name)).href);
+      return m.default && typeof m.default === "object" ? { ...m.default, ...m } : m; // CommonJS packages put their exports on .default
     } catch {}
   }
   console.error(`\n${name} is needed for this test. Install it with:  npm i -g ${name}${name === "playwright" ? " && npx playwright install chromium" : ""}\n`);
