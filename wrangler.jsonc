@@ -10,5 +10,8 @@
   "kv_namespaces": [{ "binding": "STATE", "id": "c677314f15644c22873e1098406a5c69" }],
   "ai": { "binding": "AI" },
   "triggers": { "crons": ["*/15 * * * *"] },
-  "observability": { "enabled": true }
+  "observability": { "enabled": true },
+  // Browser scripts are served from Function#toString (src/index.js); keep_names would inject
+  // __name() calls into them that break in the browser.
+  "keep_names": false
 }

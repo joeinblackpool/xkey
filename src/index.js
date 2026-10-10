@@ -14,6 +14,11 @@ const GUIDES = PAGES.filter((p) => p.path.startsWith("/guides/"));
 // Arial advance widths (in 1/2048 em) for the title checker, taken from the engine's own table.
 const W = {}; for (let c = 32; c < 127; c++) W[String.fromCharCode(c)] = pixelWidth(String.fromCharCode(c), 2048);
 for (const c of "–—£€’‘“”…·•é") W[c] = pixelWidth(c, 2048);
+// These browser scripts are made from function source (Function#toString). If the bundler keeps
+// function names (wrangler's default keep_names), the source contains __name(...) calls whose helper
+// isn't shipped – the script then dies with "__name is not defined". wrangler.jsonc turns keep_names
+// off; this shim keeps the scripts working even if that setting is ever lost.
+const NAME_SHIM = "var __name=function(f){return f};";
 const TOOLS_JS = `var W=${JSON.stringify(W)};(${toolsApp.toString()})();`;
 
 // ---------- forms
@@ -270,10 +275,10 @@ const worker = {
       case "/robots.txt": return send(ROBOTS, TXT);
       case "/llms.txt": return send(LLMS, TXT);
       case "/site.webmanifest": return send(MANIFEST, "application/manifest+json");
-      case "/assets/audit.js": return send(AUDIT_JS, JS, 200, "public, max-age=3600");
-      case "/assets/compare.js": return send(COMPARE_JS, JS, 200, "public, max-age=3600");
-      case "/assets/report.js": return send(REPORT_JS, JS, 200, "public, max-age=3600");
-      case "/assets/tools.js": return send(TOOLS_JS, JS, 200, "public, max-age=3600");
+      case "/assets/audit.js": return send(NAME_SHIM + AUDIT_JS, JS, 200, "public, max-age=3600");
+      case "/assets/compare.js": return send(NAME_SHIM + COMPARE_JS, JS, 200, "public, max-age=3600");
+      case "/assets/report.js": return send(NAME_SHIM + REPORT_JS, JS, 200, "public, max-age=3600");
+      case "/assets/tools.js": return send(NAME_SHIM + TOOLS_JS, JS, 200, "public, max-age=3600");
       case "/favicon.svg": return send(FAVICON, "image/svg+xml", 200, "public, max-age=31536000, immutable");
       case "/favicon.ico": return Response.redirect(`${url.origin}/favicon.svg`, 301);
       case "/og.png": return send(OG_BYTES, "image/png", 200, "public, max-age=86400");
