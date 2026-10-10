@@ -1,0 +1,7 @@
+requests>=2.31
+beautifulsoup4>=4.12
+flask>=3.0
+gunicorn>=22.0
+openpyxl>=3.1
+# Optional, only for JavaScript-heavy sites in myscraper.py:
+# playwright>=1.45
