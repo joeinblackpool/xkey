@@ -145,9 +145,20 @@ def make_crawler(job_id, url, max_pages, path, products_only, out_dir=JOBS_DIR, 
 def start_job(url, max_pages, path, products_only, ip, compare_id=None, sitemap_list=False):
     job_id = uuid.uuid4().hex
     crawler = make_crawler(job_id, url, max_pages, path, products_only, sitemap_list=sitemap_list)
-    jobs[job_id] = {"crawler": crawler, "created": time.time(), "url": url, "ip": ip,
-                    "compare_id": compare_id, "report": None}
-    threading.Thread(target=crawler.run, daemon=True).start()
+    job = {"crawler": crawler, "created": time.time(), "url": url, "ip": ip,
+           "compare_id": compare_id, "report": None, "lock": threading.Lock()}
+    jobs[job_id] = job
+
+    def run():
+        crawler.run()
+        # Build the report and spreadsheets here, not inside a page request: big crawls
+        # take a while on a small server and would otherwise freeze the progress page.
+        if crawler.pages_done:
+            try:
+                build_report(job, final=True)
+            except Exception as exc:
+                crawler.log(f"Could not build the report: {exc}")
+    threading.Thread(target=run, daemon=True).start()
     return job_id
 
 
@@ -189,6 +200,13 @@ def build_report(job, final):
     """
     if job["report"] and final:
         return job["report"]
+    with job.setdefault("lock", threading.Lock()):
+        if job["report"] and final:
+            return job["report"]
+        return _build_report(job, final)
+
+
+def _build_report(job, final):
     files = job_files(job)
     rows = reports.load_rows(files["csv"])
     issues = reports.find_issues(rows)
@@ -293,13 +311,11 @@ def job_page(job_id):
 def job_status(job_id):
     job = get_job(job_id)
     c = job["crawler"]
-    report = None
-    if not is_running(job) and c.pages_done:
-        try:
-            report = build_report(job, final=True)
-        except Exception as exc:  # a report problem must not break progress
-            c.log(f"Could not build the report: {exc}")
-    return jsonify(state=c.state, message=c.message, pages_done=c.pages_done,
+    report = job["report"]
+    state = c.state
+    if not is_running(job) and c.pages_done and report is None and job.get("lock") and job["lock"].locked():
+        state = "preparing"  # crawl done, spreadsheets still being built in the background
+    return jsonify(state=state, message=c.message, pages_done=c.pages_done,
                    mode="list" if c.sitemap_list else "crawl",
                    pages_fetched=c.pages_fetched, max_pages=c.max_pages, queued=c.queued,
                    log=list(c.recent_log)[-15:], report=report)
