@@ -31,7 +31,7 @@ a.card{text-decoration:none;display:block}a.card:hover{border-color:var(--brand)
 .prose>*{max-width:46em}.prose h2{margin-top:36px}
 .crumbs{font-size:14px;color:var(--mute);padding-top:16px}.crumbs a{color:var(--mute);display:inline-block;padding:12px 0;min-width:44px}
 .cta{background:var(--hero);color:var(--hero-fg);border-radius:20px;padding:36px;margin:40px 0}.cta h2,.cta .ct{color:var(--hero-fg)!important}.cta p{color:var(--hero-fg);opacity:.85}
-.tablewrap{overflow-x:auto}table{border-collapse:collapse;width:100%;margin:12px 0}th,td{text-align:left;vertical-align:top;padding:10px 12px;border-bottom:1px solid var(--line)}th{font-size:15px}
+.tablewrap{overflow-x:auto}.promise{border-top:1px solid var(--line);background:var(--card)}.promise .wrap{padding-top:22px;padding-bottom:22px}.promise p{margin:0}.promise ul{display:flex;flex-wrap:wrap;gap:8px 18px;list-style:none;padding:0;margin:10px 0 0}.promise li{font-size:15px}.promise li::before{content:"✓ ";color:var(--brand);font-weight:700}table{border-collapse:collapse;width:100%;margin:12px 0}th,td{text-align:left;vertical-align:top;padding:10px 12px;border-bottom:1px solid var(--line)}th{font-size:15px}
 details{border-bottom:1px solid var(--line);padding:14px 0}summary{cursor:pointer;font-weight:600}summary h3{display:inline;font-size:18px;margin:0}
 footer{border-top:1px solid var(--line);margin-top:56px;padding:32px 0;color:var(--mute);font-size:15px}footer .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px 32px}footer ul{list-style:none;padding:0;margin:0}footer a{color:var(--mute);display:inline-block;padding:10px 0;min-height:44px}
 .small{font-size:14px;color:var(--mute)}.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
@@ -57,7 +57,7 @@ export const FAVICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 
 function jsonld(p) {
   const url = SITE + p.path;
   const g = [
-    { "@type": "Organization", "@id": `${SITE}/#org`, name: BRAND.name, url: `${SITE}/`, logo: `${SITE}/favicon.svg`, email: BRAND.email, parentOrganization: { "@type": "Organization", "@id": "https://icework.co.uk/#business", name: BRAND.maker, url: BRAND.makerUrl + "/" } },
+    { "@type": "Organization", "@id": `${SITE}/#org`, name: BRAND.name, description: "Free SEO and AI search tools for UK businesses. Every tool is free, with no account, no email, no Google sign-in and no paid version.", url: `${SITE}/`, logo: `${SITE}/favicon.svg`, email: BRAND.email, parentOrganization: { "@type": "Organization", "@id": "https://icework.co.uk/#business", name: BRAND.maker, url: BRAND.makerUrl + "/" } },
     { "@type": "WebSite", "@id": `${SITE}/#site`, url: `${SITE}/`, name: BRAND.name, publisher: { "@id": `${SITE}/#org` }, inLanguage: "en-GB" },
     p.app ? { "@type": "WebApplication", "@id": `${url}#app`, name: p.app, url, applicationCategory: "BusinessApplication", operatingSystem: "Any (web browser)", isAccessibleForFree: true, dateModified: UPDATED, offers: { "@type": "Offer", price: "0", priceCurrency: "GBP" }, publisher: { "@id": `${SITE}/#org` } }
       : p.article ? { "@type": "Article", "@id": `${url}#page`, headline: p.h1, description: p.desc, url, dateModified: UPDATED, datePublished: UPDATED, author: { "@id": `${SITE}/#org` }, publisher: { "@id": `${SITE}/#org` }, inLanguage: "en-GB" }
@@ -82,6 +82,7 @@ export function layout(p) {
 <style>${CSS}</style><script type="application/ld+json">${jsonld(p)}</script></head><body>
 <header class="top"><div class="wrap nav"><a class="logo" href="/" aria-label="XKey home">X<b>Key</b></a><ul>${nav}</ul></div></header>
 ${crumbs}<main>${p.body}${maker}</main>
+<aside class="promise noprint" aria-label="The XKey free promise"><div class="wrap"><p><strong>Every XKey tool is 100% free – for good.</strong> No catch, no paid version, nothing to unlock.</p><ul><li>No account</li><li>No email</li><li>No "Sign in with Google"</li><li>No card details</li><li>No trial</li><li>No subscription</li></ul></div></aside>
 <footer><div class="wrap"><div class="cols">
 <div><a class="logo" href="/">X<b>Key</b></a><p>${BRAND.tagline}. No cost, no sign-up, no email, no subscription. Built in the UK.</p><p class="small">Made by <a href="${BRAND.makerUrl}" rel="noopener">${BRAND.maker}</a>, ${BRAND.town}.</p></div>
 <div><strong>SEO checks</strong><ul><li><a href="/">Free SEO check</a></li><li><a href="/ai-seo-checker">AI SEO checker</a></li><li><a href="/website-audit">Website audit</a></li><li><a href="/seo-comparison">Competitor comparison</a></li><li><a href="/seo-monitoring">SEO monitoring</a></li></ul></div>

@@ -43,10 +43,22 @@ export const PAGES = [
   {
     path: "/", crumb: "Home", title: "Free SEO Check | No Sign-Up, No Email, Instant Report",
     desc: "Free SEO check for any website – no sign-up, no email, no subscription. Google readiness, AI search, Core Web Vitals and local SEO, with a ranked fix list.",
-    h1: "Free SEO check for any website", eyebrow: "Free · Instant · No sign-up", app: "XKey free SEO check",
-    lead: "Type in a web address and get a full SEO report in about 20 seconds: how Google sees the page, whether AI assistants can find it, how fast it really is, and exactly what to fix first.",
+    h1: "Free SEO check – no sign-up, no email", eyebrow: "Free · Instant · Any website", app: "XKey free SEO check",
+    lead: "Type in any web address and get a full SEO report in about 20 seconds – no account, no email, no daily limit. See how Google reads the page, whether AI assistants can find it, how fast it really is, and exactly what to fix first.",
     form: "check",
-    sections: `<h2>What the free SEO check looks at</h2>
+    sections: `<h2>What "free, no sign-up" means on XKey</h2>
+<p>Lots of SEO checkers call themselves free, then ask for an email before showing the report, stop you after a few checks a day or hide the useful parts behind a trial. Here's exactly what you get on XKey:</p>
+<div class="tablewrap"><table><thead><tr><th scope="col">What you might expect</th><th scope="col">On XKey</th></tr></thead><tbody>
+<tr><td>Create an account first</td><td><strong>Never.</strong> No account, no login, no password.</td></tr>
+<tr><td>"Sign in with Google" or connect Search Console</td><td><strong>Never.</strong> XKey reads public pages; it never asks to link any account.</td></tr>
+<tr><td>Enter your email to see the results</td><td><strong>Never.</strong> The full report appears on screen straight away.</td></tr>
+<tr><td>Only a few checks a day</td><td><strong>No daily limit.</strong> Only bot protection: two checks a minute, and a cap on re-checking the same site too often.</td></tr>
+<tr><td>Part of the report locked</td><td><strong>Nothing locked.</strong> Every check, score and fix is shown.</td></tr>
+<tr><td>Pay to download the report</td><td><strong>Free.</strong> Print it or save it as a PDF from the report page.</td></tr>
+<tr><td>A free trial that runs out</td><td><strong>No trial.</strong> It stays free.</td></tr>
+<tr><td>Sign up for the whole-site audit</td><td><p style="margin:0"><strong>No sign-up.</strong> The <a href="/website-audit">website audit</a> crawls up to 250 pages, and the <a href="/website-crawler">website crawler</a> up to 10,000.</p></td></tr>
+</tbody></table></div>
+<h2>What the free SEO check looks at</h2>
 <p>XKey runs around 50 checks across ten areas, each weighted by how much it affects your rankings. You get an overall score out of 100, a score for each area and a "fix these first" list sorted by impact.</p>
 <div class="grid">
 <div class="card"><p class="ct">Indexing &amp; crawling</p><p>Status code, noindex, robots.txt rules, XML sitemap, canonical tag, redirect chains, www and https consistency.</p></div>
@@ -60,11 +72,17 @@ export const PAGES = [
 </div>
 <h2>Why most free SEO checkers miss AI search</h2>
 <p>A growing share of people now ask ChatGPT, Claude, Perplexity or Google's AI Overviews instead of scrolling through ten blue links. Those assistants can only recommend a business they're allowed to crawl and can clearly understand. A site can rank on Google and still be invisible to AI because its robots.txt blocks the crawlers, its business details aren't marked up, or it never answers questions directly. XKey scores this separately as <strong>AI search readiness</strong>, so you can see both sides at once. Read more in our <a href="/guides/ai-search-optimisation">guide to AI search optimisation</a>.</p>
+<h2>How is the SEO score worked out?</h2>
+<p>Every check has an impact level. A critical problem – such as a noindex tag that keeps the page out of Google – counts five times as much as a low-impact one, high counts three times and medium twice. Your score out of 100 is how many of those weighted points the page earns. That means one serious problem pulls the score down more than a handful of small ones, which is how it works in Google too. Each area gets its own score as well, so you can see at a glance whether the trouble is indexing, content, speed or AI visibility.</p>
+<h2>Built for UK websites</h2>
+<p>XKey is made in Blackpool for UK businesses. The local SEO checks recognise UK phone numbers and postcodes, so it can tell whether your contact details are on the page and match your LocalBusiness markup, and the report is written in plain British English rather than agency jargon. It works for any website in any country, though.</p>
 <h2>How to use your SEO report</h2>
 <ol><li><strong>Start with the fix list.</strong> It's sorted so the changes with the biggest effect come first – usually indexing problems, missing titles or a missing H1.</li>
 <li><strong>Check the critical items.</strong> Anything marked critical can stop a page ranking at all.</li>
 <li><strong>Re-run the check</strong> after each change. Reports are cached for an hour, so add a small change to the address (such as a trailing slash) if you need a fresh one sooner.</li>
 <li><strong>Check the whole site.</strong> A single page can look perfect while problems elsewhere hold you back – run a <a href="/website-audit">full website audit</a> next.</li></ol>
+<h2>What can't a free SEO check tell you?</h2>
+<p>No checker – free or paid – can see your actual Google rankings, the full list of sites linking to you, or how strong your competitors are for a particular search. For your rankings and indexing, set up Google Search Console (our <a href="/guides/google-search-console">step-by-step guide</a> shows how). If your site doesn't appear in Google at all, start with <a href="/guides/why-is-my-website-not-on-google">why isn't my website on Google?</a> And if you serve local customers, follow the <a href="/guides/local-seo-checklist">local SEO checklist</a>.</p>
 <h2>Is this SEO check really free?</h2>
 <p>Yes, completely. No cost, no sign-up, no email address, no subscription, no trial that runs out and no "upgrade to see your results". You get the whole report straight away. The <a href="/seo-tools">instant tools</a> run in your browser and are unlimited; full checks only have a safety limit set far above normal use, to stop bots. XKey is made by <a href="https://icework.co.uk" rel="noopener">IceWork</a>, a small web studio in Blackpool, as a free tool for UK businesses – if you'd like the fixes done for you, IceWork can help, but you never have to.</p>`,
     faqs: [
@@ -72,6 +90,7 @@ export const PAGES = [
       ["Do you store my website's content?", "No. We fetch the page like a search engine would, analyse it and keep only the finished report in a short-lived cache for an hour so repeat views are fast."],
       ["Is there a limit on how many sites I can check?", "Not for normal use. The instant tools run in your browser and are unlimited. Full checks and audits only have a safety limit set far above what a person can use by hand (two checks a minute, every minute), plus a cap on how often any one website can be checked – that stops bots using XKey to flood other people's sites."],
       ["Do I need to give my email address?", "No. XKey never asks for an email, an account or card details – not even for weekly monitoring, which gives you a private link instead."],
+      ["Can I download my SEO report without signing up?", "Yes. Use \"Print or save as PDF\" at the bottom of any report. The website audit also gives you a PDF and a CSV of every page, with no sign-up."],
       ["Can I check a competitor's website?", "Yes – any public website. To see your site and up to two competitors side by side, use the competitor comparison."],
       ["Why is my score different from other SEO checkers?", "Each tool weights different checks. XKey gives extra weight to things that stop a page appearing at all (indexing, titles, H1) and adds AI search readiness, which most checkers don't measure yet."],
     ],
@@ -142,7 +161,7 @@ export const PAGES = [
   },
   {
     path: "/seo-comparison", crumb: "Competitor comparison", parent: ["/seo-tools", "SEO tools"], title: "Compare Website SEO With Competitors | Free Tool",
-    desc: "Compare your website's SEO with up to two competitors side by side: overall score, AI readiness, speed and content, and where they beat you.",
+    desc: "Free, no sign-up: compare your website's SEO with up to two competitors side by side – score, AI readiness, speed, content and where they beat you.",
     h1: "Compare your SEO with competitors", eyebrow: "Side by side", app: "XKey SEO comparison",
     lead: "Google ranks pages against each other. See how your page scores against two rivals, check by check, and where they're ahead.",
     form: "compare",
@@ -165,7 +184,7 @@ export const PAGES = [
     faqs: [["Do I need an account?", "No. There's no sign-up and no email – just keep the dashboard link."], ["How often is my site checked?", "Once a week. You can also run an extra check from your dashboard, up to once an hour."], ["How do I stop monitoring?", "Email us your dashboard link and we'll delete the monitor and its history."]],
   },
   {
-    path: "/title-tag-checker", crumb: "Title tag checker", parent: ["/seo-tools", "SEO tools"], title: "Title Tag & Meta Description Pixel Width Checker",
+    path: "/title-tag-checker", crumb: "Title tag checker", parent: ["/seo-tools", "SEO tools"], title: "Free Title Tag & Meta Description Pixel Checker",
     desc: "Check your title tag and meta description length in pixels, as Google measures them. Live preview of your Google result as you type. Free.",
     h1: "Title tag and meta description checker", eyebrow: "Instant tool", app: "XKey title tag checker",
     lead: "Google cuts titles and descriptions by pixel width, not character count. Type below to see exactly how yours will look in search results.",
@@ -180,7 +199,7 @@ export const PAGES = [
     faqs: [["Why does Google rewrite my title?", "Google may replace a title that's too long, stuffed with keywords, repeated across pages or doesn't match the page – often using your H1 instead. A clear, unique title that describes the page is usually left alone."], ["Does the title tag still matter for SEO?", "Yes. It's one of the strongest on-page signals of what a page is about, and it's the headline people see before deciding whether to click."]],
   },
   {
-    path: "/robots-txt-tester", crumb: "robots.txt tester", parent: ["/seo-tools", "SEO tools"], title: "robots.txt Tester | Check Googlebot & AI Crawler Access",
+    path: "/robots-txt-tester", crumb: "robots.txt tester", parent: ["/seo-tools", "SEO tools"], title: "Free robots.txt Tester | Googlebot & AI Crawlers",
     desc: "Free robots.txt tester: paste your rules and test whether Googlebot, Bingbot, GPTBot, ClaudeBot or PerplexityBot can crawl any URL. Google's matching rules.",
     h1: "robots.txt tester", eyebrow: "Instant tool", app: "XKey robots.txt tester",
     lead: "Paste a robots.txt file, choose a crawler and test a URL. We apply Google's documented rules: the most specific matching group, longest matching rule, and Allow winning ties.",
@@ -248,7 +267,7 @@ export const PAGES = [
 <ul><li>Listed in robots.txt with a <code>Sitemap:</code> line, and submitted in Google Search Console.</li><li>Only includes pages you want indexed: no redirects, errors or noindex pages.</li><li>Uses accurate <code>lastmod</code> dates so search engines know what changed.</li><li>Split into a sitemap index if you have more than 50,000 URLs.</li></ul>
 <p>To find sitemap entries that redirect or error, and indexable pages missing from your sitemap, run the <a href="/website-audit">website audit</a>.</p>`,
     [["Do I need a sitemap?", "Small, well-linked sites can be found without one, but a sitemap is free insurance and helps new pages get discovered sooner."], ["Where should my sitemap be?", "Usually at yoursite.co.uk/sitemap.xml, listed in robots.txt and submitted in Google Search Console and Bing Webmaster Tools."]]),
-  toolPage("/security-headers-checker", "Security headers checker", "Security Headers Checker | HTTPS, HSTS & More",
+  toolPage("/security-headers-checker", "Security headers checker", "Free Security Headers Checker | HTTPS, HSTS & More",
     "Free security headers checker: HTTPS, HTTP-to-HTTPS redirects, HSTS, Content-Security-Policy, X-Content-Type-Options, Referrer-Policy and more.",
     "Security headers checker", "Browsers warn visitors about insecure sites, and Google prefers HTTPS. Check the basics that keep your visitors safe.",
     "security", "XKey security headers checker",
@@ -489,8 +508,8 @@ export const PAGES = [
     sections: `<h2>Which SEO tool should I start with?</h2><p>Start with the <a href="/">free SEO check</a> on your most important page – it covers everything below in one report. Then run the <a href="/website-audit">website audit</a> to catch site-wide problems, and turn on <a href="/seo-monitoring">weekly monitoring</a> so nothing breaks unnoticed.</p><h2>Are these SEO tools really free?</h2><p>Yes. No sign-up, no trial and no limits beyond fair-use rate limits that stop abuse. XKey is paid for by <a href="https://icework.co.uk" rel="noopener">IceWork</a>, who build websites, as a useful free service.</p><h2>Do the single-topic tools run a different check?</h2><p>The checkers for speed, schema, sitemaps, security, mobile and local SEO run the full check and open your report at that section, so you never miss a bigger problem elsewhere on the page.</p>`, tools: true, itemList: TOOLS,
   },
   {
-    path: "/guides", crumb: "Guides", title: "SEO Guides | Plain-English Help From XKey",
-    desc: "Plain-English SEO guides for UK businesses: why a site isn't on Google, Search Console, title tags, local SEO, schema, AI search and more.",
+    path: "/guides", crumb: "Guides", title: "Free SEO Guides | Plain-English Help From XKey",
+    desc: "Free plain-English SEO guides for UK businesses: why a site isn't on Google, Search Console, title tags, local SEO, schema, AI search and more.",
     h1: "SEO guides", eyebrow: "Plain English", lead: "Short, practical guides for business owners who want to understand their SEO report.", sections: `<h2>Who are these guides for?</h2><p>Business owners, marketers and anyone who has run an SEO check and wants to know what the results mean. Each guide explains one topic in plain English, says what matters and what doesn't, and links to the free tool that checks it. We update them when Google or the AI providers change their guidance.</p><h2>Where should I start?</h2><p>If you're new to SEO, read <a href="/guides/what-is-an-seo-check">what an SEO check is</a>, then follow the <a href="/guides/how-to-check-website-seo">10-minute routine</a>. If your site doesn't appear in Google at all, start with <a href="/guides/why-is-my-website-not-on-google">why isn't my website on Google?</a></p><h2>Guides for local businesses</h2><p>Serve customers in a particular town? The <a href="/guides/local-seo-checklist">local SEO checklist</a> and <a href="/guides/google-business-profile">Google Business Profile guide</a> cover the steps that put you in the map pack.</p><h2>Guides for AI search</h2><p>To get recommended by ChatGPT, Claude, Perplexity and Google's AI Overviews, read <a href="/guides/ai-search-optimisation">AI search optimisation</a>, then decide which crawlers to let in with our guide to <a href="/guides/block-ai-training-bots">blocking AI training bots</a>, and find out <a href="/guides/llms-txt">whether you need llms.txt</a>.</p>`, guides: true,
   },
   {
@@ -785,6 +804,8 @@ Sitemap: https://yourdomain.co.uk/sitemap.xml</code></pre>
     h1: "About XKey", lead: "XKey is a free SEO and AI search checker for UK businesses, made by IceWork, a small web studio in Blackpool.",
     sections: `<h2>Why we built it</h2>
 <p>Most SEO tools are built for agencies: expensive, hidden behind sign-ups, and full of jargon. Small business owners need something simpler – a clear score, a short list of what matters, and an honest explanation. We also wanted a tool that takes AI search seriously, because that's where search is heading.</p>
+<h2>Why is everything free?</h2>
+<p>Because "free" should mean free. Most SEO tools that call themselves free want something back – an email address for their mailing list, a "Sign in with Google" to read your data, card details for a trial, or a cap of a few checks before you have to pay. XKey asks for none of that. Every tool, report, download and weekly monitor is free, with no account and no paid version waiting behind it. XKey is paid for by <a href="https://icework.co.uk" rel="noopener">IceWork</a>: some people who use it later ask IceWork to fix their website, and that's the only business model.</p>
 <h2>How it's built</h2>
 <p>XKey runs on Cloudflare's network. Checks are based on what Google and the AI providers document publicly, and we update them as their guidance changes. We fetch pages the way a search engine does, follow robots.txt in the site audit and don't keep your content.</p>
 <h2>Who's behind it</h2>
