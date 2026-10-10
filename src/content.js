@@ -465,8 +465,8 @@ export const PAGES = [
   },
   {
     path: "/guides", crumb: "Guides", title: "SEO Guides | Plain-English Help From XKey",
-    desc: "Plain-English SEO guides: what an SEO check is, how to check a website's SEO, AI search optimisation and Core Web Vitals explained.",
-    h1: "SEO guides", eyebrow: "Plain English", lead: "Short, practical guides for business owners who want to understand their SEO report.", sections: `<h2>Who are these guides for?</h2><p>Business owners, marketers and anyone who has run an SEO check and wants to know what the results mean. Each guide explains one topic in plain English, says what matters and what doesn't, and links to the free tool that checks it. We update them when Google or the AI providers change their guidance.</p><h2>Where should I start?</h2><p>If you're new to SEO, read <a href="/guides/what-is-an-seo-check">what an SEO check is</a>, then follow the <a href="/guides/how-to-check-website-seo">10-minute routine</a>.</p>`, guides: true,
+    desc: "Plain-English SEO guides for UK businesses: why a site isn't on Google, Search Console, title tags, local SEO, schema, AI search and more.",
+    h1: "SEO guides", eyebrow: "Plain English", lead: "Short, practical guides for business owners who want to understand their SEO report.", sections: `<h2>Who are these guides for?</h2><p>Business owners, marketers and anyone who has run an SEO check and wants to know what the results mean. Each guide explains one topic in plain English, says what matters and what doesn't, and links to the free tool that checks it. We update them when Google or the AI providers change their guidance.</p><h2>Where should I start?</h2><p>If you're new to SEO, read <a href="/guides/what-is-an-seo-check">what an SEO check is</a>, then follow the <a href="/guides/how-to-check-website-seo">10-minute routine</a>. If your site doesn't appear in Google at all, start with <a href="/guides/why-is-my-website-not-on-google">why isn't my website on Google?</a></p><h2>Guides for local businesses</h2><p>Serve customers in a particular town? The <a href="/guides/local-seo-checklist">local SEO checklist</a> and <a href="/guides/google-business-profile">Google Business Profile guide</a> cover the steps that put you in the map pack.</p><h2>Guides for AI search</h2><p>To get recommended by ChatGPT, Claude, Perplexity and Google's AI Overviews, read <a href="/guides/ai-search-optimisation">AI search optimisation</a>, then decide which crawlers to let in with our guide to <a href="/guides/block-ai-training-bots">blocking AI training bots</a>, and find out <a href="/guides/llms-txt">whether you need llms.txt</a>.</p>`, guides: true,
   },
   {
     path: "/guides/what-is-an-seo-check", crumb: "What is an SEO check?", parent: ["/guides", "Guides"], article: true,
@@ -477,7 +477,7 @@ export const PAGES = [
 <h2>How should I read the score?</h2>
 <p>Scores are weighted: problems that stop a page appearing at all count far more than nice-to-haves. Treat the score as a to-do list, not a grade – a page scoring 85 with a critical indexing problem is in more trouble than one scoring 75 with minor warnings.</p>
 <h2>What can't an SEO checker tell you?</h2>
-<ul><li><strong>Your actual rankings</strong> – that needs Google Search Console or a rank tracker.</li><li><strong>How strong your competitors are</strong> for a particular search.</li><li><strong>Your backlink profile</strong> in full – that requires a crawl of the whole web.</li><li><strong>Whether your content is the best answer</strong> – that's still a human judgement.</li></ul>
+<ul><li><strong>Your actual rankings</strong> – that needs <a href="/guides/google-search-console">Google Search Console</a> or a rank tracker.</li><li><strong>How strong your competitors are</strong> for a particular search.</li><li><strong>Your backlink profile</strong> in full – that requires a crawl of the whole web.</li><li><strong>Whether your content is the best answer</strong> – that's still a human judgement.</li></ul>
 <p>Ready? <a href="/">Run a free SEO check</a>.</p>`,
   },
   {
@@ -489,7 +489,7 @@ export const PAGES = [
 <h2>2. Crawl the whole site (3 minutes)</h2>
 <p>Run a <a href="/website-audit">website audit</a> to find broken links, duplicate titles and orphan pages across the site.</p>
 <h2>3. Look at Google's own data (3 minutes)</h2>
-<p>In Google Search Console, check the <strong>Pages</strong> report for pages that aren't indexed, and the <strong>Performance</strong> report for the searches you already appear for. If you haven't set it up, do it today – it's free.</p>
+<p>In <a href="/guides/google-search-console">Google Search Console</a>, check the <strong>Pages</strong> report for pages that aren't indexed, and the <strong>Performance</strong> report for the searches you already appear for. If you haven't set it up, do it today – it's free.</p>
 <h2>4. Compare with a competitor (2 minutes)</h2>
 <p>Use the <a href="/seo-comparison">competitor comparison</a> against a business that ranks above you, and note where they're ahead.</p>
 <h2>5. Keep watching</h2>
@@ -501,7 +501,7 @@ export const PAGES = [
     title: "AI Search Optimisation: Get Found by ChatGPT & AI", desc: "How to get your business found and cited by ChatGPT, Claude, Perplexity and Google AI Overviews: crawl access, entities, answers and trust.",
     h1: "AI search optimisation: getting found by ChatGPT and AI Overviews", lead: "AI assistants are becoming a front door to the web. Here's how to make sure they can find, understand and recommend your business.",
     sections: `<h2>1. Let the right crawlers in</h2>
-<p>AI search features fetch pages with their own crawlers – for example OAI-SearchBot (ChatGPT search), Claude-SearchBot, PerplexityBot and Googlebot (AI Overviews). If robots.txt blocks them, you can't be cited. Training crawlers such as GPTBot and Google-Extended are separate: blocking them doesn't remove you from search. Test your rules with the <a href="/robots-txt-tester">robots.txt tester</a>.</p>
+<p>AI search features fetch pages with their own crawlers – for example OAI-SearchBot (ChatGPT search), Claude-SearchBot, PerplexityBot and Googlebot (AI Overviews). If robots.txt blocks them, you can't be cited. Training crawlers such as GPTBot and Google-Extended are separate: blocking them doesn't remove you from search. Test your rules with the <a href="/robots-txt-tester">robots.txt tester</a>, and see our guide to <a href="/guides/block-ai-training-bots">blocking training bots without leaving AI search</a>.</p>
 <h2>2. Make it obvious who you are</h2>
 <p>Add Organization or LocalBusiness structured data with your name, website, logo, contact details and <code>sameAs</code> links to official profiles such as your Google Business Profile and LinkedIn page. Keep the same name and details everywhere.</p>
 <h2>3. Answer questions directly</h2>
@@ -526,6 +526,233 @@ export const PAGES = [
 <h2>Lab data vs real-user data</h2>
 <p>Lab tests (Lighthouse) load your page once on a simulated phone. Real-user data (the Chrome UX Report) comes from actual Chrome visitors over 28 days, and it's what Google uses. XKey's <a href="/page-speed-checker">page speed checker</a> shows both.</p>`,
     faqs: [["Where can I find my Core Web Vitals?", "In Google Search Console's Core Web Vitals report, in PageSpeed Insights, or in XKey's page speed checker."], ["What happened to FID?", "Interaction to Next Paint (INP) replaced First Input Delay as a Core Web Vital in March 2024."], ["Why does my site have no real-user data?", "The Chrome UX Report only covers pages and sites with enough Chrome visits. Until then, use the lab test as a guide."]],
+  },
+  {
+    path: "/guides/why-is-my-website-not-on-google", crumb: "Why isn't my website on Google?", parent: ["/guides", "Guides"], article: true,
+    title: "Why Isn't My Website on Google? 9 Causes and Fixes", desc: "Can't find your website on Google? The nine most common causes – from a stray noindex tag to a brand-new domain – and how to fix each one.",
+    h1: "Why isn't my website on Google?", lead: "If you search for your business and your website doesn't appear, one of a handful of problems is almost always to blame. Here's how to find which one, in the order most likely to matter.",
+    sections: `<h2>First: is it really missing?</h2>
+<p>Type <code>site:yourdomain.co.uk</code> into Google. If you see a list of your pages, your site <em>is</em> indexed – it just isn't ranking for the words you tried, which is a different problem (see cause 8). If Google shows nothing at all, work through the causes below. The quickest way to test most of them at once is a <a href="/">free SEO check</a> on your home page.</p>
+<h2>1. The site is very new</h2>
+<p>Google has to discover a site before it can index it. A brand-new domain with no links pointing at it can take anything from a few days to several weeks to appear. You can speed this up by adding the site to Google Search Console and submitting your sitemap – our <a href="/guides/google-search-console">Search Console guide</a> walks through it.</p>
+<h2>2. A noindex tag is telling Google to stay away</h2>
+<p>This is the most common cause on sites that were built on a staging server. A <code>&lt;meta name="robots" content="noindex"&gt;</code> tag, or an <code>X-Robots-Tag: noindex</code> header, asks search engines not to list the page. In WordPress, check that <strong>Settings › Reading › Discourage search engines</strong> is unticked. XKey flags noindex as a critical problem.</p>
+<h2>3. robots.txt is blocking Googlebot</h2>
+<p>A single line – <code>Disallow: /</code> under <code>User-agent: *</code> – blocks the whole site. Paste your rules into the <a href="/robots-txt-tester">robots.txt tester</a> and test your home page against Googlebot. Remember that robots.txt stops crawling, not indexing: a blocked page can still appear as a bare link with no description, which is rarely what you want.</p>
+<h2>4. The page returns an error</h2>
+<p>Pages that answer with a 404, 410 or 5xx status code are dropped from Google. So are pages Google thinks are "soft 404s" – they say 200 OK but look empty or like an error page. Our <a href="/guides/broken-links-and-redirects">guide to broken links and redirects</a> explains how to fix them.</p>
+<h2>5. The canonical tag points somewhere else</h2>
+<p>A canonical tag tells Google which address is the "real" version of a page. If every page on your site points its canonical at the home page, or at the old staging domain, Google will index that address instead of yours. Each page should normally point to itself.</p>
+<h2>6. There's not enough on the page</h2>
+<p>Google doesn't index everything it crawls. Pages with only a heading and a photo, or text copied from another site, are often crawled and then left out. In Search Console these show as "Crawled – currently not indexed". Write something genuinely useful – what you do, where, for whom, how much it costs and how to get in touch.</p>
+<h2>7. Google can't see the content</h2>
+<p>If your text only appears after JavaScript runs, or is inside images, Google may see an almost blank page. Most modern site builders are fine, but some single-page apps and old Flash-style templates are not. The <a href="/">SEO check</a> reports the word count Google can actually read.</p>
+<h2>8. It's indexed but not ranking</h2>
+<p>If <code>site:</code> finds you but your name or service doesn't, you're competing with other pages. Make sure your title and H1 say exactly what you do and where, set up a Google Business Profile if you serve local customers (see our <a href="/guides/local-seo-checklist">local SEO checklist</a>), and earn a few genuine links from local directories, suppliers and associations.</p>
+<h2>9. A manual action or security issue</h2>
+<p>Rarely, Google removes a site for spam or because it has been hacked. Search Console's <strong>Security &amp; Manual actions</strong> section will tell you if this has happened and what to fix. Hacked sites often show strange pages in a <code>site:</code> search – Japanese text or pharmacy keywords are common signs.</p>`,
+    faqs: [["How long does it take for a new website to appear on Google?", "Usually a few days to a few weeks. Submitting a sitemap in Google Search Console and getting even one link from an established site helps Google find it sooner."], ["Can I pay Google to index my website?", "No. Indexing is free and can't be bought. Google Ads put you in the paid results, but they don't affect whether your pages are indexed or how they rank."], ["Why does my site show on Bing but not Google?", "The two search engines crawl and index separately. Check Google Search Console's Pages report for the reason Google gives, and fix anything marked as an error."]],
+  },
+  {
+    path: "/guides/google-search-console", crumb: "How to set up Google Search Console", parent: ["/guides", "Guides"], article: true,
+    title: "How to Set Up Google Search Console (Step by Step)", desc: "Set up Google Search Console in 15 minutes: choose a property type, verify your site, submit a sitemap and learn the four reports that matter most.",
+    h1: "How to set up Google Search Console", lead: "Search Console is Google's free tool for website owners. It's the only place to see which searches you appear for, which pages Google has indexed and why others were left out.",
+    sections: `<h2>Why every website needs Search Console</h2>
+<p>An SEO checker like XKey looks at your pages from the outside. Search Console shows Google's own view from the inside: the actual searches people used to find you, how often you appeared, how many clicked, and any page Google couldn't index along with the reason. It costs nothing and takes about 15 minutes to set up.</p>
+<h2>Step 1: choose a property type</h2>
+<p>Go to Google Search Console, sign in with a Google account and click <strong>Add property</strong>. You'll see two choices:</p>
+<ul><li><strong>Domain property</strong> – covers every version of your site (http and https, www and non-www, and all subdomains). It can only be verified with a DNS record, so you need access to wherever your domain is managed.</li><li><strong>URL-prefix property</strong> – covers one exact address, such as <code>https://www.example.co.uk/</code>. It offers more ways to verify, including uploading a file or adding a meta tag.</li></ul>
+<p>If you can edit your DNS, choose Domain. If your web designer manages everything, a URL-prefix property for the exact address your site uses is fine.</p>
+<h2>Step 2: verify that you own the site</h2>
+<p>For a Domain property, Google gives you a TXT record to add in your DNS settings (at your registrar, or Cloudflare if you use it). For a URL-prefix property, the simplest options are uploading the HTML file Google gives you to your site's root folder, or pasting a meta tag into your home page's <code>&lt;head&gt;</code>. Sites already using Google Analytics or Tag Manager can often verify with one click. Then press <strong>Verify</strong>. DNS changes can take a little while to be seen – if it fails, wait an hour and try again.</p>
+<h2>Step 3: submit your sitemap</h2>
+<p>Open <strong>Sitemaps</strong>, type the address of your sitemap (often <code>sitemap.xml</code> or <code>sitemap_index.xml</code>) and click Submit. Google should show "Success" and the number of pages it found. Not sure you have one? Run the <a href="/sitemap-checker">sitemap checker</a>, or make one with the <a href="/xml-sitemap-generator">XML sitemap generator</a>.</p>
+<h2>Step 4: learn the four reports that matter</h2>
+<ul><li><strong>Performance</strong> – searches, clicks, impressions and average position. Filter by page to see what each one ranks for.</li><li><strong>Pages</strong> (under Indexing) – which pages are indexed and, for the rest, why not: noindex, redirect, not found, duplicate or "crawled – currently not indexed".</li><li><strong>URL inspection</strong> – type any address into the bar at the top to see exactly how Google last saw it, and request indexing after you've fixed or published a page.</li><li><strong>Core Web Vitals</strong> – real-visitor speed data, grouped into good, needs improvement and poor. Our <a href="/guides/core-web-vitals">Core Web Vitals guide</a> explains it.</li></ul>
+<h2>Step 5: add Bing too</h2>
+<p>Bing Webmaster Tools can import your verified sites straight from Search Console, so it takes a couple of minutes. Bing also powers several other search services, so it's worth having.</p>
+<h2>What Search Console won't tell you</h2>
+<p>It doesn't check your titles, structured data, security headers or AI crawler access in detail, and it only reports on your own site. Pair it with a regular <a href="/">SEO check</a> and <a href="/seo-monitoring">weekly monitoring</a> to catch problems before they show up in Google's data.</p>`,
+    faqs: [["Is Google Search Console free?", "Yes, completely. There's no paid version."], ["How long until data appears?", "Usually a few days after verification. Performance data then covers up to the last 16 months, starting from when Google first collected it."], ["Does using Search Console improve my rankings?", "Not by itself. It shows you what to fix and lets you ask Google to recrawl pages, which helps new and updated pages get picked up sooner."]],
+  },
+  {
+    path: "/guides/title-tags", crumb: "How to write title tags", parent: ["/guides", "Guides"], article: true,
+    title: "How to Write Title Tags That Fit Google's Results", desc: "How to write title tags that rank and get clicked: why Google cuts titles by pixel width, what to put first, examples and the mistakes to avoid.",
+    h1: "How to write title tags that fit Google", lead: "Your title tag is usually the blue headline people see in Google. It's one of the strongest signals of what a page is about, and it decides whether anyone clicks.",
+    sections: `<h2>What is a title tag?</h2>
+<p>It's the text between <code>&lt;title&gt;</code> and <code>&lt;/title&gt;</code> in a page's HTML. Browsers show it in the tab, social sites use it when a link is shared, and Google uses it for the headline of your search result – which Google calls the "title link".</p>
+<h2>Why length is measured in pixels, not characters</h2>
+<p>Google cuts long titles to fit the width of the results page, adding "…" at the end. Because letters have different widths – a "W" is far wider than an "i" – a 55-character title in capitals can be cut while a 65-character title in lower case fits. On desktop the space is roughly 600 pixels. Our <a href="/title-tag-checker">title tag checker</a> measures your title the way Google displays it, so you can see exactly where it would be cut.</p>
+<h2>A simple formula that works</h2>
+<p><strong>Main search phrase + what makes you different + location (if local)</strong>. For example:</p>
+<ul><li><em>Emergency Plumber in Preston | 24/7, No Call-Out Fee</em></li><li><em>Wedding Cakes Blackpool | Handmade to Order Since 2009</em></li><li><em>How to Bleed a Radiator (With Pictures)</em></li></ul>
+<p>Put the words people actually search for at the start, where they're least likely to be cut and most likely to be read. Your brand name can go at the end if there's room – but on most pages, Google already shows your site name above the title, so it isn't essential.</p>
+<h2>Seven mistakes to avoid</h2>
+<ol><li><strong>The same title on every page.</strong> Each page needs its own. Duplicate titles make it hard for Google to tell pages apart – the <a href="/website-audit">website audit</a> finds them across your whole site.</li><li><strong>"Home" or "Welcome".</strong> These tell searchers nothing.</li><li><strong>Keyword stuffing.</strong> "Plumber Preston, Plumbers Preston, Cheap Plumber Preston" looks like spam, and Google is likely to rewrite it.</li><li><strong>Too long.</strong> The important part gets cut off.</li><li><strong>Too short.</strong> "Services" wastes space you could use to persuade.</li><li><strong>Not matching the page.</strong> If the title promises prices, show prices – otherwise people bounce back to Google.</li><li><strong>All capitals.</strong> Harder to read and takes up more width.</li></ol>
+<h2>Why Google sometimes rewrites your title</h2>
+<p>Google can replace a title with text from your H1, headings or links when it thinks the original is too long, stuffed with keywords, the same as other pages or a poor match for the search. Keeping your title accurate, unique and close to your H1 is the best way to have it shown as written.</p>
+<p>Need ideas? Try the <a href="/blog-title-generator">blog title generator</a> or let the <a href="/ai-meta-description-generator">AI title and description writer</a> suggest options that fit.</p>`,
+    faqs: [["How many characters should a title tag be?", "Around 50–60 characters usually fits, but Google measures pixel width rather than characters, so check it with a pixel-width checker."], ["Should the title tag and H1 be the same?", "They can be similar. The title is written for the search results; the H1 is the heading on the page. Keeping them close helps Google show your title as written."], ["Does changing my title tag affect rankings?", "It can, for better or worse. Change one page at a time and watch its clicks and position in Search Console for a few weeks."]],
+  },
+  {
+    path: "/guides/meta-descriptions", crumb: "How to write a meta description", parent: ["/guides", "Guides"], article: true,
+    title: "How to Write a Meta Description That Gets Clicks", desc: "What a meta description is, whether Google uses it, how long it should be and a simple formula for writing one that earns the click – with examples.",
+    h1: "How to write a meta description", lead: "A meta description is the short summary that often appears under your title in Google. It doesn't change your ranking directly, but a good one can win you the click.",
+    sections: `<h2>Does Google actually use meta descriptions?</h2>
+<p>Sometimes. Google has said the description isn't a ranking factor, and it often writes its own snippet from your page text when that matches the search better. But when your description is accurate and relevant, Google frequently shows it as written – and it's also used by Facebook, LinkedIn, WhatsApp and many AI tools when your link is shared. It's worth five minutes per important page.</p>
+<h2>How long should it be?</h2>
+<p>Like titles, descriptions are cut by width, not character count. Around 140–155 characters usually shows in full on desktop, and a little less on mobile. Put the important part first so a cut-off version still makes sense. The <a href="/title-tag-checker">title tag checker</a> measures both your title and description in pixels.</p>
+<h2>A formula for descriptions that get clicked</h2>
+<p><strong>What you offer + why choose you + what to do next.</strong></p>
+<ul><li><em>Local electrician in Lytham for rewires, fuse boards and EV chargers. NICEIC registered, fixed prices, free quotes – call today.</em></li><li><em>Find out how much a loft conversion costs in 2026, what affects the price and how to save, with real examples from the North West.</em></li></ul>
+<p>Use the words people search for – Google shows matching words in bold, which draws the eye. Be specific: numbers, places, prices and guarantees beat vague words like "quality" and "professional".</p>
+<h2>Common mistakes</h2>
+<ul><li><strong>Leaving it blank</strong> – Google will pick some text from the page, which may be a cookie notice or a menu.</li><li><strong>The same description on every page</strong> – each page needs its own. The <a href="/website-audit">website audit</a> lists duplicates.</li><li><strong>Promising what the page doesn't deliver</strong> – it costs you visitors who leave straight away.</li><li><strong>Using quotation marks</strong> – in some systems a double quote ends the description early.</li></ul>
+<h2>How to add one</h2>
+<p>Most website builders and SEO plugins (Yoast, Rank Math, Squarespace, Wix, Shopify) have a "search appearance" or "SEO description" box for each page. If you edit HTML yourself, use the <a href="/meta-tag-generator">meta tag generator</a> to create the tag, or let the <a href="/ai-meta-description-generator">AI description writer</a> draft one from your page.</p>`,
+    faqs: [["Is a meta description a ranking factor?", "No, not directly. It affects how many people click your result, and more relevant clicks are good for your business either way."], ["Why is Google showing different text from my meta description?", "Google picks the text it thinks best answers each search. A description that clearly summarises the page is more likely to be shown."], ["Do I need a meta description on every page?", "Your important pages should each have a unique one. For very large sites, it's better to leave some blank than to repeat the same text everywhere."]],
+  },
+  {
+    path: "/guides/local-seo-checklist", crumb: "Local SEO checklist", parent: ["/guides", "Guides"], article: true,
+    title: "Local SEO Checklist for UK Small Businesses", desc: "A practical local SEO checklist for UK small businesses: Google Business Profile, consistent contact details, local pages, schema, reviews and citations.",
+    h1: "Local SEO checklist for UK small businesses", lead: "When someone searches for a plumber, café or accountant \"near me\", Google shows a map and three businesses before any normal results. This checklist covers what gets you into that map pack and onto page one.",
+    sections: `<h2>How Google decides local rankings</h2>
+<p>Google says local results are based mainly on three things: <strong>relevance</strong> (how well your business matches the search), <strong>distance</strong> (how far you are from the searcher or the place they named) and <strong>prominence</strong> (how well known you are, from reviews, links and mentions across the web). You can't move your premises, but you can improve the other two.</p>
+<h2>1. Claim and complete your Google Business Profile</h2>
+<p>This is the single most important step for local search. Choose the most accurate primary category, add your hours, services, service areas, photos and a description written for customers. Our <a href="/guides/google-business-profile">Google Business Profile guide</a> covers setup and verification.</p>
+<h2>2. Keep your name, address and phone number identical everywhere</h2>
+<p>Your business name, address and phone number (often called NAP) should match exactly on your website, Google profile, Facebook page and directory listings. "Unit 4, 12 High St" on one site and "12 High Street, Unit 4" on another isn't a disaster, but a different phone number or an old address is. Put your details in the footer of every page as text, not just in an image.</p>
+<h2>3. Give each service and main town its own page</h2>
+<p>A page for "boiler repairs" and another for "boiler installation" can each rank for its own searches. If you serve several towns, a page for each <em>main</em> area is fine – as long as each says something genuinely specific: jobs you've done there, travel times, local regulations or prices. Dozens of near-identical "plumber in [town]" pages are doorway pages and break Google's spam rules.</p>
+<h2>4. Add LocalBusiness structured data</h2>
+<p>LocalBusiness schema tells Google and AI assistants your name, address, phone, hours, area served and website in a format machines can read without guessing. Create it with the <a href="/schema-generator">local business schema generator</a>, then check it with the <a href="/local-seo-checker">local SEO checker</a>.</p>
+<h2>5. Get reviews the honest way</h2>
+<p>Ask every happy customer, and make it easy with a short link to your Google review form. Reply to every review, especially the bad ones – calmly and helpfully. Never buy reviews, write your own, offer discounts for them or only ask customers you know are happy: it breaks Google's rules, and the Digital Markets, Competition and Consumers Act 2024 made fake reviews illegal in the UK.</p>
+<h2>6. List your business in the right directories</h2>
+<p>A handful of accurate listings beats hundreds of junk ones. Good places to start: Bing Places, Apple Business Connect, Yell, Thomson Local, Facebook, your trade body (such as Gas Safe, NICEIC or the Federation of Master Builders), your local chamber of commerce and any respected sites for your industry.</p>
+<h2>7. Be visible to AI assistants too</h2>
+<p>People increasingly ask ChatGPT or Google's AI Overviews for local recommendations. They can only suggest businesses they can read and understand – check yours with the <a href="/ai-seo-checker">AI SEO checker</a> and read our <a href="/guides/ai-search-optimisation">AI search guide</a>.</p>
+<h2>8. Check how you look in other towns</h2>
+<p>Results change from street to street. The <a href="/local-search-checker">local search checker</a> shows Google's results as they appear in any UK town, so you can see who you're really up against.</p>`,
+    faqs: [["Do I need a website for local SEO?", "You can appear in the map pack with only a Google Business Profile, but a website gives Google more to go on and gives customers somewhere to check you out. Most top-ranking local businesses have both."], ["Can I rank in a town where I don't have an office?", "In the normal results, yes, with a genuinely useful page about your work there. In the map pack it's much harder, because distance matters a lot."], ["Should I use a virtual office address?", "No. Google's guidelines don't allow mailboxes or virtual offices as a business address unless the office is staffed during your business hours. Service-area businesses can hide their address and list the areas they cover instead."]],
+  },
+  {
+    path: "/guides/google-business-profile", crumb: "Google Business Profile guide", parent: ["/guides", "Guides"], article: true,
+    title: "Google Business Profile: How to Set It Up and Verify", desc: "How to create, verify and get the most from a free Google Business Profile: categories, service areas, video verification, photos, posts and reviews.",
+    h1: "Google Business Profile: set up and verify", lead: "A Google Business Profile is the free listing that shows your business on Google Maps and in the local map pack. For most local businesses, it brings in more calls than the website does.",
+    sections: `<h2>Before you start</h2>
+<p>Search Google Maps for your business name first. If a profile already exists – Google sometimes creates them from public information – you'll claim it rather than create a new one. Duplicate profiles confuse customers and Google, so never make a second one. You'll need a Google account; use one the business controls, not a personal or employee account that might disappear.</p>
+<h2>Step 1: create or claim the profile</h2>
+<p>Go to Google Business Profile, enter your business name and choose your <strong>primary category</strong>. This is the most important choice you'll make: pick the one that describes what you <em>are</em> ("Plumber", "Wedding photographer", "Italian restaurant") rather than everything you do. You can add extra categories later.</p>
+<h2>Step 2: storefront or service-area business</h2>
+<p>If customers visit you, enter your address. If you go to them – trades, cleaners, mobile hairdressers – you can hide your address and list the towns or postcodes you cover instead. You can't use a PO box, virtual office or someone else's address.</p>
+<h2>Step 3: verification</h2>
+<p>Google needs to confirm you really run the business, and Google decides which method you're offered. For most new profiles that's now a <strong>short video</strong>, recorded on your phone in one continuous take. It typically needs to show:</p>
+<ul><li><strong>Where you are</strong> – your street, nearby businesses or your signage.</li><li><strong>That the business is real</strong> – equipment, stock, branded vehicles or your workspace.</li><li><strong>That you manage it</strong> – for example unlocking the door, opening a till or showing tools only staff would have.</li></ul>
+<p>Keep faces and private documents out of shot. Reviews of the video usually take a few working days. Older or established profiles may be offered phone, email or instant verification instead. If the video is rejected, read the reason carefully, fix it and submit a new one rather than creating another profile.</p>
+<h2>Step 4: fill in everything</h2>
+<ul><li><strong>Hours</strong>, including bank holidays and special hours.</li><li><strong>Services or menu</strong>, with prices where you can.</li><li><strong>Description</strong> – up to 750 characters, written for customers. Mention what you do and where, without stuffing in keywords.</li><li><strong>Photos</strong> – real photos of your work, team, premises and vehicles. Profiles with photos get far more attention than those without.</li><li><strong>Website link</strong> – to your home page or the most relevant local page.</li></ul>
+<h2>Step 5: keep it active</h2>
+<p>Add new photos, share updates and offers as posts, keep your hours accurate and reply to every review. Make sure your name, address and phone number match your website exactly – see the <a href="/guides/local-seo-checklist">local SEO checklist</a>.</p>
+<h2>Rules that get profiles suspended</h2>
+<p>Adding keywords or towns to your business name ("Smith Plumbing – Best Plumber Preston"), using a fake or shared address, creating more than one profile per location, and buying or faking reviews. Suspension can take weeks to reverse, so it isn't worth the risk.</p>
+<p>Once your profile is live, check your website's local signals with the <a href="/local-seo-checker">local SEO checker</a>.</p>`,
+    faqs: [["Does a Google Business Profile cost anything?", "No. It's free. Be wary of anyone calling to say your listing will be removed unless you pay – Google doesn't charge for profiles."], ["Can I choose postcard verification?", "Google decides which verification methods you're offered, and for most new profiles that's video. If another option is available you'll see it on the verification screen."], ["How long does it take to appear on Google Maps?", "Usually within a few days of successful verification, though edits can take a little longer to show everywhere."]],
+  },
+  {
+    path: "/guides/schema-markup", crumb: "Schema markup for small businesses", parent: ["/guides", "Guides"], article: true,
+    title: "Schema Markup for Small Businesses: What to Add", desc: "Schema markup in plain English: which types a small business website needs, what Google still shows as rich results in 2026, and how to add it safely.",
+    h1: "Schema markup for small businesses", lead: "Schema markup – also called structured data – is a short block of code that tells search engines and AI assistants exactly what's on a page, so they don't have to guess.",
+    sections: `<h2>What schema markup does</h2>
+<p>A person reading your contact page knows which string of digits is your phone number and that "Mon–Fri 9–5" means your opening hours. A machine has to guess. Schema markup labels these facts using a shared vocabulary from schema.org, usually in a format called JSON-LD that sits in the page's code without changing how it looks. Google recommends JSON-LD because it's the easiest to add and maintain.</p>
+<h2>What it can and can't do</h2>
+<p>Structured data can make your result eligible for extra features – star ratings on products, event dates, breadcrumbs and more – and it helps Google and AI assistants connect your website with your business. It doesn't guarantee those features, and it isn't a direct ranking boost. Google ignores markup that describes things not visible on the page, and misleading markup can lead to a manual action.</p>
+<h2>The schema types most small businesses need</h2>
+<ul><li><strong>Organization</strong> or <strong>LocalBusiness</strong> (or a more specific type such as Plumber, Dentist or Restaurant) – your name, logo, address, phone, hours, area served, website and <code>sameAs</code> links to your official profiles. Put it on your home page and contact page. Create it with the <a href="/schema-generator">local business schema generator</a>.</li><li><strong>WebSite</strong> – your site name, which helps Google show the right name above your results.</li><li><strong>BreadcrumbList</strong> – shows where a page sits on your site, and can replace the address in your search result with a tidy path.</li><li><strong>Product</strong> – for shops: price, currency, availability and reviews from real customers.</li><li><strong>Article</strong> – for blog posts and guides: headline, author and dates.</li><li><strong>Event</strong> – for gigs, classes and open days with dates and locations.</li></ul>
+<h2>What changed recently</h2>
+<p>Google has been cutting back the rich results it shows. HowTo rich results were removed in 2023. FAQ rich results were limited to government and health sites the same year, and on 7 May 2026 Google stopped showing them for everyone. There's no penalty for keeping FAQ markup, but it no longer earns extra space in Google, so it isn't worth adding new. Star ratings for a business reviewing <em>itself</em> – on its own LocalBusiness or Organization markup – haven't been shown since 2019.</p>
+<h2>How to add schema markup</h2>
+<p>On WordPress, plugins such as Yoast and Rank Math add the basics automatically. Shopify, Wix and Squarespace include some markup too – check what's already there before adding more, so you don't end up with two conflicting versions. For custom sites, paste the JSON-LD into the page's <code>&lt;head&gt;</code> or just before <code>&lt;/body&gt;</code>.</p>
+<h2>How to check it</h2>
+<p>Run the <a href="/schema-checker">schema checker</a> on the page. It validates your JSON-LD, lists the types found and shows any properties Google requires that are missing. Re-check after every redesign or plugin update – broken markup is one of the most common things a site change quietly breaks.</p>`,
+    faqs: [["Is schema markup a ranking factor?", "Not directly. It helps search engines understand your pages and can make them eligible for rich results, which can improve clicks."], ["Do AI assistants use schema markup?", "AI search tools read structured data along with the visible page. Clear Organization or LocalBusiness markup makes it easier for them to connect your website with the right business details."], ["Should I remove my FAQ schema?", "There's no need to rush. Google says it doesn't cause problems, though it no longer produces rich results. Remove it next time you're editing the page if you'd like tidier code."]],
+  },
+  {
+    path: "/guides/llms-txt", crumb: "What is llms.txt?", parent: ["/guides", "Guides"], article: true,
+    title: "What Is llms.txt and Does Your Website Need One?", desc: "What llms.txt is, who uses it, what Google says about it, and whether it's worth adding to your website – an honest, plain-English answer.",
+    h1: "What is llms.txt and does your website need one?", lead: "llms.txt is a short text file that gives AI tools a summary of your website and a list of its most important pages. It's simple to add – but it's worth knowing what it does and doesn't do.",
+    sections: `<h2>Where llms.txt came from</h2>
+<p>The format was proposed in September 2024 by Jeremy Howard of Answer.AI. The idea: web pages are full of menus, adverts and scripts that large language models (LLMs) have to wade through. A plain Markdown file at <code>yourdomain.co.uk/llms.txt</code> could give them a clean summary instead – who you are, what the site covers and links to the pages that matter.</p>
+<h2>What goes in the file</h2>
+<p>A typical llms.txt has:</p>
+<ul><li>a heading with your site or business name,</li><li>a one-line summary in a quote block,</li><li>a short paragraph with any important context, and</li><li>sections of links, each with a few words about the page – for example your services, prices, guides and contact page.</li></ul>
+<p>You can see XKey's own at <a href="/llms.txt">xkey.co.uk/llms.txt</a>, or build yours in a minute with the <a href="/llms-txt-generator">llms.txt generator</a>.</p>
+<h2>Does Google use it?</h2>
+<p>No – not for Search. Google's Search guidance says you don't need llms.txt or any other special file to appear in AI Overviews or AI Mode; those features draw on the normal search index, so ordinary SEO is what counts. Other parts of Google take a different view: in 2026 Lighthouse added an experimental check for llms.txt as part of assessing whether sites are ready for AI agents browsing on people's behalf.</p>
+<h2>Do ChatGPT, Claude or Perplexity use it?</h2>
+<p>None of the big AI companies has published a commitment to read llms.txt when deciding what to cite. Some AI coding tools and documentation sites do use it, and AI agents may fetch it when they're sent to explore a site. In short: there's no evidence it boosts your visibility today, and no evidence it does any harm.</p>
+<h2>So should you add one?</h2>
+<p>If it takes you ten minutes, yes – it's a tidy summary of your site, it costs nothing and it may become more useful as AI agents spread. But it is <em>not</em> a replacement for the things that demonstrably matter for AI search:</p>
+<ul><li>letting AI search crawlers in through robots.txt (see our guide to <a href="/guides/block-ai-training-bots">blocking training bots without leaving AI search</a>),</li><li>clear Organization or LocalBusiness <a href="/guides/schema-markup">schema markup</a>,</li><li>pages that answer real questions directly, and</li><li>being indexed by Google and Bing in the first place.</li></ul>
+<p>The <a href="/ai-seo-checker">AI SEO checker</a> tests all of these, including whether you have an llms.txt file, and weights them by how much they really matter.</p>`,
+    faqs: [["Is llms.txt the same as robots.txt?", "No. robots.txt tells crawlers which pages they may visit. llms.txt is a summary and reading list; it doesn't allow or block anything."], ["Where does the llms.txt file go?", "In the root of your website, so it loads at yourdomain.co.uk/llms.txt – the same place as robots.txt."], ["What is llms-full.txt?", "An optional companion file containing the full text of your key pages in Markdown. It's mainly used by software documentation sites and isn't needed for most businesses."]],
+  },
+  {
+    path: "/guides/block-ai-training-bots", crumb: "Block AI training bots", parent: ["/guides", "Guides"], article: true,
+    title: "Block AI Training Bots but Stay Visible in AI Search", desc: "Stop AI companies training on your content while staying visible in ChatGPT search, Perplexity and Google AI Overviews – with robots.txt examples.",
+    h1: "How to block AI training bots but stay in AI search", lead: "Many businesses want to stop AI companies copying their content for training – without disappearing from the AI assistants their customers now use to find them. With the right robots.txt rules, you can do both.",
+    sections: `<h2>Training crawlers and search crawlers are different</h2>
+<p>Most AI companies now use separate crawlers for separate jobs. <strong>Training crawlers</strong> collect pages to build future AI models. <strong>Search crawlers</strong> fetch pages so an assistant can find, quote and link to you when someone asks a question. A third kind fetches a page only when a user asks the assistant to look at it. Blocking a training crawler doesn't stop the search crawler from the same company.</p>
+<h2>The main crawlers to know</h2>
+<ul><li><strong>OpenAI</strong> – GPTBot (training), OAI-SearchBot (ChatGPT search), ChatGPT-User (pages a user asks about).</li><li><strong>Anthropic</strong> – ClaudeBot (training), Claude-SearchBot (search), Claude-User (pages a user asks about).</li><li><strong>Perplexity</strong> – PerplexityBot (search), Perplexity-User (pages a user asks about).</li><li><strong>Google</strong> – Googlebot crawls for Search, including AI Overviews and AI Mode. <em>Google-Extended</em> isn't a separate crawler but a robots.txt token that controls whether your content is used for Gemini models; blocking it doesn't affect Google Search.</li><li><strong>Apple</strong> – Applebot (search features such as Siri and Spotlight); Applebot-Extended controls use for Apple's AI training.</li><li><strong>Common Crawl</strong> – CCBot builds a public web archive that many AI models have been trained on.</li></ul>
+<h2>A robots.txt that blocks training and allows search</h2>
+<pre><code>User-agent: GPTBot
+Disallow: /
+
+User-agent: ClaudeBot
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
+
+User-agent: Applebot-Extended
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: *
+Allow: /
+
+Sitemap: https://yourdomain.co.uk/sitemap.xml</code></pre>
+<p>OAI-SearchBot, Claude-SearchBot, PerplexityBot, Googlebot and Bingbot aren't named, so they follow the <code>User-agent: *</code> group and stay allowed. Create a version tailored to your site with the <a href="/robots-txt-generator">robots.txt generator</a>, then test individual pages with the <a href="/robots-txt-tester">robots.txt tester</a>.</p>
+<h2>Things robots.txt can't do</h2>
+<ul><li><strong>It's a request, not a lock.</strong> Reputable companies follow it; badly behaved scrapers ignore it. For those, firewall rules are the answer – Cloudflare, for example, offers a setting to block known AI crawlers at the network level.</li><li><strong>It isn't retrospective.</strong> Content already collected for past training isn't removed.</li><li><strong>Crawler names change.</strong> New bots appear every year, so review your rules every few months.</li></ul>
+<h2>Watch out for blocking everything by accident</h2>
+<p>Some security plugins, hosting firewalls and "block AI" settings stop search crawlers as well as training crawlers. If your business never appears in ChatGPT or Perplexity answers, that's one of the first things to check. The <a href="/ai-seo-checker">AI SEO checker</a> fetches your robots.txt and shows which AI crawlers are allowed in, one by one.</p>
+<p>For more on getting recommended by AI assistants, read our <a href="/guides/ai-search-optimisation">AI search optimisation guide</a>.</p>`,
+    faqs: [["Will blocking GPTBot remove me from ChatGPT?", "No. ChatGPT's search feature uses OAI-SearchBot, which is controlled separately. Block GPTBot and allow OAI-SearchBot to stay findable without contributing to training."], ["Does blocking Google-Extended affect my Google rankings?", "No. Google says Google-Extended doesn't affect inclusion or ranking in Google Search, including AI Overviews."], ["How often should I update my AI crawler rules?", "Every few months, or whenever a major AI company announces a new crawler. The robots.txt generator is kept up to date with the main ones."]],
+  },
+  {
+    path: "/guides/broken-links-and-redirects", crumb: "Broken links and redirects", parent: ["/guides", "Guides"], article: true,
+    title: "Broken Links, 404 Errors and Redirects Explained", desc: "What 404 errors, soft 404s, 301 and 302 redirects and redirect chains mean for SEO, when they matter and how to find and fix them on your website.",
+    h1: "Broken links, 404s and redirects explained", lead: "Every website collects broken links over time – pages get renamed, products sell out and other sites move. A few don't matter much. Left unchecked, they waste visitors, crawl time and links you've earned.",
+    sections: `<h2>What the status codes mean</h2>
+<ul><li><strong>200 OK</strong> – the page loaded normally.</li><li><strong>301 Moved Permanently</strong> – the page has a new permanent address. Search engines move it to the new URL and pass along its signals.</li><li><strong>302 Found / 307 Temporary Redirect</strong> – the page is somewhere else for now. Google treats a long-standing temporary redirect much like a permanent one, but 301 is clearer when a move is permanent.</li><li><strong>404 Not Found</strong> – nothing exists at this address.</li><li><strong>410 Gone</strong> – the page has been removed deliberately. Google drops it slightly faster than a 404.</li><li><strong>5xx</strong> – a server error. If these persist, Google slows down crawling and may drop pages.</li></ul>
+<h2>Do 404 errors hurt SEO?</h2>
+<p>Not on their own. Google has said 404s for pages that genuinely no longer exist are normal and don't count against the rest of your site. They matter when:</p>
+<ul><li><strong>your own pages link to them</strong> – visitors hit a dead end, and Google wastes time crawling nothing;</li><li><strong>other websites link to them</strong> – any value from those links is lost; or</li><li><strong>an important page is broken by mistake</strong> – it drops out of Google.</li></ul>
+<h2>Soft 404s</h2>
+<p>A soft 404 is a page that returns "200 OK" but is empty, says "not found", or is a thin "no results" page. Google treats it as an error anyway and reports it in Search Console. Fix it by returning a real 404 or 410, redirecting to a genuinely relevant page, or adding proper content.</p>
+<h2>When to redirect and when to let a page 404</h2>
+<p>Redirect with a 301 when there's a close replacement – the renamed page, the new version of a product or the category it belonged to. Don't redirect everything to your home page; Google often treats that as a soft 404 and visitors find it confusing. If there's truly no equivalent, a helpful 404 page with a search box and links to your main sections is the right answer.</p>
+<h2>Redirect chains</h2>
+<p>A chain is when page A redirects to B, which redirects to C. Each hop adds delay, and Google stops following after several hops. Chains usually build up through redesigns – http to https, then non-www to www, then an old URL to a new one. Point every old address straight at its final destination, and update your internal links to use the final URL directly.</p>
+<h2>How to find broken links</h2>
+<ul><li>Check any single page with the <a href="/broken-link-checker">broken link checker</a>.</li><li>Crawl up to 250 pages with the <a href="/website-audit">website audit</a> to find broken internal links, redirect chains and the pages linking to them.</li><li>In Google Search Console, the <strong>Pages</strong> report lists URLs that are "Not found (404)" or "Soft 404", and the <strong>Links</strong> report shows which of your pages other sites link to most.</li></ul>
+<h2>Prevent them in the first place</h2>
+<p>Before changing a page's address, set up the redirect at the same time. After a redesign, crawl the old sitemap against the new site to make sure every old URL lands somewhere sensible. And turn on <a href="/seo-monitoring">weekly monitoring</a> so a broken key page doesn't go unnoticed for months.</p>`,
+    faqs: [["How many redirects is too many?", "Ideally one hop from the old address to the new one. Two is fine; long chains slow pages down and risk Google giving up before the end."], ["Should I use a 404 or a 410 for deleted pages?", "Either works. A 410 tells Google the removal is deliberate and can get the page dropped a little faster."], ["Do redirects lose SEO value?", "A 301 to a closely matching page keeps nearly all of it. Redirecting to an unrelated page, such as the home page, loses most of it."]],
   },
   {
     path: "/about", crumb: "About", title: "About XKey | Free UK SEO Checker",

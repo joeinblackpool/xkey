@@ -4,7 +4,7 @@ import { MONITOR_CSS } from "../engine/monitor.js";
 
 export const BRAND = { name: "XKey", fullName: "XKey", domain: "xkey.co.uk", tagline: "Free SEO & AI search check", maker: "IceWork", makerUrl: "https://icework.co.uk", email: "iceworks@f1rst.co.uk", price: 350, town: "Blackpool" };
 export const SITE = `https://${BRAND.domain}`;
-export const UPDATED = "2026-10-07";
+export const UPDATED = "2026-10-10";
 
 export const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
@@ -47,7 +47,7 @@ ${MONITOR_CSS}
 .free{display:flex;flex-wrap:wrap;gap:6px 18px;list-style:none;padding:0;margin:14px 0 0;font-size:15px;font-weight:600;color:var(--fg)}.free li::before{content:"✓ ";color:var(--brand)}
 .ogc{border:1px solid var(--line);border-radius:12px;overflow:hidden;max-width:520px;background:var(--card)}.ogi{aspect-ratio:1.91/1;background:var(--line) center/cover no-repeat}.ogn{display:flex;align-items:center;justify-content:center;color:var(--mute);font-size:14px}.ogt{padding:10px 14px;display:flex;flex-direction:column;gap:2px;font-family:Arial,sans-serif}.ogt span{font-size:12px;color:var(--mute)}.ogt b{font-size:16px}.ogt small{font-size:14px;color:var(--mute)}
 .tool .row>div{min-width:0}
-.prose code{overflow-wrap:anywhere}
+.prose code{overflow-wrap:anywhere}pre{max-width:100%;overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px 16px;font-size:14px;line-height:1.5}pre code{overflow-wrap:normal;white-space:pre}
 @media (max-width:640px){.nav{gap:0;min-height:0}.nav ul{margin:0 -20px;padding:0 20px;width:calc(100% + 40px);flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;gap:0 18px}.nav ul::-webkit-scrollbar{display:none}.nav ul a{white-space:nowrap;font-size:15px}.hero{padding-top:28px;padding-bottom:28px}.hero h1{font-size:34px}.lead{font-size:18px}.cta{padding:26px}}`;
 
 export const NAV = [["/", "SEO check"], ["/ai-seo-checker", "AI SEO checker"], ["/website-audit", "Site audit"], ["/seo-comparison", "Compare"], ["/seo-tools", "All tools"], ["/guides", "Guides"]];
@@ -87,7 +87,7 @@ ${crumbs}<main>${p.body}${maker}</main>
 <div><strong>SEO checks</strong><ul><li><a href="/">Free SEO check</a></li><li><a href="/ai-seo-checker">AI SEO checker</a></li><li><a href="/website-audit">Website audit</a></li><li><a href="/seo-comparison">Competitor comparison</a></li><li><a href="/seo-monitoring">SEO monitoring</a></li></ul></div>
 <div><strong>Free tools</strong><ul><li><a href="/title-tag-checker">Title tag checker</a></li><li><a href="/robots-txt-tester">robots.txt tester</a></li><li><a href="/llms-txt-generator">llms.txt generator</a></li><li><a href="/meta-tag-generator">Meta tag generator</a></li><li><a href="/xml-sitemap-generator">Sitemap generator</a></li><li><a href="/keyword-generator">Keyword generator</a></li><li><a href="/ai-meta-description-generator">AI description writer</a></li><li><a href="/keyword-difficulty-checker">Keyword difficulty</a></li><li><a href="/plagiarism-checker">Plagiarism checker</a></li><li><a href="/word-counter">Word counter</a></li><li><a href="/seo-tools">All 30 SEO tools</a></li></ul></div>
 <div><strong>XKey</strong><ul><li><a href="/guides">SEO guides</a></li><li><a href="/about">About</a></li><li><a href="/contact">Contact</a></li><li><a href="mailto:${BRAND.email}">${BRAND.email}</a></li><li><a href="/privacy">Privacy</a></li></ul></div>
-</div><p class="small">© ${new Date().getUTCFullYear()} ${BRAND.name}. Scores are a guide, not a guarantee of rankings.</p></div></footer></body></html>`;
+</div><p class="small">© ${UPDATED.slice(0, 4)} ${BRAND.name}. Scores are a guide, not a guarantee of rankings.</p></div></footer></body></html>`;
 }
 
 const SECURITY = { "strict-transport-security": "max-age=63072000; includeSubDomains; preload", "x-content-type-options": "nosniff", "referrer-policy": "strict-origin-when-cross-origin", "x-frame-options": "DENY", "permissions-policy": "camera=(), microphone=(), geolocation=()" };
