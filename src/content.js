@@ -4,9 +4,9 @@
 
 const TOOLS = [
   ["/", "Free SEO check", "Full single-page audit: Google readiness, AI search, speed, security and local SEO."],
+  ["/website-crawler", "Website crawler", "Crawl up to 10,000 pages and download every title, heading, link and price as Excel or CSV."],
   ["/ai-seo-checker", "AI SEO checker", "Can ChatGPT, Claude, Perplexity and Google AI Overviews read and cite your site?"],
   ["/website-audit", "Website audit", "Crawl up to 250 pages for broken links, duplicate titles and orphan pages."],
-  ["/website-crawler", "Website crawler", "Crawl up to 10,000 pages and download every title, heading, link and price as Excel or CSV."],
   ["/seo-comparison", "Competitor comparison", "Your site against up to two competitors, side by side."],
   ["/seo-monitoring", "SEO monitoring", "A free weekly re-check with a score history graph."],
   ["/title-tag-checker", "Title tag checker", "See your title and description in pixels, exactly as Google cuts them."],
@@ -46,7 +46,8 @@ export const PAGES = [
     h1: "Free SEO check – no sign-up, no email", eyebrow: "Free · Instant · Any website", app: "XKey free SEO check",
     lead: "Type in any web address and get a full SEO report in about 20 seconds – no account, no email, no daily limit. See how Google reads the page, whether AI assistants can find it, how fast it really is, and exactly what to fix first.",
     form: "check",
-    sections: `<h2>What "free, no sign-up" means on XKey</h2>
+    sections: `<div class="cta" style="margin-top:0"><p class="ct" style="font-size:24px">New: crawl your whole website free – up to 10,000 pages</p><p>Every page's title, description, headings, word count, links and prices in one spreadsheet, plus an SEO issues report and a score out of 100. Download as Excel or CSV, or compare with a competitor. No sign-up, no email.</p><a class="btn" href="/website-crawler">Try the website crawler</a></div>
+<h2>What "free, no sign-up" means on XKey</h2>
 <p>Lots of SEO checkers call themselves free, then ask for an email before showing the report, stop you after a few checks a day or hide the useful parts behind a trial. Here's exactly what you get on XKey:</p>
 <div class="tablewrap"><table><thead><tr><th scope="col">What you might expect</th><th scope="col">On XKey</th></tr></thead><tbody>
 <tr><td>Create an account first</td><td><strong>Never.</strong> No account, no login, no password.</td></tr>
