@@ -6,6 +6,7 @@ const TOOLS = [
   ["/", "Free SEO check", "Full single-page audit: Google readiness, AI search, speed, security and local SEO."],
   ["/ai-seo-checker", "AI SEO checker", "Can ChatGPT, Claude, Perplexity and Google AI Overviews read and cite your site?"],
   ["/website-audit", "Website audit", "Crawl up to 250 pages for broken links, duplicate titles and orphan pages."],
+  ["/website-crawler", "Website crawler", "Crawl up to 10,000 pages and download every title, heading, link and price as Excel or CSV."],
   ["/seo-comparison", "Competitor comparison", "Your site against up to two competitors, side by side."],
   ["/seo-monitoring", "SEO monitoring", "A free weekly re-check with a score history graph."],
   ["/title-tag-checker", "Title tag checker", "See your title and description in pixels, exactly as Google cuts them."],
@@ -112,8 +113,32 @@ export const PAGES = [
 <h2>How does the crawl work?</h2>
 <p>We start at the address you enter, follow your internal links and read your XML sitemap, respecting your robots.txt as we go. Each page is fetched once and summarised; nothing is stored after your report is shown. A 250-page crawl usually takes one to three minutes.</p>
 <h2>Single page or whole site?</h2>
-<p>The <a href="/">free SEO check</a> looks at one page in great detail, including AI readiness and real-world speed. The website audit looks wider and finds problems that only show up across many pages, such as fifty pages sharing the same title. Use both.</p>`,
+<p>The <a href="/">free SEO check</a> looks at one page in great detail, including AI readiness and real-world speed. The website audit looks wider and finds problems that only show up across many pages, such as fifty pages sharing the same title. Use both. For bigger sites, or to get every page into a spreadsheet, use the <a href="/website-crawler">website crawler</a>, which handles up to 10,000 pages.</p>`,
     faqs: [["How many pages can the audit check?", "Up to 250 pages per audit, which covers most small and medium business websites. Larger sites are sampled from the home page and sitemap outwards."], ["Does the audit follow robots.txt?", "Yes. Pages your robots.txt blocks for crawlers are skipped and listed, just as a search engine would treat them."], ["Can I download the results?", "Yes. Print the report or save it as a PDF, and download a CSV with a row for every page crawled."]],
+  },
+  {
+    path: "/website-crawler", crumb: "Website crawler", parent: ["/seo-tools", "SEO tools"], title: "Free Website Crawler | 10,000 Pages to Excel or CSV",
+    desc: "Free website crawler: crawl up to 10,000 pages and download every title, description, heading, link, contact detail and product price as Excel or CSV.",
+    h1: "Free website crawler", eyebrow: "Up to 10,000 pages", app: "XKey website crawler",
+    lead: "Crawl a whole website and get an SEO issues report, a score out of 100 and a spreadsheet of every page – titles, descriptions, headings, word counts, links, contact details and product prices.",
+    sections: `<p><a class="btn" href="https://crawler.xkey.co.uk/" rel="noopener">Open the website crawler</a></p>
+<h2>What the website crawler gives you</h2>
+<div class="grid">
+<div class="card"><p class="ct">A row for every page</p><p>Status code, title, description, H1, headings, word count, response time, canonical, robots tag and the page that first linked to it.</p></div>
+<div class="card"><p class="ct">SEO issues and a score</p><p>Broken pages and where they're linked from, missing or duplicate titles and descriptions, missing H1s, thin and slow pages, images without alt text and noindex pages – ranked High, Medium and Low.</p></div>
+<div class="card"><p class="ct">Excel, CSV and Google Sheets</p><p>Download an Excel workbook with Summary, Issues and Pages sheets, a CSV of every page, an issues-only CSV, or a formula that pulls the data straight into Google Sheets.</p></div>
+<div class="card"><p class="ct">Product data</p><p>Limit the crawl to a section such as <code>/products/</code> and save one row per product: name, price, currency, SKU, brand, stock and image, read from the shop's own structured data.</p></div>
+<div class="card"><p class="ct">Competitor comparison</p><p>Crawl your site and a competitor's with the same settings and see them side by side, with the better result highlighted.</p></div>
+<div class="card"><p class="ct">Contact details</p><p>Email addresses and phone numbers published on each page, so you can check your details are the same everywhere.</p></div>
+</div>
+<h2>Website crawler or website audit?</h2>
+<p>The <a href="/website-audit">website audit</a> checks up to 250 pages in a few minutes and gives you a ranked report with indexing checks such as orphan pages and sitemap conflicts. The crawler goes much further – up to 10,000 pages – and is built for getting the data out: a spreadsheet you can sort, filter and share. Use the audit for a quick health check and the crawler when you need every page in a spreadsheet.</p>
+<h2>How long does a crawl take?</h2>
+<p>The crawler is deliberately polite. It follows robots.txt, including any crawl delay, waits between 2.5 and 5.5 seconds between pages and backs off if a site says it's busy. That works out at about four seconds a page: 100 pages take around seven minutes and 1,000 pages about an hour. You can leave the page and come back – finished crawls are kept for 48 hours.</p>
+<h2>What it can't do</h2>
+<ul><li>It stays on the site you enter and doesn't check links to other websites.</li><li>It reads the HTML each page sends, so content that only appears after JavaScript runs may be missed.</li><li>It runs on a free server that sleeps when nobody is using it, so the first visit can take up to a minute to wake it, and very long crawls may be interrupted.</li><li>Only crawl sites you own or have permission to crawl.</li></ul>
+<p>Not sure where to start? Run the <a href="/">free SEO check</a> on your home page first, then crawl the whole site. Our guide to <a href="/guides/broken-links-and-redirects">broken links and redirects</a> explains how to fix what the crawler finds.</p>`,
+    faqs: [["Is the website crawler free?", "Yes. No sign-up, no email and no subscription. There's a limit of a few crawls at once so the free server stays available for everyone."], ["Can it crawl a shop's product pages?", "Yes. Open Product directory options, enter the section to stay in (such as /products/) and tick the option to save only product pages. Prices and stock come from the product data the shop publishes."], ["Is my crawl data kept?", "Finished crawl files are deleted automatically after 48 hours. Nothing is shared with anyone else."]],
   },
   {
     path: "/seo-comparison", crumb: "Competitor comparison", parent: ["/seo-tools", "SEO tools"], title: "Compare Website SEO With Competitors | Free Tool",
@@ -459,7 +484,7 @@ export const PAGES = [
   },
   {
     path: "/seo-tools", crumb: "SEO tools", title: "Free SEO Tools | No Sign-Up, No Email, No Subscription",
-    desc: "30 free SEO tools with no sign-up, no email and no subscription: SEO check, site audit, meta tag and sitemap generators, keyword ideas and more.",
+    desc: "31 free SEO tools with no sign-up, no email and no subscription: SEO check, site audit, meta tag and sitemap generators, keyword ideas and more.",
     h1: "Free SEO tools", eyebrow: "No sign-up", lead: "Every tool is free, with no account, no email and no subscription. The generators and counters run in your browser, so they're unlimited and nothing you type leaves your device.",
     sections: `<h2>Which SEO tool should I start with?</h2><p>Start with the <a href="/">free SEO check</a> on your most important page – it covers everything below in one report. Then run the <a href="/website-audit">website audit</a> to catch site-wide problems, and turn on <a href="/seo-monitoring">weekly monitoring</a> so nothing breaks unnoticed.</p><h2>Are these SEO tools really free?</h2><p>Yes. No sign-up, no trial and no limits beyond fair-use rate limits that stop abuse. XKey is paid for by <a href="https://icework.co.uk" rel="noopener">IceWork</a>, who build websites, as a useful free service.</p><h2>Do the single-topic tools run a different check?</h2><p>The checkers for speed, schema, sitemaps, security, mobile and local SEO run the full check and open your report at that section, so you never miss a bigger problem elsewhere on the page.</p>`, tools: true, itemList: TOOLS,
   },
