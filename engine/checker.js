@@ -266,7 +266,7 @@ export function analyse(f) {
   const dated = /dateModified|datePublished/.test(ldBlocks.join(" ")) || /<time\b/i.test(body) || !!meta(head, "property", "article:modified_time") || !!meta(head, "property", "article:published_time") || /(last (updated|reviewed)|updated on|published on?)\s*:?\s*(\d|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i.test(bodyText);
   A("Freshness signals", "medium", P(dated), dated ? "The page shows when it was published or last updated." : "No published/updated date found.", "Show a 'last updated' date and add dateModified to your structured data.");
   const trust = ["about", "contact", "privacy"].filter((k) => internal.some((l) => new RegExp(k, "i").test(l.u.pathname + " " + l.text)));
-  A("Trust pages (E-E-A-T)", "medium", P(trust.length === 3, trust.length >= 2), `Links found to: ${trust.length ? trust.join(", ") : "none"} of about / contact / privacy.`, "Link to About, Contact and Privacy pages from every page – they help visitors, Google and AI tools see who stands behind the content.");
+  A("Trust pages (E-E-A-T)", "medium", P(trust.length === 3, trust.length >= 2), (trust.length === 3 ? "Links found to all three: about, contact and privacy." : trust.length ? `Links found to ${trust.join(" and ")}; missing ${["about", "contact", "privacy"].filter((k) => !trust.includes(k)).join(" and ")}.` : "No links found to about, contact or privacy pages."), "Link to About, Contact and Privacy pages from every page – they help visitors, Google and AI tools see who stands behind the content.");
 
   // ================= 5. Structured data
   const D = cat("Structured data", "Machine-readable facts for rich results and AI.");
