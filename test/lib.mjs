@@ -5,6 +5,7 @@
 //   comparisons can be tested without the internet.
 // - need(name): loads a dev tool (playwright, esbuild) from the project, the global npm folder
 //   or a known tools folder, with a clear message if it's missing.
+import fs from "node:fs";
 import http from "node:http";
 import { createRequire } from "node:module";
 import { execSync } from "node:child_process";
@@ -46,7 +47,9 @@ export async function serve(port = 8789, workerPath = "../src/index.js") {
     titles: ["Emergency Plumber in Preston | 24/7, No Call-Out Fee", "Preston Plumber – Fixed Prices, Gas Safe", "24 Hour Plumber Preston | Fast Local Help"],
     descriptions: ["Emergency plumber in Preston for leaks, boilers and blocked drains. Gas Safe engineers, fixed prices and no call-out fee. Call today.", "Local Preston plumbers, 24 hours a day. Fixed prices and friendly, tidy engineers – get a free quote now.", "Fast, fixed-price plumbing across Preston and Lancashire. Leaks, boilers and drains sorted today."],
   }) }) };
-  const env = { STATE, AI };
+  // Backlink index stand-in: the files build.py publishes (format 2), from test/fixtures/backlinks.
+  const BL_DATA = blData("backlinks");
+  const env = { STATE, AI, BL_DATA };
   const worker = (await import(new URL(workerPath, import.meta.url).href)).default;
   const server = http.createServer(async (req, res) => {
     const chunks = []; for await (const c of req) chunks.push(c);
@@ -60,4 +63,11 @@ export async function serve(port = 8789, workerPath = "../src/index.js") {
   });
   await new Promise((ok) => server.listen(port, ok));
   return { url: `http://localhost:${port}`, env, close: () => new Promise((ok) => server.close(ok)) };
+}
+
+/** Stand-in for the published backlink index: env.BL_DATA = { manifest(), file(name, [start, end]?) } (see src/backlinks.js). */
+export function blData(dir) {
+  const base = new URL(`./fixtures/${dir}/`, import.meta.url);
+  const m = JSON.parse(fs.readFileSync(new URL("manifest.json", base), "utf8"));
+  return { manifest: () => m, file: (name, r) => { const b = fs.readFileSync(new URL(name, base)); return new Uint8Array(r ? b.subarray(r[0], r[1] + 1) : b); } };
 }

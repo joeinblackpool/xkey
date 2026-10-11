@@ -1,7 +1,9 @@
-# Builds the free UK backlink index from Common Crawl's domain web graph and publishes it as a
-# GitHub release (assets manifest.json + bl-data.bin). The Worker reads
-# releases/latest/download/manifest.json, then byte ranges of bl-data.bin, so publishing a new
-# release switches the site over.
+# Builds the free backlink index (every linked domain) from Common Crawl's domain web graph and
+# publishes it as a GitHub release: manifest.json, bl-index.bin and bl-data-N.bin (each < 2 GB).
+# The Worker reads releases/latest/download/manifest.json, then bl-index.bin, then one byte range of
+# one data file per lookup, so publishing a new release switches the site over.
+# Each build gets its own tag; the release is uploaded as a draft and only made "latest" once every
+# file is there, so the site keeps using the previous release until then. Older ones are then deleted.
 # Runs when backlinks/ changes (e.g. a new release name in backlinks/release.txt) and quarterly.
 name: Backlink index
 on:
@@ -17,7 +19,7 @@ concurrency: backlinks
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 300
+    timeout-minutes: 330
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -26,27 +28,66 @@ jobs:
       - run: sudo apt-get install -y pigz && pip install numpy pandas
       - name: Test the builder on a tiny fake graph
         run: python backlinks/test_build.py
+      - name: Free disk space for the links saved between passes (~17 GB)
+        id: disk
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL || true
+          df -h / /mnt || true
+          SPILL=""
+          for d in /mnt "$RUNNER_TEMP"; do
+            sudo mkdir -p "$d/bl-spill" 2>/dev/null && sudo chown "$USER" "$d/bl-spill" || continue
+            if [ "$(df -BG --output=avail "$d/bl-spill" | tail -1 | tr -dc 0-9)" -ge 22 ]; then SPILL="$d/bl-spill"; break; fi
+          done
+          # Without enough disk the edges file is streamed once per partition instead (slower, same result).
+          if [ -n "$SPILL" ]; then echo "args=--spill $SPILL" >> "$GITHUB_OUTPUT"; else echo "args=--parts 12" >> "$GITHUB_OUTPUT"; fi
+          echo "Spill folder: ${SPILL:-none}"
       - name: Pick the newest Common Crawl web graph (falls back to backlinks/release.txt)
         id: rel
         run: |
           REL=$(curl -sSf --retry 5 https://index.commoncrawl.org/graphinfo.json | python -c "import json,sys; print(json.load(sys.stdin)[0]['id'])" 2>/dev/null || true)
           case "$REL" in cc-main-*) ;; *) REL=$(cat backlinks/release.txt) ;; esac
-          echo "Using $REL"; echo "rel=$REL" >> "$GITHUB_OUTPUT"
-      - name: Build the index (streams ~10 GB from Common Crawl)
-        run: python backlinks/build.py "${{ steps.rel.outputs.rel }}" --out shards
-      - name: Publish as the latest release
+          TAG="backlinks-$REL-$(date -u +%Y%m%d%H%M)"
+          echo "Using $REL, tag $TAG"; echo "rel=$REL" >> "$GITHUB_OUTPUT"; echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+      - name: Build the index (streams ~9 GB from Common Crawl)
+        run: python backlinks/build.py "${{ steps.rel.outputs.rel }}" --out shards --tag "${{ steps.rel.outputs.tag }}" ${{ steps.disk.outputs.args }}
+      - name: Upload as a draft release, then make it the latest
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="backlinks-${{ steps.rel.outputs.rel }}"
-          gh release delete "$TAG" -y --cleanup-tag 2>/dev/null || true
-          gh release create "$TAG" shards/manifest.json shards/bl-data.bin --title "UK backlink index – ${{ steps.rel.outputs.rel }}" \
-            --notes "Built $(date -u +%F) from Common Crawl's domain-level web graph ${{ steps.rel.outputs.rel }}. Used by xkey.co.uk/backlink-checker." --latest
+          TAG="${{ steps.rel.outputs.tag }}"
+          ls -la shards
+          gh release create "$TAG" --draft --title "Backlink index – ${{ steps.rel.outputs.rel }}" \
+            --notes "Built $(date -u +%F) from Common Crawl's domain-level web graph ${{ steps.rel.outputs.rel }}. Every linked domain. Used by xkey.co.uk/backlink-checker."
+          for f in shards/bl-index.bin shards/bl-data-*.bin shards/manifest.json; do
+            for try in 1 2 3 4 5; do gh release upload "$TAG" "$f" --clobber && break; echo "retrying $f"; sleep $((try * 30)); done
+          done
+          # every file must be there before the site is switched over
+          for f in shards/*; do
+            n=$(gh release view "$TAG" --json assets --jq ".assets[] | select(.name == \"$(basename "$f")\") | .size")
+            test "$n" = "$(stat -c%s "$f")" || { echo "$f is missing or the wrong size on the release ($n)"; exit 1; }
+          done
+          gh release edit "$TAG" --draft=false --latest
       - name: Check the published files can be read in slices (the site relies on Range requests)
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="backlinks-${{ steps.rel.outputs.rel }}"
+          TAG="${{ steps.rel.outputs.tag }}"
           sleep 20
-          curl -sSfL --retry 5 -r 1000-1099 -o part "https://github.com/joeinblackpool/xkey/releases/download/$TAG/bl-data.bin"
+          URL="https://github.com/joeinblackpool/xkey/releases/download/$TAG"
+          curl -sSfL --retry 5 -r 1000-1099 -o part "$URL/bl-data-0.bin"
           test "$(stat -c%s part)" -eq 100 || { echo "Range request returned $(stat -c%s part) bytes, expected 100"; exit 1; }
-          cmp part <(tail -c +1001 shards/bl-data.bin | head -c 100) && echo "Range requests work"
-          curl -sSfL --retry 5 https://github.com/joeinblackpool/xkey/releases/latest/download/manifest.json | python -c "import json,sys; m=json.load(sys.stdin); print('latest =', m['release'], m['domains'], 'domains')"
+          cmp part <(tail -c +1001 shards/bl-data-0.bin | head -c 100) && echo "Range requests work"
+          curl -sSfL --retry 5 -o idx "$URL/bl-index.bin" && cmp idx shards/bl-index.bin && echo "Index downloads whole"
+          for try in 1 2 3 4 5; do
+            curl -sSfL --retry 5 https://github.com/joeinblackpool/xkey/releases/latest/download/manifest.json | python -c "import json,sys; m=json.load(sys.stdin); print('latest =', m.get('tag'), m['domains'], 'domains'); assert m.get('tag') == '$TAG'" && exit 0
+            sleep 30
+          done
+          echo "The latest release isn't $TAG"; exit 1
+      - name: Delete older backlink releases (keeps the previous one for edge-cached lookups)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --paginate 'repos/${{ github.repository }}/releases?per_page=100' --jq '.[] | select(.draft | not) | select(.tag_name | startswith("backlinks-")) | [.created_at, .tag_name] | @tsv' \
+            | sort -r | cut -f2 | grep -vx "${{ steps.rel.outputs.tag }}" | tail -n +2 | while read -r t; do
+            gh release delete "$t" -y --cleanup-tag && echo "deleted $t"
+          done
