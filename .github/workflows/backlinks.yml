@@ -1,6 +1,7 @@
 # Builds the free UK backlink index from Common Crawl's domain web graph and publishes it as a
-# GitHub release (assets bl-000..511.json.gz + manifest.json). The Worker reads
-# releases/latest/download/<file>, so publishing a new release switches the site over.
+# GitHub release (assets manifest.json + bl-data.bin). The Worker reads
+# releases/latest/download/manifest.json, then byte ranges of bl-data.bin, so publishing a new
+# release switches the site over.
 # Runs when backlinks/ changes (e.g. a new release name in backlinks/release.txt) and quarterly.
 name: Backlink index
 on:
@@ -39,5 +40,13 @@ jobs:
         run: |
           TAG="backlinks-${{ steps.rel.outputs.rel }}"
           gh release delete "$TAG" -y --cleanup-tag 2>/dev/null || true
-          gh release create "$TAG" shards/* --title "UK backlink index – ${{ steps.rel.outputs.rel }}" \
+          gh release create "$TAG" shards/manifest.json shards/bl-data.bin --title "UK backlink index – ${{ steps.rel.outputs.rel }}" \
             --notes "Built $(date -u +%F) from Common Crawl's domain-level web graph ${{ steps.rel.outputs.rel }}. Used by xkey.co.uk/backlink-checker." --latest
+      - name: Check the published files can be read in slices (the site relies on Range requests)
+        run: |
+          TAG="backlinks-${{ steps.rel.outputs.rel }}"
+          sleep 20
+          curl -sSfL --retry 5 -r 1000-1099 -o part "https://github.com/joeinblackpool/xkey/releases/download/$TAG/bl-data.bin"
+          test "$(stat -c%s part)" -eq 100 || { echo "Range request returned $(stat -c%s part) bytes, expected 100"; exit 1; }
+          cmp part <(tail -c +1001 shards/bl-data.bin | head -c 100) && echo "Range requests work"
+          curl -sSfL --retry 5 https://github.com/joeinblackpool/xkey/releases/latest/download/manifest.json | python -c "import json,sys; m=json.load(sys.stdin); print('latest =', m['release'], m['domains'], 'domains')"

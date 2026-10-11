@@ -6,9 +6,12 @@ For every .uk domain that other websites link to, it records:
   - its link strength (0-100, from how many websites link to it, on a log scale)
   - its strongest linking websites (up to TOP_K), each with their own link strength
 
-Output: shards/bl-000.json.gz ... bl-511.json.gz and shards/manifest.json.
-Each shard is {"example.co.uk": [ref_domains, strength, [["linker.com", strength], ...]], ...}.
-A domain's shard is fnv1a32(domain) % SHARDS (the Worker uses the same function).
+Output (two files, so publishing is one quick upload):
+  shards/bl-data.bin   – SHARDS gzipped JSON blobs back to back. Each blob is
+                         {"example.co.uk": [ref_domains, strength, [["linker.com", strength], ...]], ...}
+  shards/manifest.json – release info plus "offsets": blob i is bytes offsets[i] .. offsets[i+1]-1.
+A domain's shard is fnv1a32(domain) % SHARDS (the Worker uses the same function) and the Worker
+reads just that byte range, so a lookup downloads ~40 kB.
 
 Runs on a GitHub Actions runner (see .github/workflows/backlinks.yml): the files are streamed
 straight from Common Crawl, so nothing big is written to disk.
@@ -29,7 +32,7 @@ import time
 import numpy as np
 import pandas as pd
 
-SHARDS = 512
+SHARDS = 4096
 TOP_K = 100
 CHUNK = 20_000_000
 UK_SECOND_LEVEL = {"co", "org", "ltd", "plc", "net", "me", "ac", "gov", "nhs", "police", "sch", "mod", "nic", "parliament"}
@@ -149,18 +152,25 @@ def main():
         dom = forward(uk_name[tgt])
         linkers = [[forward(names[x]), int(s_all[x])] for x in f_top[a0:b0].tolist()]
         shards[fnv1a32(dom) % SHARDS][dom] = [int(n), int(s_all[tgt]), linkers]
-    total = 0
-    for i, sh in enumerate(shards):
-        total += len(sh)
-        with gzip.open(os.path.join(a.out, f"bl-{i:03d}.json.gz"), "wt", encoding="utf-8", compresslevel=9) as fh:
-            json.dump(sh, fh, separators=(",", ":"), ensure_ascii=False)
-    manifest = {"release": a.release, "built": time.strftime("%Y-%m-%d"), "shards": SHARDS, "top_k": TOP_K,
-                "domains": total, "uk_domains": int(len(uk_ids)), "all_domains": int(n_nodes), "links": int(seen),
-                "max_ref_domains": top}
-    with open(os.path.join(a.out, "manifest.json"), "w") as fh:
-        json.dump(manifest, fh, indent=1)
-    size = sum(os.path.getsize(os.path.join(a.out, x)) for x in os.listdir(a.out))
+    meta = {"release": a.release, "built": time.strftime("%Y-%m-%d"), "uk_domains": int(len(uk_ids)),
+            "all_domains": int(n_nodes), "links": int(seen), "max_ref_domains": top}
+    total, size = write_outputs(shards, a.out, meta)
     log(f"Done in {(time.time() - t0) / 60:.1f} min: {total:,} domains, {size / 1e6:.1f} MB in {SHARDS} shards")
+
+
+def write_outputs(shards, out, meta):
+    """Write bl-data.bin (gzipped JSON shards back to back) and manifest.json (with byte offsets)."""
+    offsets, total = [0], 0
+    with open(os.path.join(out, "bl-data.bin"), "wb") as fh:
+        for sh in shards:
+            total += len(sh)
+            blob = gzip.compress(json.dumps(sh, separators=(",", ":"), ensure_ascii=False).encode("utf-8"), compresslevel=9, mtime=0)
+            fh.write(blob)
+            offsets.append(offsets[-1] + len(blob))
+    manifest = dict(meta, shards=len(shards), top_k=TOP_K, domains=total, offsets=offsets)
+    with open(os.path.join(out, "manifest.json"), "w") as fh:
+        json.dump(manifest, fh, separators=(",", ":"))
+    return total, offsets[-1]
 
 
 if __name__ == "__main__":

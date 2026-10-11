@@ -33,11 +33,17 @@ class BuildTest(unittest.TestCase):
         cls.out = os.path.join(cls.tmp, "shards")
         subprocess.run([sys.executable, os.path.join(HERE, "build.py"), REL, "--base", f"http://127.0.0.1:{srv.server_address[1]}", "--out", cls.out], check=True)
         cls.data = {}
+        with open(os.path.join(cls.out, "manifest.json")) as f:
+            cls.manifest = json.load(f)
+        off = cls.manifest["offsets"]
+        assert len(off) == build.SHARDS + 1
+        with open(os.path.join(cls.out, "bl-data.bin"), "rb") as f:
+            blob = f.read()
+        assert len(blob) == off[-1]
         for i in range(build.SHARDS):
-            with gzip.open(os.path.join(cls.out, f"bl-{i:03d}.json.gz"), "rt") as f:
-                for k, v in json.load(f).items():
-                    cls.data[k] = v
-                    assert build.fnv1a32(k) % build.SHARDS == i, "domain in the wrong shard"
+            for k, v in json.loads(gzip.decompress(blob[off[i]:off[i + 1]])).items():
+                cls.data[k] = v
+                assert build.fnv1a32(k) % build.SHARDS == i, "domain in the wrong shard"
 
     def test_counts_and_order(self):
         n, s, linkers = self.data["smithplumbing.co.uk"]
@@ -54,7 +60,7 @@ class BuildTest(unittest.TestCase):
         self.assertEqual(set(self.data), {"smithplumbing.co.uk", "bbc.co.uk", "rival.co.uk"})
 
     def test_manifest(self):
-        m = json.load(open(os.path.join(self.out, "manifest.json")))
+        m = self.manifest
         self.assertEqual(m["release"], REL)
         self.assertEqual(m["domains"], 3)
         self.assertEqual(m["links"], len(LINKS))
