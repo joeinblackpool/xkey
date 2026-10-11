@@ -1,0 +1,43 @@
+# Builds the free UK backlink index from Common Crawl's domain web graph and publishes it as a
+# GitHub release (assets bl-000..511.json.gz + manifest.json). The Worker reads
+# releases/latest/download/<file>, so publishing a new release switches the site over.
+# Runs when backlinks/ changes (e.g. a new release name in backlinks/release.txt) and quarterly.
+name: Backlink index
+on:
+  push:
+    branches: [main]
+    paths: ["backlinks/**", ".github/workflows/backlinks.yml"]
+  schedule:
+    - cron: "0 3 15 1,4,7,10 *"
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency: backlinks
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: sudo apt-get install -y pigz && pip install numpy pandas
+      - name: Test the builder on a tiny fake graph
+        run: python backlinks/test_build.py
+      - name: Pick the newest Common Crawl web graph (falls back to backlinks/release.txt)
+        id: rel
+        run: |
+          REL=$(curl -sSf --retry 5 https://index.commoncrawl.org/graphinfo.json | python -c "import json,sys; print(json.load(sys.stdin)[0]['id'])" 2>/dev/null || true)
+          case "$REL" in cc-main-*) ;; *) REL=$(cat backlinks/release.txt) ;; esac
+          echo "Using $REL"; echo "rel=$REL" >> "$GITHUB_OUTPUT"
+      - name: Build the index (streams ~10 GB from Common Crawl)
+        run: python backlinks/build.py "${{ steps.rel.outputs.rel }}" --out shards
+      - name: Publish as the latest release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="backlinks-${{ steps.rel.outputs.rel }}"
+          gh release delete "$TAG" -y --cleanup-tag 2>/dev/null || true
+          gh release create "$TAG" shards/* --title "UK backlink index – ${{ steps.rel.outputs.rel }}" \
+            --notes "Built $(date -u +%F) from Common Crawl's domain-level web graph ${{ steps.rel.outputs.rel }}. Used by xkey.co.uk/backlink-checker." --latest
