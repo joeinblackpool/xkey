@@ -7,6 +7,7 @@ const TOOLS = [
   ["/website-crawler", "Website crawler", "Crawl up to 10,000 pages and download every title, heading, link and price as Excel or CSV."],
   ["/ai-seo-checker", "AI SEO checker", "Can ChatGPT, Claude, Perplexity and Google AI Overviews read and cite your site?"],
   ["/website-audit", "Website audit", "Crawl up to 250 pages for broken links, duplicate titles and orphan pages."],
+  ["/backlink-checker", "Backlink checker", "See which websites link to any UK site – and which link to your competitor but not you."],
   ["/seo-comparison", "Competitor comparison", "Your site against up to two competitors, side by side."],
   ["/seo-monitoring", "SEO monitoring", "A free weekly re-check with a score history graph."],
   ["/title-tag-checker", "Title tag checker", "See your title and description in pixels, exactly as Google cuts them."],
@@ -159,6 +160,27 @@ export const PAGES = [
 <ul><li>It stays on the site you enter and doesn't check links to other websites.</li><li>It reads the HTML each page sends, so content that only appears after JavaScript runs may be missed.</li><li>It runs on a free server that sleeps when nobody is using it, so the first visit can take up to a minute to wake it, and very long crawls may be interrupted.</li><li>Only crawl sites you own or have permission to crawl.</li></ul>
 <p>Not sure where to start? Run the <a href="/">free SEO check</a> on your home page first, then crawl the whole site. Our guide to <a href="/guides/broken-links-and-redirects">broken links and redirects</a> explains how to fix what the crawler finds.</p>`,
     faqs: [["Is the website crawler free?", "Yes. No sign-up, no email and no subscription. There's a limit of a few crawls at once so the free server stays available for everyone."], ["Can it list every product a shop sells?", "Usually, yes. Open Product directory options and tick Full product list, fast: it reads the shop's sitemaps, which list every product page, and gives you each product's address, name and code in a minute or two. For prices and stock, start a second crawl with Visit product pages for prices and a section of the shop – that visits each page, so allow about 4 seconds a product."], ["Is my crawl data kept?", "Finished crawl files are deleted automatically after 48 hours. Nothing is shared with anyone else."]],
+  },
+  {
+    path: "/backlink-checker", crumb: "Backlink checker", parent: ["/seo-tools", "SEO tools"], title: "Free Backlink Checker for UK Websites | No Sign-Up",
+    desc: "Free backlink checker for UK websites: see how many websites link to any .uk site, the strongest ones, and the link gap with a competitor. No sign-up.",
+    h1: "Free backlink checker for UK websites", eyebrow: "Free · No sign-up", app: "XKey backlink checker", form: "backlinks",
+    lead: "See which websites link to any UK site, how strong those links are, and which websites link to your competitor but not to you. No account, no email, no daily limit.",
+    sections: `<h2>What the backlink checker shows</h2>
+<div class="grid">
+<div class="card"><p class="ct">Websites linking to you</p><p>How many different websites link to a site, counted once each – the headline number most SEO tools use.</p></div>
+<div class="card"><p class="ct">Your strongest links</p><p>Up to 100 linking websites, strongest first, each with a link strength score.</p></div>
+<div class="card"><p class="ct">The link gap</p><p>Add a competitor to see the strong websites that link to them but not to you – your best list of link prospects.</p></div>
+</div>
+<h2>Where does the link data come from?</h2>
+<p>From <a href="https://commoncrawl.org/" rel="noopener">Common Crawl</a>, a non-profit that crawls billions of web pages every month and publishes a free map of which websites link to which. Each quarter XKey takes the newest map – over 130 million websites and 2 billion links – and builds an index of every UK (.uk) website that's linked to. That's the same kind of data the big paid tools build with their own crawlers.</p>
+<h2>What is link strength?</h2>
+<p>A score from 0 to 100 based on how many different websites link to a site, on a logarithmic scale – so going from 10 to 100 linking websites moves the score as much as going from 1,000 to 10,000. The most-linked website on the web scores 100. A local business with a few dozen good links typically scores 15–30; national newspapers and government sites score 60 and above. It's comparable to Ahrefs' Domain Rating or Moz's Domain Authority in spirit, but it's our own calculation, so the numbers won't match theirs.</p>
+<h2>How do I use the link gap?</h2>
+<p>Work down the list and ask why each website links to your competitor. Usually it's one of a handful of reasons: a supplier or manufacturer listing stockists, a trade body or directory, a local club or charity they sponsor, a news story, or a genuinely useful guide on their site. Most of those are open to you too. Never buy links – Google treats paid links as spam, and our <a href="/guides/local-seo-checklist">local SEO checklist</a> covers the honest ways to earn them.</p>
+<h2>What it can't tell you</h2>
+<ul><li><strong>UK websites only for now.</strong> The checker covers .uk addresses (.co.uk, .org.uk, .uk and so on). We're working on .com and other endings.</li><li><strong>Not every link on the web.</strong> Common Crawl visits billions of pages but not all of them, so small or new sites may show fewer links than they really have – and links added in the last few months won't appear until the next quarterly update.</li><li><strong>Websites, not individual pages.</strong> It counts linking websites and shows which ones; it doesn't list the exact page each link is on, its anchor text or whether it's nofollow.</li></ul>`,
+    faqs: [["Is this backlink checker really free?", "Yes. No sign-up, no email and no subscription, with only a fair-use limit to stop bots. The data is public, and XKey builds the index itself, so there's nothing to upgrade to."], ["How often is the backlink data updated?", "Every three months, when Common Crawl publishes its next web graph. The months the data covers are shown under every result."], ["Why does my site show no backlinks?", "Either no other website links to it yet, or Common Crawl hasn't crawled the pages that do. New sites often take a few months to appear. Getting listed on a few genuine local directories and suppliers' sites is the quickest honest way to start."], ["Can I check a competitor's backlinks?", "Yes – any .uk website. Put your site in the first box and theirs in the second to see the websites that link to them but not to you."]],
   },
   {
     path: "/seo-comparison", crumb: "Competitor comparison", parent: ["/seo-tools", "SEO tools"], title: "Compare Website SEO With Competitors | Free Tool",
@@ -504,7 +526,7 @@ export const PAGES = [
   },
   {
     path: "/seo-tools", crumb: "SEO tools", title: "Free SEO Tools | No Sign-Up, No Email, No Subscription",
-    desc: "31 free SEO tools with no sign-up, no email and no subscription: SEO check, site audit, meta tag and sitemap generators, keyword ideas and more.",
+    desc: "32 free SEO tools with no sign-up, no email and no subscription: SEO check, site audit, meta tag and sitemap generators, keyword ideas and more.",
     h1: "Free SEO tools", eyebrow: "No sign-up", lead: "Every tool is free, with no account, no email and no subscription. The generators and counters run in your browser, so they're unlimited and nothing you type leaves your device.",
     sections: `<h2>Which SEO tool should I start with?</h2><p>Start with the <a href="/">free SEO check</a> on your most important page – it covers everything below in one report. Then run the <a href="/website-audit">website audit</a> to catch site-wide problems, and turn on <a href="/seo-monitoring">weekly monitoring</a> so nothing breaks unnoticed.</p><h2>Are these SEO tools really free?</h2><p>Yes. No sign-up, no trial and no limits beyond fair-use rate limits that stop abuse. XKey is paid for by <a href="https://icework.co.uk" rel="noopener">IceWork</a>, who build websites, as a useful free service.</p><h2>Do the single-topic tools run a different check?</h2><p>The checkers for speed, schema, sitemaps, security, mobile and local SEO run the full check and open your report at that section, so you never miss a bigger problem elsewhere on the page.</p>`, tools: true, itemList: TOOLS,
   },
@@ -674,7 +696,7 @@ export const PAGES = [
 <h2>5. Get reviews the honest way</h2>
 <p>Ask every happy customer, and make it easy with a short link to your Google review form. Reply to every review, especially the bad ones – calmly and helpfully. Never buy reviews, write your own, offer discounts for them or only ask customers you know are happy: it breaks Google's rules, and the Digital Markets, Competition and Consumers Act 2024 made fake reviews illegal in the UK.</p>
 <h2>6. List your business in the right directories</h2>
-<p>A handful of accurate listings beats hundreds of junk ones. Good places to start: Bing Places, Apple Business Connect, Yell, Thomson Local, Facebook, your trade body (such as Gas Safe, NICEIC or the Federation of Master Builders), your local chamber of commerce and any respected sites for your industry.</p>
+<p>To see where your competitors are listed and you aren't, put both sites into the free <a href="/backlink-checker">backlink checker</a>. A handful of accurate listings beats hundreds of junk ones. Good places to start: Bing Places, Apple Business Connect, Yell, Thomson Local, Facebook, your trade body (such as Gas Safe, NICEIC or the Federation of Master Builders), your local chamber of commerce and any respected sites for your industry.</p>
 <h2>7. Be visible to AI assistants too</h2>
 <p>People increasingly ask ChatGPT or Google's AI Overviews for local recommendations. They can only suggest businesses they can read and understand – check yours with the <a href="/ai-seo-checker">AI SEO checker</a> and read our <a href="/guides/ai-search-optimisation">AI search guide</a>.</p>
 <h2>8. Check how you look in other towns</h2>

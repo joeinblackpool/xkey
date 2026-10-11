@@ -363,8 +363,50 @@ export function toolsApp() {
         var verdict = kdv < 35 ? ["Easy", "s-pass", "The pages ranking now are weak or don't target this phrase. A focused, genuinely useful page has a real chance."] : kdv < 60 ? ["Medium", "s-warn", "Beatable with a well-built page that answers the search better than what's there, plus some links or local signals."] : ["Hard", "s-fail", "Strong, well-targeted pages and big sites hold page one. Go for a longer, more specific version of this keyword first."];
         out.innerHTML = '<div class="ck-head" style="margin:16px 0"><div class="ring" style="--p:' + kdv + ";--c:" + (kdv < 35 ? "#1a7f37" : kdv < 60 ? "#9a6700" : "#cf222e") + '" role="img" aria-label="Difficulty ' + kdv + ' out of 100"><div><span><b>' + kdv + "</b><small>difficulty</small></span></div></div><div><p style=\"font-size:22px;margin:0\"><strong class=\"" + verdict[1] + "\">" + verdict[0] + "</strong></p><p>" + verdict[2] + "</p>" + (weak ? "<p><strong>" + weak + " of " + ok.length + "</strong> ranking pages look weak – those are the spots to take.</p>" : "") + "</div></div>" +
           '<div class="tablewrap"><table><thead><tr><th>#</th><th>Page</th><th>Strength</th><th>Why</th></tr></thead><tbody>' + rows.map(function (r, i) { return "<tr><td>" + (i + 1) + '</td><td style="overflow-wrap:anywhere;font-size:14px">' + esc((r.j.host || r.j.url) + "") + "<br><span class=\"small\">" + esc((r.j.title || "").slice(0, 80)) + "</span></td><td>" + (r.s == null ? '<span class="s-fail">' + esc(r.j.error) + "</span>" : '<b style="color:' + (r.s < 40 ? "#1a7f37" : r.s < 65 ? "#9a6700" : "#cf222e") + '">' + r.s + "</b>") + '</td><td class="small">' + (r.why ? esc(r.why.join(" · ")) : "") + "</td></tr>"; }).join("") + "</tbody></table></div>" +
-          '<p class="small">An estimate from how strongly each ranking page targets the keyword and what kind of site it is. Backlinks aren\'t measured, so treat big-name sites as harder than they look.</p>';
+          '<p class="small">An estimate from how strongly each ranking page targets the keyword and what kind of site it is. Backlinks aren\'t measured here, so treat big-name sites as harder than they look – check UK sites\' links with the <a href="/backlink-checker">backlink checker</a>.</p>';
       });
+    });
+  }
+
+  // ---- backlink checker (UK index built from Common Crawl's public web graph)
+  var bl = $("bl-form");
+  if (bl) {
+    var strengthCell = function (v) { return '<b style="color:' + col(v >= 40, v >= 20) + '">' + v + "</b>"; };
+    var linkerRows = function (list, start) {
+      return list.map(function (l, i) { return "<tr><td>" + (start + i + 1) + '</td><td style="overflow-wrap:anywhere">' + esc(l[0]) + '</td><td class="num">' + strengthCell(l[1]) + "</td></tr>"; }).join("");
+    };
+    var linkerTable = function (list, more) {
+      return '<div class="tablewrap"><table><thead><tr><th>#</th><th>Website linking to it</th><th>Link strength</th></tr></thead><tbody>' + linkerRows(list.slice(0, 25), 0) +
+        (list.length > 25 ? '</tbody><tbody class="bl-more" hidden>' + linkerRows(list.slice(25), 25) : "") + "</tbody></table></div>" +
+        (list.length > 25 ? '<p><button class="btn ghost bl-show" type="button">Show all ' + list.length + "</button></p>" : "") + (more ? '<p class="small">' + more + "</p>" : "");
+    };
+    var summary = function (r, label) {
+      if (!r.found) return '<div class="card" style="margin:16px 0"><p class="ct">' + esc(label) + ": " + esc(r.domain) + '</p><p>No links to this site were found in the data. That\'s common for new or small sites – Common Crawl doesn\'t visit every page on the web, so some links may be missing.</p></div>';
+      return '<div class="card" style="margin:16px 0"><p class="ct">' + esc(label) + ": " + esc(r.domain) + '</p><div class="row" style="gap:28px"><div><b style="font-size:30px">' + r.refDomains.toLocaleString("en-GB") + '</b><br><span class="small">websites link to it</span></div><div><b style="font-size:30px;color:' + col(r.strength >= 40, r.strength >= 20) + '">' + r.strength + '</b><br><span class="small">link strength (0–100)</span></div></div></div>';
+    };
+    bl.addEventListener("submit", function (ev) {
+      ev.preventDefault();
+      var d = val("bl-d"), vs = val("bl-vs"), out = $("bl-out");
+      if (!d) { $("bl-d").focus(); return; }
+      out.innerHTML = "<p>Looking up links…</p>";
+      fetch("/api/backlinks?d=" + encodeURIComponent(d) + (vs ? "&vs=" + encodeURIComponent(vs) : "")).then(function (r) { return r.json(); }).then(function (j) {
+        if (j.error) { out.innerHTML = '<p class="s-fail">' + esc(j.error) + "</p>"; return; }
+        var y = j.you, h = summary(y, "Your site");
+        if (y.found) h += "<h3>Strongest websites linking to " + esc(y.domain) + "</h3>" + linkerTable(y.linkers, y.refDomains > y.linkers.length ? "Showing the " + y.linkers.length + " strongest of " + y.refDomains.toLocaleString("en-GB") + "." : "");
+        if (j.them) {
+          var t = j.them;
+          h += "<h2 style=\"margin-top:32px\">Link gap: " + esc(y.domain) + " vs " + esc(t.domain) + "</h2>" + summary(t, "Competitor");
+          if (t.found) {
+            h += j.gap.length ? "<p><strong>" + j.gap.length + " website" + (j.gap.length === 1 ? "" : "s") + " link to " + esc(t.domain) + " but not to you</strong>, strongest first – these are your best link prospects. Ask yourself why they link to your competitor: a supplier, a directory, a local club, a news story or a useful guide?</p>" + linkerTable(j.gap, "Compared using each site's " + j.topK + " strongest links.")
+              : "<p>Every website among the strongest that link to " + esc(t.domain) + " links to you too. Nice work.</p>";
+          }
+        }
+        h += '<p class="small" style="margin-top:20px">Link data: Common Crawl\'s public web graph, ' + esc(j.months) + ". Counts are websites (domains), not individual links, and include all link types. Refreshed every three months.</p>";
+        out.innerHTML = h;
+        Array.prototype.forEach.call(out.querySelectorAll(".bl-show"), function (b) {
+          b.addEventListener("click", function () { var tb = b.parentNode.previousElementSibling.querySelector(".bl-more"); if (tb) tb.hidden = false; b.parentNode.hidden = true; });
+        });
+      }).catch(function () { out.innerHTML = '<p class="s-fail">Couldn\'t look that up – please try again.</p>'; });
     });
   }
 

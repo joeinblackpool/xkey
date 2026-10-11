@@ -46,7 +46,12 @@ export async function serve(port = 8789, workerPath = "../src/index.js") {
     titles: ["Emergency Plumber in Preston | 24/7, No Call-Out Fee", "Preston Plumber – Fixed Prices, Gas Safe", "24 Hour Plumber Preston | Fast Local Help"],
     descriptions: ["Emergency plumber in Preston for leaks, boilers and blocked drains. Gas Safe engineers, fixed prices and no call-out fee. Call today.", "Local Preston plumbers, 24 hours a day. Fixed prices and friendly, tidy engineers – get a free quote now.", "Fast, fixed-price plumbing across Preston and Lancashire. Leaks, boilers and drains sorted today."],
   }) }) };
-  const env = { STATE, AI };
+  // Backlink index stand-in: the same two files build.py publishes, in test/fixtures (see src/backlinks.js).
+  const fs = await import("node:fs");
+  const blManifest = JSON.parse(fs.readFileSync(new URL("./fixtures/backlinks-manifest.json", import.meta.url), "utf8"));
+  const blData = fs.readFileSync(new URL("./fixtures/backlinks-data.bin", import.meta.url));
+  const BL_DATA = { manifest: () => blManifest, range: (a, b) => new Uint8Array(blData.subarray(a, b + 1)) };
+  const env = { STATE, AI, BL_DATA };
   const worker = (await import(new URL(workerPath, import.meta.url).href)).default;
   const server = http.createServer(async (req, res) => {
     const chunks = []; for await (const c of req) chunks.push(c);

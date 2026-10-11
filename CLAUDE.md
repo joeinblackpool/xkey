@@ -13,6 +13,11 @@ Free SEO & AI search checker for UK businesses, made by IceWork (icework.co.uk).
 - Crawls one site (robots.txt respected, 2.5–5.5 s between pages, max 10,000 rows): SEO issues report + score, Excel/CSV/Google Sheets, product data, competitor compare, emailed re-crawls (needs SMTP settings on Render). Run locally: `cd crawler && pip install -r requirements.txt && python app.py`. Details: `crawler/README.md`.
 - `REQUIRE_EMAIL` (email before download) exists but stays OFF: it breaks the "no email" rule below unless Joe says otherwise.
 
+## Backlink checker (/backlink-checker)
+- Data: Common Crawl's domain-level web graph (free, public, ~133M domains / 2.1B links, new release quarterly). `backlinks/build.py` keeps every linked .uk domain: referring-domain count, 0–100 link strength (log of referring domains vs the most-linked domain) and its 100 strongest linkers; 512 gzipped JSON shards (shard = fnv1a32(domain) % 512).
+- Built by `.github/workflows/backlinks.yml` on a GitHub runner (push to backlinks/**, quarterly cron, or manual) and published as this repo's latest GitHub release; `src/backlinks.js` reads `releases/latest/download/manifest.json` and the shards, cached at the edge. No secrets involved.
+- .uk only for now (honestly stated on the page). Tests use `test/fixtures/backlinks.json` via `env.BL_DATA`; builder test: `python backlinks/test_build.py`.
+
 ## Layout
 - `src/` – XKey pages (`content.js`), shell/styles (`site.js`), routing + APIs (`index.js`), browser tools (`tools-client.js`, served as /assets/tools.js), page parser (`page-parse.js`), OG image (`og.js`).
 - `engine/` – SEO checker engine **shared with icework.co.uk** (repo joeinblackpool/ICEWORK, folder `src/`). `src/page-parse.js` is also copied to ICEWORK `src/` (it powers the competitor topic gap there). Keep the two copies identical: change it here, then copy the same files into ICEWORK `src/` and run its tests (`node test/check.mjs`, `node test/checker-unit.mjs`).
