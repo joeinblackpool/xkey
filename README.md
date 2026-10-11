@@ -4,6 +4,6 @@ Source for [xkey.co.uk](https://xkey.co.uk), made by [IceWork](https://icework.c
 A single Cloudflare Worker: every push to `main` builds and deploys automatically (Workers Builds).
 
 - `src/` – XKey pages, tools and routing
-- `engine/` – the SEO checker engine, shared with icework.co.uk (copied from joeinblackpool/FleaBag `src/`; keep the two in step)
+- `engine/` – the SEO checker engine, shared with icework.co.uk (joeinblackpool/ICEWORK `src/`; keep the two in step)
 - `crawler/` – Python website crawler (CSV export), hosted separately on Render via `render.yaml`
 - `test/check.mjs` – pre-deploy checks: `node test/check.mjs`
