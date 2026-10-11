@@ -1,0 +1,19 @@
+{
+ "format": 2,
+ "scope": "all",
+ "release": "cc-main-2026-jul-aug-sep",
+ "built": "2026-10-11",
+ "shards": 1024,
+ "top_k": 50,
+ "hash": "crc32",
+ "files": [
+  "bl-data-0.bin",
+  "bl-data-1.bin",
+  "bl-data-2.bin"
+ ],
+ "index": "bl-index.bin",
+ "domains": 9,
+ "all_domains": 11,
+ "links": 27,
+ "max_ref_domains": 6
+}

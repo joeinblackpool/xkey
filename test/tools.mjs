@@ -5,7 +5,8 @@
 // fails on: a browser error (e.g. a script crashing on load), a missing/empty result, or a result
 // without the expected text. Checks run on xkey.co.uk itself, which the Worker handles
 // in-process, so no internet is needed.
-import { need, serve } from "./lib.mjs";
+import { need, serve, blData } from "./lib.mjs";
+import { backlinksApi, crc32 } from "../src/backlinks.js";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import fs from "node:fs";
@@ -13,6 +14,27 @@ import os from "node:os";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const only = process.argv[2] ? new RegExp(process.argv[2], "i") : null;
+
+// 0) Backlink lookups straight against the index files: format 2 (all domains) and the older
+//    format 1 (.uk only), which the site must keep reading until a format-2 release is published.
+let apiFailed = 0;
+if (!only || only.test("backlink")) {
+  const bl = async (dir, d, vs) => (await backlinksApi({ BL_DATA: blData(dir) }, { waitUntil() {} }, new URLSearchParams(vs ? { d, vs } : { d }))).body;
+  const checks = [
+    ["crc32 matches Python's zlib.crc32", () => crc32("smithplumbing.co.uk") === 1290027534 && crc32("example.com") === 3069857465],
+    ["format 2: .co.uk", async () => (await bl("backlinks", "smithplumbing.co.uk")).you.refDomains === 3],
+    ["format 2: subdomain of a .com", async () => (await bl("backlinks", "https://shop.example.com/x")).you.domain === "example.com"],
+    ["format 2: example.com.au, not com.au", async () => { const r = await bl("backlinks", "nothing.com.au"); return r.you.domain === "nothing.com.au" && !r.you.found; }],
+    ["format 2: link gap", async () => (await bl("backlinks", "smithplumbing.co.uk", "rival.co.uk")).gap.map((x) => x[0]).join() === "wikipedia.org,localpaper.co.uk"],
+    ["format 1: .co.uk", async () => { const r = await bl("backlinks-v1", "smithplumbing.co.uk", "rival.co.uk"); return r.you.refDomains === 3 && r.gap.length === 2; }],
+    ["format 1: .com refused (UK-only index)", async () => /UK websites/.test((await bl("backlinks-v1", "example.com")).error)],
+  ];
+  for (let [name, fn] of checks) {
+    let ok = false; try { ok = await fn(); } catch (e) { name += " – " + e.message; }
+    console.log(`${ok ? " ok " : "FAIL"}  ${name}`);
+    if (!ok) apiFailed++;
+  }
+}
 
 // 1) Build like Wrangler does (esbuild, ESM, keep-names on – Wrangler's default).
 const esbuild = await need("esbuild");
@@ -51,7 +73,8 @@ const S = [
   { name: "Bulk SEO checker", path: "/bulk-seo-checker", fill: [["bk-urls", "xkey.co.uk\nxkey.co.uk/guides"]], click: "#bk-form button[type=submit]", expect: ["#bk-out", /xkey\.co\.uk[\s\S]*\d/], timeout: 90000 },
   { name: "Backlink checker", path: "/backlink-checker", fill: [["bl-d", "https://www.smithplumbing.co.uk/contact"]], click: "#bl-form button[type=submit]", expect: ["#bl-out", /3[\s\S]*websites link to it[\s\S]*bbc\.co\.uk/] },
   { name: "Backlink checker – link gap", path: "/backlink-checker", fill: [["bl-d", "smithplumbing.co.uk"], ["bl-vs", "rival.co.uk"]], click: "#bl-form button[type=submit]", expect: ["#bl-out", /2 websites link to rival\.co\.uk but not to you[\s\S]*wikipedia\.org[\s\S]*localpaper\.co\.uk/] },
-  { name: "Backlink checker – .com explained", path: "/backlink-checker", fill: [["bl-d", "example.com"]], click: "#bl-form button[type=submit]", expect: ["#bl-out", /UK websites \(\.uk addresses\) for now/] },
+  { name: "Backlink checker – .com", path: "/backlink-checker", fill: [["bl-d", "https://www.example.com/about"]], click: "#bl-form button[type=submit]", expect: ["#bl-out", /example\.com[\s\S]*3[\s\S]*websites link to it[\s\S]*wikipedia\.org/] },
+  { name: "Backlink checker – .com.au vs .co.uk", path: "/backlink-checker", fill: [["bl-d", "blog.shop.com.au"], ["bl-vs", "smithplumbing.co.uk"]], click: "#bl-form button[type=submit]", expect: ["#bl-out", /shop\.com\.au[\s\S]*2 websites link to smithplumbing\.co\.uk but not to you[\s\S]*bbc\.co\.uk/] },
   { name: "SEO score badge", path: "/seo-badge", fill: [["bd-site", "xkey.co.uk"]], expect: ["#bd-code", /badge\.svg\?site=xkey\.co\.uk/] },
 ];
 
@@ -97,5 +120,5 @@ for (const s of RUN) {
   await page.context().close();
 }
 await browser.close(); await site.close();
-console.log(`\n${RUN.length} tool scenarios, ${failed} failed`);
-process.exit(failed ? 1 : 0);
+console.log(`\n${RUN.length} tool scenarios, ${failed} failed` + (apiFailed ? `; ${apiFailed} backlink lookup checks failed` : ""));
+process.exit(failed || apiFailed ? 1 : 0);

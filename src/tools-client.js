@@ -363,12 +363,12 @@ export function toolsApp() {
         var verdict = kdv < 35 ? ["Easy", "s-pass", "The pages ranking now are weak or don't target this phrase. A focused, genuinely useful page has a real chance."] : kdv < 60 ? ["Medium", "s-warn", "Beatable with a well-built page that answers the search better than what's there, plus some links or local signals."] : ["Hard", "s-fail", "Strong, well-targeted pages and big sites hold page one. Go for a longer, more specific version of this keyword first."];
         out.innerHTML = '<div class="ck-head" style="margin:16px 0"><div class="ring" style="--p:' + kdv + ";--c:" + (kdv < 35 ? "#1a7f37" : kdv < 60 ? "#9a6700" : "#cf222e") + '" role="img" aria-label="Difficulty ' + kdv + ' out of 100"><div><span><b>' + kdv + "</b><small>difficulty</small></span></div></div><div><p style=\"font-size:22px;margin:0\"><strong class=\"" + verdict[1] + "\">" + verdict[0] + "</strong></p><p>" + verdict[2] + "</p>" + (weak ? "<p><strong>" + weak + " of " + ok.length + "</strong> ranking pages look weak – those are the spots to take.</p>" : "") + "</div></div>" +
           '<div class="tablewrap"><table><thead><tr><th>#</th><th>Page</th><th>Strength</th><th>Why</th></tr></thead><tbody>' + rows.map(function (r, i) { return "<tr><td>" + (i + 1) + '</td><td style="overflow-wrap:anywhere;font-size:14px">' + esc((r.j.host || r.j.url) + "") + "<br><span class=\"small\">" + esc((r.j.title || "").slice(0, 80)) + "</span></td><td>" + (r.s == null ? '<span class="s-fail">' + esc(r.j.error) + "</span>" : '<b style="color:' + (r.s < 40 ? "#1a7f37" : r.s < 65 ? "#9a6700" : "#cf222e") + '">' + r.s + "</b>") + '</td><td class="small">' + (r.why ? esc(r.why.join(" · ")) : "") + "</td></tr>"; }).join("") + "</tbody></table></div>" +
-          '<p class="small">An estimate from how strongly each ranking page targets the keyword and what kind of site it is. Backlinks aren\'t measured here, so treat big-name sites as harder than they look – check UK sites\' links with the <a href="/backlink-checker">backlink checker</a>.</p>';
+          '<p class="small">An estimate from how strongly each ranking page targets the keyword and what kind of site it is. Backlinks aren\'t measured here, so treat big-name sites as harder than they look – check any site\'s links with the <a href="/backlink-checker">backlink checker</a>.</p>';
       });
     });
   }
 
-  // ---- backlink checker (UK index built from Common Crawl's public web graph)
+  // ---- backlink checker (index of every linked domain, built from Common Crawl's public web graph)
   var bl = $("bl-form");
   if (bl) {
     var strengthCell = function (v) { return '<b style="color:' + col(v >= 40, v >= 20) + '">' + v + "</b>"; };
@@ -397,7 +397,7 @@ export function toolsApp() {
           var t = j.them;
           h += "<h2 style=\"margin-top:32px\">Link gap: " + esc(y.domain) + " vs " + esc(t.domain) + "</h2>" + summary(t, "Competitor");
           if (t.found) {
-            h += j.gap.length ? "<p><strong>" + j.gap.length + " website" + (j.gap.length === 1 ? "" : "s") + " link to " + esc(t.domain) + " but not to you</strong>, strongest first – these are your best link prospects. Ask yourself why they link to your competitor: a supplier, a directory, a local club, a news story or a useful guide?</p>" + linkerTable(j.gap, "Compared using each site's " + j.topK + " strongest links.")
+            h += j.gap.length ? "<p><strong>" + j.gap.length + " website" + (j.gap.length === 1 ? "" : "s") + " link to " + esc(t.domain) + " but not to you</strong>, strongest first – these are your best link prospects. Ask yourself why they link to your competitor: a supplier, a directory, a local club, a news story or a useful guide?</p>" + linkerTable(j.gap, "Compared using each site's " + j.topK + " strongest linking websites.")
               : "<p>Every website among the strongest that link to " + esc(t.domain) + " links to you too. Nice work.</p>";
           }
         }

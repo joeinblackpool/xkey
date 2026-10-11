@@ -45,11 +45,14 @@ class BuildTest(unittest.TestCase):
         srv = ThreadingHTTPServer(("127.0.0.1", 0), partial(SimpleHTTPRequestHandler, directory=cls.tmp))
         srv.RequestHandlerClass.log_message = lambda *a: None
         threading.Thread(target=srv.serve_forever, daemon=True).start()
-        cls.out = os.path.join(cls.tmp, "shards")
-        # tiny --max-file forces several data files, to test the 2 GB roll-over logic
-        subprocess.run([sys.executable, os.path.join(HERE, "build.py"), REL, "--base", f"http://127.0.0.1:{srv.server_address[1]}",
-                        "--out", cls.out, "--shards", str(SHARDS), "--parts", "2", "--max-file", "120"], check=True)
-        cls.manifest, cls.data = read_index(cls.out)
+        def build(out, *extra):
+            # tiny --max-file forces several data files, to test the 2 GB roll-over logic
+            subprocess.run([sys.executable, os.path.join(HERE, "build.py"), REL, "--base", f"http://127.0.0.1:{srv.server_address[1]}",
+                            "--out", out, "--shards", str(SHARDS), "--parts", "2", "--max-file", "120", *extra], check=True)
+            return read_index(out)
+        cls.spill = os.path.join(cls.tmp, "spill")
+        cls.manifest, cls.data = build(os.path.join(cls.tmp, "shards"), "--spill", cls.spill, "--workers", "2")
+        cls.manifest2, cls.data2 = build(os.path.join(cls.tmp, "shards2"), "--workers", "1")
 
     def test_counts_and_order(self):
         n, s, linkers = self.data["smithplumbing.co.uk"]
@@ -70,6 +73,12 @@ class BuildTest(unittest.TestCase):
         self.assertEqual(m["domains"], 6)
         self.assertEqual(m["links"], len(LINKS))
         self.assertGreater(len(m["files"]), 1, "roll-over to a second data file should have happened")
+
+    def test_streaming_mode_matches_spill_mode(self):
+        norm = lambda d: {k: (v[0], v[1], sorted(v[2])) for k, v in d.items()}
+        self.assertEqual(norm(self.data), norm(self.data2))
+        self.assertEqual(self.manifest["domains"], self.manifest2["domains"])
+        self.assertFalse(os.path.exists(self.spill), "spill folder should be removed")
 
 
 if __name__ == "__main__":
