@@ -384,6 +384,8 @@ export function toolsApp() {
       if (!r.found) return '<div class="card" style="margin:16px 0"><p class="ct">' + esc(label) + ": " + esc(r.domain) + '</p><p>No links to this site were found in the data. That\'s common for new or small sites – Common Crawl doesn\'t visit every page on the web, so some links may be missing.</p></div>';
       return '<div class="card" style="margin:16px 0"><p class="ct">' + esc(label) + ": " + esc(r.domain) + '</p><div class="row" style="gap:28px"><div><b style="font-size:30px">' + r.refDomains.toLocaleString("en-GB") + '</b><br><span class="small">websites link to it</span></div><div><b style="font-size:30px;color:' + col(r.strength >= 40, r.strength >= 20) + '">' + r.strength + '</b><br><span class="small">link strength (0–100)</span></div></div></div>';
     };
+    var qd = (location.search.match(/[?&]d=([^&]+)/) || [])[1];
+    if (qd && !val("bl-d")) { try { $("bl-d").value = decodeURIComponent(qd.replace(/\+/g, " ")); } catch (e) {} setTimeout(function () { bl.requestSubmit ? bl.requestSubmit() : bl.dispatchEvent(new Event("submit", { cancelable: true })); }, 0); }
     bl.addEventListener("submit", function (ev) {
       ev.preventDefault();
       var d = val("bl-d"), vs = val("bl-vs"), out = $("bl-out");
@@ -409,6 +411,48 @@ export function toolsApp() {
       }).catch(function () { out.innerHTML = '<p class="s-fail">Couldn\'t look that up – please try again.</p>'; });
     });
   }
+
+  // ---- domain authority checker (same index, up to 100 sites in batches of 10)
+  var da = $("da-form");
+  if (da) da.addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var seen = {}, sites = $("da-urls").value.split(/[\s,]+/).filter(function (x) { x = x.toLowerCase(); if (!/\./.test(x) || seen[x]) return false; seen[x] = 1; return true; }).slice(0, 100);
+    var out = $("da-out"); if (!sites.length) { out.innerHTML = '<p class="s-warn">Add at least one website.</p>'; return; }
+    var res = sites.map(function () { return null; }), batches = [], meta = null, failed = "", sorted = false;
+    for (var b = 0; b < sites.length; b += 10) batches.push(b);
+    var num = function (n) { return Number(n).toLocaleString("en-GB"); };
+    var draw = function () {
+      var done = res.filter(Boolean).length, order = sites.map(function (s, i) { return i; });
+      if (sorted) order.sort(function (a, b) { return ((res[b] && res[b].authority) || -1) - ((res[a] && res[a].authority) || -1); });
+      out.innerHTML = (done < sites.length ? '<p class="small">' + done + " of " + sites.length + " checked…</p>" : "") + (failed ? '<p class="s-fail">' + esc(failed) + "</p>" : "") +
+        '<div class="tablewrap"><table><thead><tr><th>Website</th><th>Authority</th><th>Linking websites</th><th>Global rank</th></tr></thead><tbody>' + order.map(function (i) {
+          var r = res[i]; if (!r) return "<tr><td>" + esc(sites[i]) + '</td><td colspan="3" class="small">Waiting…</td></tr>';
+          if (r.error) return '<tr><td style="overflow-wrap:anywhere">' + esc(r.input) + '</td><td colspan="3" class="s-fail">' + esc(r.error) + "</td></tr>";
+          if (!r.found) return '<tr><td style="overflow-wrap:anywhere">' + esc(r.domain) + '</td><td><b>0</b></td><td colspan="2" class="small">No links found</td></tr>';
+          return '<tr><td style="overflow-wrap:anywhere"><a href="/backlink-checker?d=' + encodeURIComponent(r.domain) + '">' + esc(r.domain) + '</a></td><td><b style="color:' + col(r.authority >= 40, r.authority >= 20) + '">' + r.authority + "</b></td><td>" + num(r.refDomains) + "</td><td>" + (r.rank ? "#" + num(r.rank) : "–") + "</td></tr>";
+        }).join("") + "</tbody></table></div>" +
+        (done === sites.length ? '<div class="row"><button type="button" class="btn ghost" id="da-csv">Download CSV</button>' + (sites.length > 1 ? '<button type="button" class="btn ghost" id="da-sort">' + (sorted ? "Original order" : "Sort by authority") + "</button>" : "") + "</div>" : "") +
+        (meta ? '<p class="small">Authority 0–100 ' + (meta.ranks ? "from each site's position in Common Crawl's ranking of " + num(meta.ranked) + " websites by how central they are in the web's link map" : "from how many websites link to each site, on a log scale") + ". Link data: " + esc(meta.months) + ". Click a website to see its backlinks.</p>" : "");
+      var c = $("da-csv"); if (c) c.onclick = function () {
+        var cell = function (v) { v = String(v == null ? "" : v); if (/^[=+\-@\t\r]/.test(v)) v = "'" + v; return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+        var rows = [["website", "authority", "linking_websites", "global_rank", "top_linking_websites"]].concat(res.map(function (r, i) { return !r ? [sites[i], "error"] : r.error ? [r.input, "error", r.error] : [r.domain, r.authority, r.refDomains, r.rank || "", (r.top || []).join(" ")]; }));
+        var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["\ufeff" + rows.map(function (r) { return r.map(cell).join(","); }).join("\r\n")], { type: "text/csv" })); a.download = "xkey-domain-authority.csv"; document.body.appendChild(a); a.click(); a.remove();
+      };
+      var so = $("da-sort"); if (so) so.onclick = function () { sorted = !sorted; draw(); };
+    };
+    var next = 0;
+    var work = function () {
+      if (next >= batches.length) return; var start = batches[next++], part = sites.slice(start, start + 10);
+      fetch("/api/authority?d=" + encodeURIComponent(part.join(","))).then(function (r) { return r.json(); }).then(function (j) {
+        if (j.error) throw new Error(j.error);
+        meta = j; j.results.forEach(function (r, k) { res[start + k] = r; });
+      }).catch(function (e) {
+        failed = (e && e.message) || "Couldn't look those up – please try again.";
+        part.forEach(function (s, k) { res[start + k] = { input: s, error: "Not checked" }; });
+      }).then(function () { draw(); work(); });
+    };
+    draw(); work(); work();
+  });
 
   // ---- your recent checks (stored only in this browser)
   var rc = $("recent");

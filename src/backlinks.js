@@ -4,7 +4,9 @@
 // Format 2 (scope "all": every domain):
 //   manifest.json   – release info, release tag, shard count, data file names
 //   bl-index.bin    – per shard three little-endian uint32: data file number, byte offset, length
-//   bl-data-N.bin   – gzipped text shards; lines "domain\tref_domains\tstrength\tlinker:strength,…"
+//   bl-data-N.bin   – gzipped text shards; lines "domain\tref_domains\tstrength\tlinker:strength,…\thc_rank"
+//                     (hc_rank – Common Crawl's harmonic centrality position, 1 = most central – is
+//                     missing in releases built before it was added, and 0 when not ranked)
 //   shard = crc32(domain) % shards (zlib's crc32, as in build.py)
 // Format 1 (.uk only, the first release): manifest.json with byte "offsets" into bl-data.bin, whose
 //   shards are gzipped JSON {domain: [ref_domains, strength, [[linker, strength], …]]};
@@ -114,7 +116,7 @@ async function shardIndex(env, ctx, m) {
   return indexes.get(id);
 }
 
-const NOT_FOUND = (domain) => ({ domain, found: false, refDomains: 0, strength: 0, linkers: [] });
+const NOT_FOUND = (domain) => ({ domain, found: false, refDomains: 0, strength: 0, linkers: [], rank: 0 });
 const LOAD_ERROR = "The backlink data couldn't be loaded – please try again in a minute.";
 
 async function lookup1(env, ctx, m, domain) {
@@ -134,9 +136,9 @@ async function lookup2(env, ctx, m, domain) {
   if (!buf) throw new Error(LOAD_ERROR);
   const text = await gunzipText(buf), at = text.indexOf(`\n${domain}\t`);
   if (at < 0) return NOT_FOUND(domain);
-  const [, n, s, list] = text.slice(at + 1, text.indexOf("\n", at + 1)).split("\t");
+  const [, n, s, list, hc] = text.slice(at + 1, text.indexOf("\n", at + 1)).split("\t");
   const linkers = list ? list.split(",").map((x) => { const c = x.lastIndexOf(":"); return [x.slice(0, c), +x.slice(c + 1)]; }) : [];
-  return { domain, found: true, refDomains: +n, strength: +s, linkers };
+  return { domain, found: true, refDomains: +n, strength: +s, linkers, rank: +hc || 0 };
 }
 
 // Try each candidate name (e.g. shop.example.com, then example.com); report the first one found.
@@ -170,5 +172,36 @@ export async function backlinksApi(env, ctx, params) {
       }
     }
     return { status: 200, body: out };
+  } catch (e) { return { status: 503, body: { error: e.message } }; }
+}
+
+/** Authority 0–100 from a harmonic centrality position: 100 for the most central site on the web,
+ *  falling evenly with each tenfold drop in position, to 0 at the last of `ranked` domains. Without
+ *  a position (older releases) it falls back to link strength (referring domains, log scale). */
+export function authority(r, ranked) {
+  if (!r.found) return 0;
+  if (!r.rank || !(ranked > 1)) return r.strength;
+  return Math.max(1, Math.min(100, Math.round(100 * (1 - Math.log(r.rank) / Math.log(ranked)))));
+}
+
+export const AUTHORITY_BATCH = 10;
+
+/** GET /api/authority?d=site1.com,site2.co.uk,… (up to AUTHORITY_BATCH; the page sends longer lists in batches) */
+export async function authorityApi(env, ctx, params) {
+  const raw = String(params.get("d") || "").split(/[\s,]+/).map((x) => x.trim()).filter(Boolean);
+  if (!raw.length) return { status: 400, body: { error: "Enter at least one website address." } };
+  if (raw.length > AUTHORITY_BATCH) return { status: 400, body: { error: `Up to ${AUTHORITY_BATCH} websites per request.` } };
+  const m = await manifest(env, ctx);
+  if (!m) return { status: 503, body: { error: "The link data is being updated – please try again in a few minutes." } };
+  try {
+    const results = [];
+    for (const input of raw) {
+      let site;
+      try { site = siteDomain(input); } catch (e) { results.push({ input, error: e.message }); continue; }
+      if (m.scope !== "all" && !site.uk) { results.push({ input, domain: site.domain, error: "Only .uk websites are covered for now." }); continue; }
+      const r = await lookup(env, ctx, m, site);
+      results.push({ input, domain: r.domain, found: r.found, authority: authority(r, m.ranked), rank: r.rank || 0, refDomains: r.refDomains, strength: r.strength, top: r.linkers.slice(0, 3).map((l) => l[0]) });
+    }
+    return { status: 200, body: { results, months: crawlMonths(m.release), release: m.release, ranked: m.ranked || 0, ranks: !!m.ranked } };
   } catch (e) { return { status: 503, body: { error: e.message } }; }
 }

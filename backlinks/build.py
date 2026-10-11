@@ -6,11 +6,13 @@ For every domain that other websites link to, it records:
   - how many different websites (domains) link to it
   - its link strength (0-100: referring domains on a log scale, the most-linked domain = 100)
   - its strongest linking websites (up to TOP_K), each with their own link strength
+  - its position in Common Crawl's harmonic centrality ranking of every domain (1 = most central;
+    0 = not ranked), used by the domain authority checker
 
 Output (format 2), all in --out:
   bl-data-0.bin, bl-data-1.bin, … – gzipped text shards back to back (each file < 1.9 GB, GitHub's
                                     limit is 2 GB). A shard is "\\n" then lines of
-                                    "domain\\tref_domains\\tstrength\\tlinker:strength,linker:strength,…\\n"
+                                    "domain\\tref_domains\\tstrength\\tlinker:strength,…\\thc_rank\\n"
   bl-index.bin                    – SHARDS records of three little-endian uint32: file, offset, length
                                     (length 0 = no linked domains in that shard)
   manifest.json                   – release info, shard count, file names
@@ -132,7 +134,7 @@ SB = [str(i).encode() for i in range(101)]
 
 def write_shards(job):
     """Text + gzip for shards bounds[j0]..bounds[j1]; returns [(shard, domains, blob), …]."""
-    names, offs, strength, indeg, f, t, row_shard, bounds = _W
+    names, offs, strength, indeg, hc, f, t, row_shard, bounds = _W
     out = []
     for j in range(job[0], job[1]):
         a0, b0 = int(bounds[j]), int(bounds[j + 1])
@@ -140,14 +142,43 @@ def write_shards(job):
         fa, fb, fsg = offs[F].tolist(), offs[F + 1].tolist(), strength[F].tolist()
         g = np.flatnonzero(np.r_[True, T[1:] != T[:-1], True])
         tgt = T[g[:-1]]
-        ta, tb, tn, tsg = offs[tgt].tolist(), offs[tgt + 1].tolist(), indeg[tgt].tolist(), strength[tgt].tolist()
+        ta, tb, tn, tsg, thc = offs[tgt].tolist(), offs[tgt + 1].tolist(), indeg[tgt].tolist(), strength[tgt].tolist(), hc[tgt].tolist()
         g = g.tolist()
         lines = []
         for k in range(len(g) - 1):
             toks = [names[fa[i]:fb[i]] + b":" + SB[fsg[i]] for i in range(g[k], g[k + 1])]
-            lines.append(names[ta[k]:tb[k]] + b"\t" + str(tn[k]).encode() + b"\t" + SB[tsg[k]] + b"\t" + b",".join(toks))
+            lines.append(names[ta[k]:tb[k]] + b"\t" + str(tn[k]).encode() + b"\t" + SB[tsg[k]] + b"\t" + b",".join(toks) + b"\t" + str(thc[k]).encode())
         out.append((int(row_shard[a0]), len(lines), gzip.compress(b"\n" + b"\n".join(lines) + b"\n", compresslevel=6, mtime=0)))
     return out
+
+
+def read_ranks(url, hashes, n_nodes):
+    """Common Crawl's ranks file: "#harmonicc_pos #harmonicc_val #pr_pos #pr_val #host_rev #n_hosts",
+    one line per domain, names reversed like the vertices file. Domains are matched by a 64-bit hash
+    of the reversed name (a dict of 130M names wouldn't fit in memory). Returns (positions, count)."""
+    hc = np.zeros(n_nodes, np.int32)
+    order = np.argsort(hashes, kind="stable").astype(np.int32)
+    keys = hashes[order]
+    ranked = matched = 0
+    try:
+        # a quick check first: a missing file would otherwise be retried for minutes by read_tsv
+        if subprocess.run(["curl", "-sSfIL", "--retry", "5", "--retry-delay", "5", "-o", os.devnull, url]).returncode:
+            raise ValueError(f"{url} isn't available")
+        log("Reading domain ranks…")
+        for c in read_tsv(url, ["pos", "rev"], {"pos": np.int64, "rev": str}, usecols=[0, 4]):
+            h = np.fromiter((hash(r) for r in c["rev"].tolist()), np.int64, len(c))
+            at = np.minimum(np.searchsorted(keys, h), n_nodes - 1)
+            ok = keys[at] == h
+            hc[order[at[ok]]] = np.minimum(c["pos"].to_numpy()[ok], 2**31 - 1)
+            ranked += len(c)
+            matched += int(ok.sum())
+        log(f"  {ranked:,} ranked domains, {matched:,} matched")
+        if not matched:
+            raise ValueError("no ranked domain matched the domain list")
+    except (Exception, SystemExit) as e:  # noqa: BLE001 – ranks are optional
+        log(f"  WARNING: domain ranks not used ({e})")
+        return np.zeros(n_nodes, np.int32), 0
+    return hc, ranked
 
 
 def main():
@@ -170,7 +201,7 @@ def main():
 
     # 1) Domain names (forward form, one bytes buffer + offsets) and each domain's shard.
     log("Reading domain list…")
-    bufs, lens, shard_parts, n_nodes = [], [], [], 0
+    bufs, lens, shard_parts, hash_parts, n_nodes = [], [], [], [], 0
     for c in read_tsv(f"{root}-vertices.txt.gz", ["id", "rev", "hosts"], {"id": np.int64, "rev": str, "hosts": np.int64}, usecols=[0, 1]):
         if int(c["id"].iloc[0]) != n_nodes:
             raise SystemExit("vertex ids are not consecutive")
@@ -178,6 +209,7 @@ def main():
         bufs.append(b"".join(raw))
         lens.append(np.fromiter((len(x) for x in raw), np.int64, len(raw)))
         shard_parts.append(np.fromiter((zlib.crc32(x) % S for x in raw), np.int32, len(raw)))
+        hash_parts.append(np.fromiter((hash(r) for r in c["rev"].tolist()), np.int64, len(raw)))
         n_nodes += len(raw)
         log(f"  {n_nodes:,} domains")
     names = b"".join(bufs)
@@ -188,6 +220,11 @@ def main():
     shard = np.concatenate(shard_parts)
     del shard_parts
     log(f"{n_nodes:,} domains, names use {len(names) / 1e9:.1f} GB")
+
+    # 1b) Each domain's harmonic centrality position from the ranks file (optional: without it the
+    #     index is still built and the Worker falls back to link strength).
+    hc, ranked = read_ranks(f"{root}-ranks.txt.gz", np.concatenate(hash_parts), n_nodes)
+    del hash_parts
 
     # 2) Referring domains for every domain (edges are unique domain pairs).
     log("Counting links (pass 1)…")
@@ -253,7 +290,7 @@ def main():
         row_shard = shard[t]
         bounds = np.flatnonzero(np.r_[True, row_shard[1:] != row_shard[:-1], True]) if len(t) else np.array([0])
         global _W
-        _W = (names, offs, strength, indeg, f, t, row_shard, bounds)
+        _W = (names, offs, strength, indeg, hc, f, t, row_shard, bounds)
         jobs = np.array_split(np.arange(len(bounds) - 1), max(1, min(256, len(bounds) - 1)))
         jobs = [(int(j[0]), int(j[-1]) + 1) for j in jobs if len(j)]
         if a.workers > 1 and len(jobs) > 1:
@@ -276,7 +313,8 @@ def main():
     w.close()
     manifest = {"format": 2, "scope": "all", "release": a.release, "tag": a.tag or f"backlinks-{a.release}", "built": time.strftime("%Y-%m-%d"),
                 "shards": S, "top_k": TOP_K, "hash": "crc32", "files": w.files, "index": "bl-index.bin",
-                "domains": linked, "all_domains": n_nodes, "links": n_links, "max_ref_domains": top}
+                "domains": linked, "all_domains": n_nodes, "links": n_links, "max_ref_domains": top,
+                "rank": "harmonic centrality" if ranked else None, "ranked": ranked}
     with open(os.path.join(a.out, "manifest.json"), "w") as fh:
         json.dump(manifest, fh, indent=1)
     log(f"Done in {(time.time() - t0) / 60:.1f} min: {linked:,} linked domains, {w.total / 1e9:.2f} GB in {len(w.files)} data file(s)")

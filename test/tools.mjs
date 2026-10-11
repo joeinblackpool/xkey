@@ -6,7 +6,7 @@
 // without the expected text. Checks run on xkey.co.uk itself, which the Worker handles
 // in-process, so no internet is needed.
 import { need, serve, blData } from "./lib.mjs";
-import { backlinksApi, crc32 } from "../src/backlinks.js";
+import { backlinksApi, authorityApi, crc32 } from "../src/backlinks.js";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import fs from "node:fs";
@@ -20,6 +20,7 @@ const only = process.argv[2] ? new RegExp(process.argv[2], "i") : null;
 let apiFailed = 0;
 if (!only || only.test("backlink")) {
   const bl = async (dir, d, vs) => (await backlinksApi({ BL_DATA: blData(dir) }, { waitUntil() {} }, new URLSearchParams(vs ? { d, vs } : { d }))).body;
+  const da = async (dir, d) => (await authorityApi({ BL_DATA: blData(dir) }, { waitUntil() {} }, new URLSearchParams({ d }))).body;
   const checks = [
     ["crc32 matches Python's zlib.crc32", () => crc32("smithplumbing.co.uk") === 1290027534 && crc32("example.com") === 3069857465],
     ["format 2: .co.uk", async () => (await bl("backlinks", "smithplumbing.co.uk")).you.refDomains === 3],
@@ -28,6 +29,9 @@ if (!only || only.test("backlink")) {
     ["format 2: link gap", async () => (await bl("backlinks", "smithplumbing.co.uk", "rival.co.uk")).gap.map((x) => x[0]).join() === "wikipedia.org,localpaper.co.uk"],
     ["format 1: .co.uk", async () => { const r = await bl("backlinks-v1", "smithplumbing.co.uk", "rival.co.uk"); return r.you.refDomains === 3 && r.gap.length === 2; }],
     ["format 1: .com refused (UK-only index)", async () => /UK websites/.test((await bl("backlinks-v1", "example.com")).error)],
+    ["authority: rank-based scores and order kept", async () => { const r = await da("backlinks", "smithplumbing.co.uk,https://www.wikipedia.org/wiki/x,nothing.co.uk,not a site"); const [s, w, n, x] = r.results; return r.ranks && r.ranked === 11 && s.rank === 5 && s.authority === 33 && s.refDomains === 3 && w.authority === 100 && w.rank === 1 && !n.found && n.authority === 0 && !!x.error; }],
+    ["authority: more than 10 refused", async () => /Up to 10/.test((await da("backlinks", Array.from({ length: 11 }, (_, i) => `s${i}.com`).join(","))).error)],
+    ["authority: falls back to link strength without ranks", async () => { const r = await da("backlinks-v1", "smithplumbing.co.uk example.com"); return !r.ranks && r.results[0].authority === r.results[0].strength && r.results[0].authority > 0 && /\.uk/.test(r.results[1].error); }],
   ];
   for (let [name, fn] of checks) {
     let ok = false; try { ok = await fn(); } catch (e) { name += " – " + e.message; }
@@ -75,6 +79,9 @@ const S = [
   { name: "Backlink checker – link gap", path: "/backlink-checker", fill: [["bl-d", "smithplumbing.co.uk"], ["bl-vs", "rival.co.uk"]], click: "#bl-form button[type=submit]", expect: ["#bl-out", /2 websites link to rival\.co\.uk but not to you[\s\S]*wikipedia\.org[\s\S]*localpaper\.co\.uk/] },
   { name: "Backlink checker – .com", path: "/backlink-checker", fill: [["bl-d", "https://www.example.com/about"]], click: "#bl-form button[type=submit]", expect: ["#bl-out", /example\.com[\s\S]*3[\s\S]*websites link to it[\s\S]*wikipedia\.org/] },
   { name: "Backlink checker – .com.au vs .co.uk", path: "/backlink-checker", fill: [["bl-d", "blog.shop.com.au"], ["bl-vs", "smithplumbing.co.uk"]], click: "#bl-form button[type=submit]", expect: ["#bl-out", /shop\.com\.au[\s\S]*2 websites link to smithplumbing\.co\.uk but not to you[\s\S]*bbc\.co\.uk/] },
+  { name: "Backlink checker – opened from a link", path: "/backlink-checker?d=rival.co.uk", expect: ["#bl-out", /rival\.co\.uk[\s\S]*4[\s\S]*websites link to it/] },
+  { name: "Domain authority checker", path: "/domain-authority-checker", fill: [["da-urls", "smithplumbing.co.uk\nhttps://www.wikipedia.org/\nnothing.co.uk"]], click: "#da-form button[type=submit]", expect: ["#da-out", /smithplumbing\.co\.uk[\s\S]*33[\s\S]*#5[\s\S]*wikipedia\.org[\s\S]*100[\s\S]*#1[\s\S]*No links found[\s\S]*Download CSV/] },
+  { name: "Domain authority checker – 25 sites in batches", path: "/domain-authority-checker", fill: [["da-urls", Array.from({ length: 24 }, (_, i) => `site${i}.co.uk`).concat("bbc.co.uk").join("\n")]], click: "#da-form button[type=submit]", expect: ["#da-out", /bbc\.co\.uk[\s\S]*#2[\s\S]*Sort by authority/] },
   { name: "SEO score badge", path: "/seo-badge", fill: [["bd-site", "xkey.co.uk"]], expect: ["#bd-code", /badge\.svg\?site=xkey\.co\.uk/] },
 ];
 

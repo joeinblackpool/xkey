@@ -2,6 +2,7 @@
  "format": 2,
  "scope": "all",
  "release": "cc-main-2026-jul-aug-sep",
+ "tag": "backlinks-cc-main-2026-jul-aug-sep",
  "built": "2026-10-11",
  "shards": 1024,
  "top_k": 50,
@@ -15,5 +16,7 @@
  "domains": 9,
  "all_domains": 11,
  "links": 27,
- "max_ref_domains": 6
+ "max_ref_domains": 6,
+ "rank": "harmonic centrality",
+ "ranked": 11
 }

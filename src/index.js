@@ -7,7 +7,7 @@ import { handleChecker, rateLimited, AUDIT_JS, REPORT_JS, COMPARE_JS, overOnce, 
 import { createMonitor, runMonitor, getMonitor, validId, dashboard, runDueMonitors } from "../engine/monitor.js";
 import { robotsAllows, pixelWidth, normaliseUrl, fetchRobots, crawlStart, crawlBatch, fetchHtml, runCheck } from "../engine/checker.js";
 import { summarisePage } from "./page-parse.js";
-import { backlinksApi } from "./backlinks.js";
+import { backlinksApi, authorityApi } from "./backlinks.js";
 
 const BY_PATH = Object.fromEntries(PAGES.map((p) => [p.path, p]));
 const GUIDES = PAGES.filter((p) => p.path.startsWith("/guides/"));
@@ -102,6 +102,8 @@ Contact | /contact | Phone, email and opening hours</textarea>
 <p style="margin:16px 0 0"><button class="btn" type="submit">Check for plagiarism</button></p><div id="pg-out" aria-live="polite"></div></form><script src="/assets/tools.js" defer></script>`,
   backlinks: () => `<form class="tool" id="bl-form"><div class="row"><div style="flex:1 1 240px"><label for="bl-d">Your website</label><input id="bl-d" type="text" inputmode="url" autocomplete="url" placeholder="yourbusiness.co.uk or .com" required></div><div style="flex:1 1 240px"><label for="bl-vs">Competitor (optional)</label><input id="bl-vs" type="text" inputmode="url" placeholder="competitor.com"></div></div>
 <p style="margin:16px 0 0"><button class="btn" type="submit">Check backlinks</button></p><div id="bl-out" aria-live="polite"></div></form><script src="/assets/tools.js" defer></script>`,
+  authority: () => `<form class="tool" id="da-form"><label for="da-urls">Websites – one per line, up to 100</label><textarea id="da-urls" spellcheck="false" placeholder="yourbusiness.co.uk&#10;competitor.co.uk&#10;bbc.co.uk"></textarea>
+<p style="margin:16px 0 0"><button class="btn" type="submit">Check authority</button></p><div id="da-out" aria-live="polite"></div></form><script src="/assets/tools.js" defer></script>`,
   difficulty: () => `<form class="tool" id="kd-form"><label for="kd-kw">Keyword</label><input id="kd-kw" type="text" placeholder="boiler repair blackpool" required>
 <p style="margin:12px 0 0"><strong>Step 1:</strong> <a class="btn ghost" id="kd-google" href="https://www.google.co.uk/search" target="_blank" rel="noopener">Search Google</a></p>
 <label for="kd-urls"><strong>Step 2:</strong> paste the addresses of the page-one results (up to 10, one per line – skip ads and maps)</label><textarea id="kd-urls" spellcheck="false" placeholder="https://example.co.uk/page"></textarea>
@@ -317,6 +319,12 @@ const worker = {
       case "/api/backlinks": {
         if (await rateLimited(request, "backlinks", 120)) return Response.json({ error: "You've checked a lot of sites this hour – please try again later." }, { status: 429 });
         const r = await backlinksApi(env, c, url.searchParams);
+        return Response.json(r.body, { status: r.status, headers: { "cache-control": r.status === 200 ? "public, max-age=3600" : "no-store" } });
+      }
+      case "/api/authority": {
+        // 60 batches of up to 10 sites = 600 sites an hour per connection
+        if (await rateLimited(request, "authority", 60)) return Response.json({ error: "You've checked a lot of sites this hour – please try again later." }, { status: 429 });
+        const r = await authorityApi(env, c, url.searchParams);
         return Response.json(r.body, { status: r.status, headers: { "cache-control": r.status === 200 ? "public, max-age=3600" : "no-store" } });
       }
       case "/api/robots": {

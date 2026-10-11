@@ -26,6 +26,11 @@ with gzip.open(os.path.join(d, f"{REL}-domain-vertices.txt.gz"), "wt") as f:
     for n in names: f.write(f"{ids[n]}\t{rev(n)}\t1\n")
 with gzip.open(os.path.join(d, f"{REL}-domain-edges.txt.gz"), "wt") as f:
     for a, b in sorted((ids[s], ids[t]) for t, ss in LINKS.items() for s in ss): f.write(f"{a}\t{b}\n")
+# harmonic centrality positions: most-linked first, the unlinked site last
+ranked = sorted(names, key=lambda n: (-len(LINKS.get(n, [])), n))
+with gzip.open(os.path.join(d, f"{REL}-domain-ranks.txt.gz"), "wt") as f:
+    f.write("#harmonicc_pos\t#harmonicc_val\t#pr_pos\t#pr_val\t#host_rev\t#n_hosts\n")
+    for pos, n in enumerate(ranked, 1): f.write(f"{pos}\t{100 / pos:.3f}\t{pos}\t0.01\t{rev(n)}\t1\n")
 srv = ThreadingHTTPServer(("127.0.0.1", 0), partial(SimpleHTTPRequestHandler, directory=tmp))
 srv.RequestHandlerClass.log_message = lambda *a: None
 threading.Thread(target=srv.serve_forever, daemon=True).start()
