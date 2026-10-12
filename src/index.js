@@ -12,6 +12,7 @@ import { whoisApi } from "./whois.js";
 import { redirectsApi } from "./redirects.js";
 import { linksPageApi, linksCheckApi } from "./linkcheck.js";
 import { headersApi } from "./headers.js";
+import { dnsApi } from "./dns.js";
 
 const BY_PATH = Object.fromEntries(PAGES.map((p) => [p.path, p]));
 const GUIDES = PAGES.filter((p) => p.path.startsWith("/guides/"));
@@ -111,6 +112,7 @@ Contact | /contact | Phone, email and opening hours</textarea>
   links: () => `<form class="tool" id="lk-form"><label for="lk-url">Your website</label><input id="lk-url" type="text" inputmode="url" autocomplete="url" placeholder="yourbusiness.co.uk" required>
 <div class="row" style="margin-top:4px"><div style="flex:1 1 200px"><label for="lk-max">Pages to crawl</label><select id="lk-max"><option value="50">Up to 50</option><option value="150" selected>Up to 150</option><option value="300">Up to 300</option></select></div><div style="flex:1 1 200px"><label for="lk-ext">Links to other sites</label><select id="lk-ext"><option value="1" selected>Check them too</option><option value="0">Only my own pages</option></select></div></div>
 <div class="row" style="margin-top:16px"><button class="btn" type="submit">Find broken links</button><button class="btn ghost" type="button" id="lk-stop" style="display:none">Stop</button></div><div id="lk-out" aria-live="polite"></div></form><script src="/assets/tools.js" defer></script>`,
+  dns: () => `<form class="ck-form" id="dn-form"><label for="dn-d" class="sr">Domain name</label><input id="dn-d" type="text" inputmode="url" autocomplete="url" placeholder="yourbusiness.co.uk" required><button class="btn" type="submit">Look up DNS</button></form><div id="dn-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
   headers: () => `<form class="ck-form" id="hd-form"><label for="hd-url" class="sr">Web address</label><input id="hd-url" type="text" inputmode="url" autocomplete="url" placeholder="yourwebsite.co.uk/page" required><button class="btn" type="submit">Check headers</button></form>
 <p class="small"><label style="display:inline;font-weight:400"><input type="checkbox" id="hd-mobile" style="width:auto;margin-right:6px">Visit as a mobile browser</label></p><div id="hd-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
   redirects: () => `<form class="tool" id="rd-form"><label for="rd-urls">Web addresses – one per line, up to 100</label><textarea id="rd-urls" spellcheck="false" placeholder="http://yourbusiness.co.uk&#10;https://www.yourbusiness.co.uk/old-page"></textarea>
@@ -354,6 +356,11 @@ const worker = {
         if (await rateLimited(request, "linkcheck", 300)) return Response.json({ error: "You've checked a lot of links this hour – please try again later." }, { status: 429 });
         const r = await linksCheckApi(url.searchParams, selfFetch(env, c), c);
         return Response.json(r.body, { status: r.status, headers: { "cache-control": "no-store" } });
+      }
+      case "/api/dns": {
+        if (await rateLimited(request, "dns", 300)) return Response.json({ error: "You've looked up a lot of domains this hour – please try again later." }, { status: 429 });
+        const r = await dnsApi(env || {}, url.searchParams);
+        return Response.json(r.body, { status: r.status, headers: { "cache-control": r.status === 200 ? "public, max-age=300" : "no-store" } });
       }
       case "/api/headers": {
         if (await rateLimited(request, "headers", 300)) return Response.json({ error: "You've checked a lot of addresses this hour – please try again later." }, { status: 429 });

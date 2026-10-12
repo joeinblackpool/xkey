@@ -13,6 +13,7 @@ const TOOLS = [
   ["/domain-authority-checker", "Domain authority checker", "Authority scores for up to 100 websites at once, with links and global rank."],
   ["/redirect-checker", "Redirect checker", "Follow any address hop by hop: 301s, 302s, chains, loops and meta refreshes."],
   ["/http-header-checker", "HTTP header checker", "Every response header for any address, with what each one means for SEO."],
+  ["/dns-lookup", "DNS lookup", "A, MX, TXT, NS and other records, plus SPF and DMARC email checks."],
   ["/domain-age-checker", "Domain age checker", "How old is a website? Registration and expiry dates for up to 100 domains."],
   ["/whois-lookup", "WHOIS lookup", "Who a domain is registered with, when it expires and its name servers."],
   ["/seo-comparison", "Competitor comparison", "Your site against up to two competitors, side by side."],
@@ -246,6 +247,25 @@ export const PAGES = [
 <h2>What it can't tell you</h2>
 <ul><li><strong>What visitors in other countries get.</strong> We visit from Cloudflare's network; sites can send different headers by location, cookie or login.</li><li><strong>Request headers.</strong> This shows what the server sends back, not what your browser sends.</li><li><strong>Sites that block checkers.</strong> A firewall may answer us with a 403 even when the site works in your browser.</li></ul>`,
     faqs: [["Is the HTTP header checker free?", "Yes. No sign-up, no email and no subscription, with only a fair-use limit to stop bots."], ["How do I see HTTP headers in my browser?", "Open developer tools (F12), go to the Network tab, reload the page and click the first request. This tool shows the same thing without the setup, and follows redirects for you."], ["Why is my page not indexed when the HTML has no noindex?", "Check the X-Robots-Tag header here. Some servers, plugins and CDNs add noindex in the header, where it's invisible in the page source."]],
+  },
+  {
+    path: "/dns-lookup", crumb: "DNS lookup", parent: ["/seo-tools", "SEO tools"], title: "DNS Lookup | Check A, MX, TXT & NS Records Free",
+    desc: "Free DNS lookup: see a domain's A, AAAA, CNAME, MX, NS, TXT, CAA and SOA records, and check its website, www version, SPF and DMARC in one go.",
+    h1: "Free DNS lookup", eyebrow: "Any domain · Free · No sign-up", app: "XKey DNS lookup", form: "dns",
+    lead: "Type a domain to see every main DNS record – where the website points, who handles its email and what TXT records it has – with plain-English checks on what's missing.",
+    sections: `<h2>What the DNS lookup shows</h2>
+<div class="grid">
+<div class="card"><p class="ct">Website records</p><p>A and AAAA (the server's address), CNAME aliases, and whether the www version works too.</p></div>
+<div class="card"><p class="ct">Email records</p><p>MX servers, the SPF record and the DMARC policy, with a warning if anything is missing or wrong.</p></div>
+<div class="card"><p class="ct">Everything else</p><p>NS (who runs the DNS), TXT (verification codes), CAA (who may issue SSL certificates), SOA and DNSSEC.</p></div>
+</div>
+<h2>Which DNS records matter for SEO?</h2>
+<ul><li><strong>A, AAAA and CNAME</strong> – if these are wrong or missing, nobody can reach the site, Google included. After a move to a new host, check they point at the new server.</li><li><strong>www and non-www</strong> – both should resolve, and one should 301-redirect to the other. Check that with the <a href="/redirect-checker">redirect checker</a>.</li><li><strong>TXT records</strong> – Google Search Console can verify your site with a TXT record, which covers every version of the domain at once.</li><li><strong>NS records</strong> – show which company runs your DNS. Fast, reliable DNS helps every page load a little quicker.</li></ul>
+<h2>SPF and DMARC</h2>
+<p>They don't affect rankings, but they decide whether your emails reach the inbox. <strong>SPF</strong> lists the servers allowed to send email for your domain, and there must be only one SPF record. <strong>DMARC</strong> tells receiving servers what to do with email that fails those checks. Since 2024, Gmail and Yahoo expect both from anyone sending email in bulk.</p>
+<h2>What it can't tell you</h2>
+<ul><li><strong>Changes made in the last few minutes or hours.</strong> We ask public resolvers (Cloudflare's 1.1.1.1, with Google as a backup), which may hold the old answer until its TTL runs out.</li><li><strong>DKIM.</strong> DKIM keys live under a "selector" name only your email provider knows, so we can't look them up without it.</li><li><strong>Private or internal names</strong> that only resolve inside your network.</li></ul>`,
+    faqs: [["Is the DNS lookup free?", "Yes. No sign-up, no email and no subscription, with only a fair-use limit to stop bots."], ["How long do DNS changes take?", "Usually minutes, but resolvers can keep an old answer for as long as its TTL (time to live), shown next to every record. Lower the TTL a day before a planned move."], ["Why does my site work but show no A record?", "Check you typed the exact address people use. The site may run on www only, which is a CNAME to your host – the lookup shows www separately."], ["Do DNS settings affect SEO?", "Only indirectly: if DNS fails, Google can't reach your pages, and slow DNS adds a little to every first visit."]],
   },
   {
     path: "/domain-age-checker", crumb: "Domain age checker", parent: ["/seo-tools", "SEO tools"], title: "Domain Age Checker | Bulk, Free, No Sign-Up",

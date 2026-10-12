@@ -1,6 +1,6 @@
 // Checks against the real internet (not part of test/all.mjs, which runs offline):
 //   node test/live.mjs registries   – src/whois.js against real registries (RDAP, and WHOIS on port 43 via node:net)
-//   node test/live.mjs site         – the live xkey.co.uk APIs: backlinks, authority, redirects, headers, links, whois
+//   node test/live.mjs site         – the live xkey.co.uk APIs: backlinks, authority, redirects, headers, links, dns, whois
 // Run by .github/workflows/live-check.yml. Exits 1 if anything looks wrong.
 import net from "node:net";
 import { whoisApi } from "../src/whois.js";
@@ -53,6 +53,8 @@ if (process.argv.includes("site")) {
   [s, j] = await api("/api/links/check?u=https://www.bbc.co.uk/&u=https://www.bbc.co.uk/this-page-does-not-exist-xkey");
   const lc = j.results || [];
   check("links: ok and 404", s === 200 && lc[0] && /ok|redirect/.test(lc[0].verdict) && lc[1] && lc[1].verdict === "broken", lc.map((r) => r.verdict + " " + r.status).join("; "));
+  [s, j] = await api("/api/dns?d=bbc.co.uk");
+  check("dns: bbc.co.uk records", s === 200 && j.exists && (j.records.A || []).length > 0 && (j.records.MX || []).length > 0 && (j.records.NS || []).length > 0, `${s} ${j.error || ""}`);
   [s, j] = await api("/api/whois?d=bbc.co.uk,github.com,rte.ie,google.de");
   const w = j.results || [];
   for (const r of w) console.log(JSON.stringify(r).slice(0, 300));

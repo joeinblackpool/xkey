@@ -49,7 +49,7 @@ export async function serve(port = 8789, workerPath = "../src/index.js") {
   }) }) };
   // Backlink index stand-in: the files build.py publishes (format 2), from test/fixtures/backlinks.
   const BL_DATA = blData("backlinks");
-  const env = { STATE, AI, BL_DATA, ...whoisStandIns() };
+  const env = { STATE, AI, BL_DATA, ...whoisStandIns(), DNS_FETCH: dnsStandIn() };
   const worker = (await import(new URL(workerPath, import.meta.url).href)).default;
   const server = http.createServer(async (req, res) => {
     const chunks = []; for await (const c of req) chunks.push(c);
@@ -98,4 +98,21 @@ export function whoisStandIns() {
     throw new Error("unexpected whois server " + host);
   };
   return { WHOIS_FETCH, WHOIS_TCP };
+}
+
+/** Stand-in for DNS-over-HTTPS (see src/dns.js): a tiny zone, answered in Cloudflare's JSON format. */
+export function dnsStandIn() {
+  const T = { A: 1, NS: 2, CNAME: 5, SOA: 6, MX: 15, TXT: 16, AAAA: 28, CAA: 257 };
+  const zone = {
+    "smithplumbing.co.uk": { A: ["192.0.2.10"], MX: ["10 mail.smithplumbing.co.uk."], TXT: ['"v=spf1 include:_spf.google.com ~all"', '"google-site-verification=abc123"'], NS: ["ns1.host.co.uk."], SOA: ["ns1.host.co.uk. admin.host.co.uk. 2026101201 3600 600 604800 300"] },
+    "www.smithplumbing.co.uk": { A: ["192.0.2.10"] },
+    "_dmarc.smithplumbing.co.uk": { TXT: ['"v=DMARC1; p=none; rua=mailto:d@smithplumbing.co.uk"'] },
+    "badmail.co.uk": { A: ["192.0.2.20"], MX: ["10 mx.badmail.co.uk."], TXT: ['"v=spf1 a mx ~all"', '"v=spf1 include:sendgrid.net -all"'] },
+  };
+  return async (url) => {
+    const u = new URL(url), name = u.searchParams.get("name"), type = u.searchParams.get("type");
+    if (!zone[name] && !Object.keys(zone).some((k) => k.endsWith("." + name))) return Response.json({ Status: 3, AD: false });
+    const data = (zone[name] && zone[name][type]) || [];
+    return Response.json({ Status: 0, AD: name.startsWith("smith"), Answer: data.map((d) => ({ name: name + ".", type: T[type], TTL: 300, data: d })) });
+  };
 }

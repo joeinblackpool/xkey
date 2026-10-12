@@ -534,6 +534,36 @@ export function toolsApp() {
     crawl(); setTimeout(crawl, 250);
   });
 
+  // ---- DNS lookup (/api/dns)
+  var dn = $("dn-form");
+  if (dn) {
+    var dnq = (location.search.match(/[?&]d=([^&]+)/) || [])[1];
+    if (dnq && !$("dn-d").value.trim()) { try { $("dn-d").value = decodeURIComponent(dnq.replace(/\+/g, " ")); } catch (e) {} setTimeout(function () { dn.requestSubmit ? dn.requestSubmit() : dn.dispatchEvent(new Event("submit", { cancelable: true })); }, 0); }
+    dn.addEventListener("submit", function (ev) {
+      ev.preventDefault();
+      var d = $("dn-d").value.trim(), out = $("dn-out");
+      if (!d) { $("dn-d").focus(); return; }
+      out.innerHTML = "<p>Looking up DNS…</p>";
+      fetch("/api/dns?d=" + encodeURIComponent(d)).then(function (r) { return r.json(); }).then(function (j) {
+        if (j.error) { out.innerHTML = '<p class="s-fail">' + esc(j.error) + "</p>"; return; }
+        var lc = { fail: "#cf222e", warn: "#9a6700", ok: "#1a7f37", info: "inherit" }, icon = { fail: "✗", warn: "!", ok: "✓", info: "•" };
+        var h = '<div class="card" style="margin:16px 0"><p class="ct">' + esc(j.name) + (j.dnssec ? ' <span class="small">· DNSSEC signed</span>' : "") + '</p><ul style="list-style:none;padding:0;margin:8px 0">' + j.checks.map(function (n) { return '<li style="margin:6px 0;overflow-wrap:anywhere;color:' + lc[n.level] + '"><b>' + icon[n.level] + "</b> " + esc(n.text) + "</li>"; }).join("") + "</ul></div>";
+        if (j.exists) {
+          var rows = [];
+          ["A", "AAAA", "CNAME", "MX", "NS", "TXT", "CAA", "SOA"].forEach(function (t) {
+            var seen = {};
+            (j.records[t] || []).forEach(function (a) { var k = a.type + a.name + a.data; if (seen[k] || (a.type !== t && !(t === "A" && a.type === "CNAME"))) return; seen[k] = 1; rows.push(a); });
+          });
+          if (j.www) j.www.answers.forEach(function (a) { rows.push(a); });
+          (j.dmarc || []).forEach(function (t) { rows.push({ type: "TXT", name: "_dmarc." + j.name, ttl: "", data: t }); });
+          h += rows.length ? '<div class="tablewrap"><table><thead><tr><th>Type</th><th>Name</th><th>Value</th><th>TTL</th></tr></thead><tbody>' + rows.map(function (a) { return "<tr><td><b>" + esc(a.type) + '</b></td><td style="overflow-wrap:anywhere">' + esc(a.name) + '</td><td style="overflow-wrap:anywhere;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px">' + esc(a.data) + '</td><td class="small">' + esc(a.ttl === "" ? "" : a.ttl + "s") + "</td></tr>"; }).join("") + "</tbody></table></div>" : "<p>No records found.</p>";
+        }
+        h += '<p class="small">Answers from public DNS (Cloudflare 1.1.1.1, Google as a backup). Recent changes may take up to each record\'s TTL to show. Also check the site\'s <a href="/whois-lookup?d=' + encodeURIComponent(j.name) + '">WHOIS record</a> and <a href="/http-header-checker?url=' + encodeURIComponent(j.name) + '">HTTP headers</a>.</p>';
+        out.innerHTML = h;
+      }).catch(function () { out.innerHTML = '<p class="s-fail">Couldn\'t look that up – please try again.</p>'; });
+    });
+  }
+
   // ---- HTTP header checker (/api/headers)
   var hd = $("hd-form");
   if (hd) {
