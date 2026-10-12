@@ -9,6 +9,7 @@ const TOOLS = [
   ["/website-audit", "Website audit", "Crawl up to 250 pages for broken links, duplicate titles and orphan pages."],
   ["/backlink-checker", "Backlink checker", "See which websites link to any site – .co.uk, .com or anything else – and which link to your competitor but not you."],
   ["/domain-authority-checker", "Domain authority checker", "Authority scores for up to 100 websites at once, with links and global rank."],
+  ["/redirect-checker", "Redirect checker", "Follow any address hop by hop: 301s, 302s, chains, loops and meta refreshes."],
   ["/domain-age-checker", "Domain age checker", "How old is a website? Registration and expiry dates for up to 100 domains."],
   ["/whois-lookup", "WHOIS lookup", "Who a domain is registered with, when it expires and its name servers."],
   ["/seo-comparison", "Competitor comparison", "Your site against up to two competitors, side by side."],
@@ -208,6 +209,26 @@ export const PAGES = [
 <h2>What it can't tell you</h2>
 <ul><li><strong>Brand-new links.</strong> The data is refreshed quarterly, so links from the last few months won't count yet.</li><li><strong>Every link on the web.</strong> Common Crawl visits billions of pages but not all of them, so small sites may score a little lower than they should.</li><li><strong>Individual pages.</strong> Scores are for whole websites. Subdomains count as their main site, so blog.example.com is scored as example.com.</li><li><strong>Rankings or traffic.</strong> A high score helps, but it doesn't guarantee a page ranks or gets visitors.</li></ul>`,
     faqs: [["Is the domain authority checker free?", "Yes. No sign-up, no email and no subscription. You can check up to 100 websites at a time, with only a fair-use limit to stop bots."], ["What is a good domain authority score?", "It depends on who you compete with. Compare your score with the sites that rank above you for your main searches: if you're within about ten points, better pages and local signals can close the gap. For most local businesses, 20–40 is normal."], ["How can I increase my domain authority?", "Earn links from websites that are themselves well linked: suppliers and manufacturers listing stockists, trade bodies, local news, clubs and charities you support, and genuinely useful guides people want to share. Links from low-quality directories barely move the score."], ["Why does a website score 0?", "No links to it were found in the data. That's common for new or very small sites, because Common Crawl doesn't visit every page on the web."], ["How often is it updated?", "Every three months, when Common Crawl publishes its next web graph. The months the data covers are shown under every result."]],
+  },
+  {
+    path: "/redirect-checker", crumb: "Redirect checker", parent: ["/seo-tools", "SEO tools"], title: "Redirect Checker | 301, 302 & Redirect Chains (Free)",
+    desc: "Free redirect checker: follow up to 100 addresses hop by hop and see every 301, 302 and meta refresh, redirect chains, loops and where each one ends.",
+    h1: "Free redirect checker", eyebrow: "Bulk · Free · No sign-up", app: "XKey redirect checker", form: "redirects",
+    lead: "See exactly what happens when someone – or Google – visits an address: every redirect, its status code, and where it finally lands. Check one address or up to 100 at once.",
+    sections: `<h2>What the redirect checker shows</h2>
+<div class="grid">
+<div class="card"><p class="ct">Every hop</p><p>Each address in the chain with its HTTP status code (301, 302, 307, 308, 404…) and response time.</p></div>
+<div class="card"><p class="ct">Where it ends</p><p>The final address and whether it loads, errors or never responds.</p></div>
+<div class="card"><p class="ct">What to fix</p><p>Chains, loops, temporary redirects, meta refreshes and redirects back to insecure http.</p></div>
+</div>
+<p>Press <strong>Test http, https, www versions</strong> to check all four ways people can type your address. They should all end up on one version of your site, ideally in a single hop.</p>
+<h2>301, 302, 307 or 308?</h2>
+<ul><li><strong>301 Moved Permanently</strong> – the page has moved for good. Use it for changed addresses, a move to https or a new domain.</li><li><strong>308 Permanent Redirect</strong> – the same as a 301 for search engines. Fine to use.</li><li><strong>302 Found and 307 Temporary Redirect</strong> – the move is temporary, for example during maintenance. Google may keep the old address in its results.</li><li><strong>Meta refresh</strong> – a redirect inside the page instead of from the server. It's slower and less clear to search engines, so replace it with a 301 when you can.</li></ul>
+<h2>Do redirects hurt SEO?</h2>
+<p>A single 301 passes a page's ranking signals on to the new address, so moving pages is safe if you redirect them. Problems start with <strong>chains</strong> (A to B to C), which slow visitors down and waste Google's crawling, and <strong>loops</strong>, which stop the page loading at all. Fix a chain by pointing the first address straight at the final one, and update your own links to skip the redirect. Our guide to <a href="/guides/broken-links-and-redirects">broken links and redirects</a> covers the fixes, and the <a href="/website-audit">website audit</a> finds redirecting links across your whole site.</p>
+<h2>What it can't tell you</h2>
+<ul><li><strong>JavaScript redirects.</strong> We read the server's response and meta refresh tags; we don't run the page's scripts.</li><li><strong>Redirects by country or login.</strong> We visit from Cloudflare's network, usually in a nearby country. Sites that redirect by location, cookie or login may send you somewhere else.</li><li><strong>Sites that block checkers.</strong> Some firewalls refuse automated visits, which shows as a 403 or no response even when the site works in your browser.</li></ul>`,
+    faqs: [["Is the redirect checker free?", "Yes. No sign-up, no email and no subscription. Check up to 100 addresses at a time, with only a fair-use limit to stop bots."], ["How many redirects is too many?", "Aim for one. Google follows up to ten hops, but each one slows the page down, so point old addresses straight at the final page."], ["Should http and www versions redirect?", "Yes. Pick one version of your site – usually https without www, or with it – and 301 every other version to it, so visitors and Google see a single address."], ["Why does the checker show a 403 when my site works?", "Your site's firewall is probably blocking automated visitors. That's not a problem for Google if it allows Googlebot, but it's worth checking in Search Console."]],
   },
   {
     path: "/domain-age-checker", crumb: "Domain age checker", parent: ["/seo-tools", "SEO tools"], title: "Domain Age Checker | Bulk, Free, No Sign-Up",

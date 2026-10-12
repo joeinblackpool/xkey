@@ -7,6 +7,7 @@
 // in-process, so no internet is needed.
 import { need, serve, blData, whoisStandIns } from "./lib.mjs";
 import { whoisApi, whoisDate, parseWhois } from "../src/whois.js";
+import { traceRedirects, metaRefresh, redirectsApi } from "../src/redirects.js";
 import { backlinksApi, authorityApi, crc32 } from "../src/backlinks.js";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
@@ -19,7 +20,7 @@ const only = process.argv[2] ? new RegExp(process.argv[2], "i") : null;
 // 0) Backlink lookups straight against the index files: format 2 (all domains) and the older
 //    format 1 (.uk only), which the site must keep reading until a format-2 release is published.
 let apiFailed = 0;
-if (!only || only.test("backlink") || only.test("whois")) {
+if (!only || only.test("backlink") || only.test("whois") || only.test("redirect")) {
   const bl = async (dir, d, vs) => (await backlinksApi({ BL_DATA: blData(dir) }, { waitUntil() {} }, new URLSearchParams(vs ? { d, vs } : { d }))).body;
   const da = async (dir, d) => (await authorityApi({ BL_DATA: blData(dir) }, { waitUntil() {} }, new URLSearchParams({ d }))).body;
   const checks = [
@@ -43,6 +44,17 @@ if (!only || only.test("backlink") || only.test("whois")) {
     ["whois: more than 10 refused", async () => /Up to 10/.test((await wh(Array.from({ length: 11 }, (_, i) => `s${i}.com`).join(","))).error)],
     ["whois: date formats", () => whoisDate("12-Mar-2001") === "2001-03-12" && whoisDate("2001.03.12 10:00:00") === "2001-03-12" && whoisDate("12/03/2001") === "2001-03-12" && whoisDate("20010312") === "2001-03-12" && whoisDate("before Aug-1996") === null && parseWhois("Registered on: 05-Jun-1996\n").created === "1996-06-05"],
     ["whois: tidy status, name servers and EURid registrar", () => { const p = parseWhois("Domain Status: clientTransferProhibited https://icann.org/epp#clientTransferProhibited\nName Server: NS1.X.COM.\nRegistrar:\n        Name: ClearMedia NV\n"); return p.status[0] === "client transfer prohibited" && p.nameservers[0] === "ns1.x.com" && p.registrar === "ClearMedia NV"; }],
+  );
+  // a fake web for the redirect checker: path -> [status, location or html]
+  const web = { "/a": [301, "/b"], "/b": [302, "https://site.co.uk/c"], "/c": [200, '<html><head><meta http-equiv="refresh" content="0; URL=\'/d\'"></head><body>x</body></html>'], "/d": [200, "<html><body>done</body></html>"],
+    "/loop1": [301, "/loop2"], "/loop2": [301, "/loop1"], "/gone": [301, "/missing"], "/missing": [404, ""], "/private": [301, "http://127.0.0.1/admin"], "/insecure": [301, "http://site.co.uk/d"] };
+  let calls = 0;
+  const fakeFetch = async (u) => { calls++; const [st, v] = web[new URL(u).pathname] || [404, ""]; return st >= 300 && st < 400 ? new Response(null, { status: st, headers: { location: v } }) : new Response(v, { status: st, headers: { "content-type": "text/html" } }); };
+  checks.push(
+    ["redirects: 301 + 302 + meta refresh chain", async () => { const r = await traceRedirects("https://site.co.uk/a", fakeFetch); return r.redirects === 3 && r.final === "https://site.co.uk/d" && r.status === 200 && r.ok && r.hops[2].type === "meta" && r.problems.some((p) => /3 redirects/.test(p)) && r.problems.some((p) => /302/.test(p)) && r.problems.some((p) => /meta refresh/.test(p)); }],
+    ["redirects: loop, 404 end, private target, https to http", async () => { const [l, g, p, i] = await Promise.all(["site.co.uk/loop1", "https://site.co.uk/gone", "https://site.co.uk/private", "https://site.co.uk/insecure"].map((u) => traceRedirects(u, fakeFetch))); return !l.ok && /loop/i.test(l.problems[0]) && !g.ok && g.status === 404 && !p.ok && /can't be followed/.test(p.problems.join()) && p.hops.length === 1 && i.problems.some((x) => /insecure http/.test(x)); }],
+    ["redirects: meta refresh parsing", () => metaRefresh('<meta content="5;url=https://x.co.uk/" http-equiv="Refresh">').url === "https://x.co.uk/" && metaRefresh("<meta http-equiv=refresh content='0'>") === null && metaRefresh("<head></head><body><meta http-equiv=\"refresh\" content=\"0;url=/x\"></body>") === null],
+    ["redirects: subrequest budget and batch limit", async () => { calls = 0; const r = (await redirectsApi(new URLSearchParams(Array.from({ length: 10 }, () => ["u", "site.co.uk/loop1"])), fakeFetch)).body; const big = (await redirectsApi(new URLSearchParams(Array.from({ length: 11 }, (_, i) => ["u", `s${i}.co.uk`])), fakeFetch)).body; return calls <= 45 && r.results.length === 10 && /Up to 10/.test(big.error); }],
   );
   for (let [name, fn] of checks) {
     let ok = false; try { ok = await fn(); } catch (e) { name += " – " + e.message; }
@@ -93,6 +105,8 @@ const S = [
   { name: "Backlink checker – opened from a link", path: "/backlink-checker?d=rival.co.uk", expect: ["#bl-out", /rival\.co\.uk[\s\S]*4[\s\S]*websites link to it/] },
   { name: "Domain authority checker", path: "/domain-authority-checker", fill: [["da-urls", "smithplumbing.co.uk\nhttps://www.wikipedia.org/\nnothing.co.uk"]], click: "#da-form button[type=submit]", expect: ["#da-out", /smithplumbing\.co\.uk[\s\S]*33[\s\S]*#5[\s\S]*wikipedia\.org[\s\S]*100[\s\S]*#1[\s\S]*No links found[\s\S]*Download CSV/] },
   { name: "Domain authority checker – 25 sites in batches", path: "/domain-authority-checker", fill: [["da-urls", Array.from({ length: 24 }, (_, i) => `site${i}.co.uk`).concat("bbc.co.uk").join("\n")]], click: "#da-form button[type=submit]", expect: ["#da-out", /bbc\.co\.uk[\s\S]*#2[\s\S]*Sort by authority/] },
+  { name: "Redirect checker", path: "/redirect-checker", fill: [["rd-urls", "http://www.xkey.co.uk/seo-checker"]], click: "#rd-form button[type=submit]", expect: ["#rd-out", /http:\/\/www\.xkey\.co\.uk\/seo-checker[\s\S]*2 redirects, ends 200[\s\S]*301[\s\S]*301[\s\S]*200[\s\S]*Final address: https:\/\/xkey\.co\.uk\/[\s\S]*2 redirects in a row[\s\S]*Download CSV/] },
+  { name: "Redirect checker – http/https/www versions", path: "/redirect-checker", fill: [["rd-urls", "xkey.co.uk"]], click: "#rd-four", expect: ["#rd-out", /http:\/\/xkey\.co\.uk\/[\s\S]*1 redirect,[\s\S]*http:\/\/www\.xkey\.co\.uk[\s\S]*https:\/\/xkey\.co\.uk\/ – 0 redirects, ends 200[\s\S]*https:\/\/www\.xkey\.co\.uk[\s\S]*Download CSV/] },
   { name: "Domain age checker", path: "/domain-age-checker", fill: [["dg-urls", "example.com\nsmithplumbing.co.uk\nnothing-here.co.uk\nsoon.co.uk\nbeispiel.de"]], click: "#dg-form button[type=submit]", expect: ["#dg-out", /example\.com[\s\S]*\d+ years[\s\S]*14 Aug 1995[\s\S]*smithplumbing\.co\.uk[\s\S]*Tucows[\s\S]*Not registered[\s\S]*\d+ days left[\s\S]*beispiel\.de[\s\S]*Not published[\s\S]*Download CSV/] },
   { name: "Domain age checker – 25 in batches", path: "/domain-age-checker", fill: [["dg-urls", Array.from({ length: 24 }, (_, i) => `free${i}.co.uk`).concat("example.com").join("\n")]], click: "#dg-form button[type=submit]", expect: ["#dg-out", /example\.com[\s\S]*Oldest first/] },
   { name: "WHOIS lookup", path: "/whois-lookup", fill: [["wh-d", "https://www.example.com/page"]], click: "#wh-form button[type=submit]", expect: ["#wh-out", /example\.com[\s\S]*\d+ years[\s\S]*Assigned Numbers[\s\S]*a\.iana-servers\.net[\s\S]*client transfer prohibited[\s\S]*Signed/] },

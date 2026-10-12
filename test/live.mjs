@@ -1,6 +1,6 @@
 // Checks against the real internet (not part of test/all.mjs, which runs offline):
 //   node test/live.mjs registries   – src/whois.js against real registries (RDAP, and WHOIS on port 43 via node:net)
-//   node test/live.mjs site         – the live xkey.co.uk APIs: backlinks, authority, whois
+//   node test/live.mjs site         – the live xkey.co.uk APIs: backlinks, authority, redirects, whois
 // Run by .github/workflows/live-check.yml. Exits 1 if anything looks wrong.
 import net from "node:net";
 import { whoisApi } from "../src/whois.js";
@@ -42,6 +42,9 @@ if (process.argv.includes("site")) {
   [s, j] = await api("/api/authority?d=bbc.co.uk,github.com,nothing-xkey-12345.co.uk");
   const a = (j.results || []);
   check("authority: scores and global rank", s === 200 && j.ranks && a[0].authority > 50 && a[0].rank > 0 && a[1].rank > 0 && a[2].authority === 0, `${s} ${a.map((x) => x.authority + "/#" + x.rank).join(" ")}`);
+  [s, j] = await api("/api/redirects?u=http://github.com&u=https://www.bbc.co.uk/news");
+  const rr = j.results || [];
+  check("redirects: http to https, and a normal page", s === 200 && rr[0] && rr[0].redirects >= 1 && rr[0].final.startsWith("https://github.com") && rr[1] && rr[1].status === 200, rr.map((r) => r.error || `${r.redirects} -> ${r.status} ${r.final}`).join("; "));
   [s, j] = await api("/api/whois?d=bbc.co.uk,github.com,rte.ie,google.de");
   const w = j.results || [];
   for (const r of w) console.log(JSON.stringify(r).slice(0, 300));

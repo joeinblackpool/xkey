@@ -454,6 +454,58 @@ export function toolsApp() {
     draw(); work(); work();
   });
 
+  // ---- redirect checker (/api/redirects, up to 100 addresses in batches of 10)
+  var rd = $("rd-form");
+  if (rd) {
+    var rdRun = function () {
+      var seen = {}, list = $("rd-urls").value.split(/\s+/).filter(function (x) { if (!/\./.test(x) || seen[x]) return false; seen[x] = 1; return true; }).slice(0, 100);
+      var out = $("rd-out"); if (!list.length) { out.innerHTML = '<p class="s-warn">Add at least one web address.</p>'; return; }
+      var agent = $("rd-agent").value, res = list.map(function () { return null; }), batches = [], failed = "";
+      for (var b = 0; b < list.length; b += 10) batches.push(b);
+      var stCol = function (s) { return col(s >= 200 && s < 300, s >= 300 && s < 400); };
+      var draw = function () {
+        var done = res.filter(Boolean).length;
+        out.innerHTML = (done < list.length ? '<p class="small">' + done + " of " + list.length + " checked…</p>" : "") + (failed ? '<p class="s-fail">' + esc(failed) + "</p>" : "") + list.map(function (u, i) {
+          var r = res[i];
+          if (!r) return '<div class="card" style="margin:12px 0"><p>' + esc(u) + ' <span class="small">Waiting…</span></p></div>';
+          if (r.error) return '<div class="card" style="margin:12px 0"><p style="overflow-wrap:anywhere"><b>' + esc(r.input) + '</b></p><p class="s-fail">' + esc(r.error) + "</p></div>";
+          var verdict = r.problems.length ? '<span style="color:' + col(false, r.ok) + '">' + (r.ok ? "Works, with " + r.problems.length + " thing" + (r.problems.length === 1 ? "" : "s") + " to fix" : "Problem") + "</span>" : '<span style="color:#1a7f37">' + (r.redirects ? "Good redirect" : "No redirect") + "</span>";
+          return '<details class="card" style="margin:12px 0"' + (list.length <= 4 ? " open" : "") + '><summary style="cursor:pointer;overflow-wrap:anywhere"><b>' + esc(r.start) + "</b> – " + r.redirects + " redirect" + (r.redirects === 1 ? "" : "s") + ', ends <b style="color:' + stCol(r.status) + '">' + (r.status || "no response") + "</b> · " + verdict + "</summary>" +
+            '<ol style="margin:12px 0 0;padding-left:22px">' + r.hops.map(function (h) {
+              return '<li style="margin:6px 0;overflow-wrap:anywhere"><b style="color:' + stCol(h.status) + '">' + (h.status || "–") + "</b> " + esc(h.text) + (h.type === "meta" ? " (meta refresh" + (h.delay ? ", " + h.delay + "s" : "") + ")" : "") + ' <span class="small">' + h.ms + " ms</span><br>" + esc(h.url) + "</li>";
+            }).join("") + "</ol>" +
+            (r.redirects ? '<p style="overflow-wrap:anywhere">Final address: <b>' + esc(r.final) + "</b></p>" : "") +
+            (r.problems.length ? '<ul style="margin:8px 0 0">' + r.problems.map(function (p) { return "<li>" + esc(p) + "</li>"; }).join("") + "</ul>" : "") + "</details>";
+        }).join("") +
+        (done === list.length ? '<div class="row"><button type="button" class="btn ghost" id="rd-csv">Download CSV</button></div><p class="small">Checked as a ' + (agent === "mobile" ? "mobile" : "desktop") + " browser from Cloudflare's network. Sites that block automated visits or redirect by country or with JavaScript may behave differently for you.</p>" : "");
+        var c = $("rd-csv"); if (c) c.onclick = function () {
+          var cell = function (v) { v = String(v == null ? "" : v); if (/^[=+\-@\t\r]/.test(v)) v = "'" + v; return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+          var rows = [["address", "redirects", "final_status", "final_address", "chain", "problems"]].concat(res.map(function (r, i) { return !r ? [list[i], "error"] : r.error ? [r.input, "error", "", "", "", r.error] : [r.start, r.redirects, r.status, r.final, r.hops.map(function (h) { return h.status + " " + h.url; }).join(" > "), r.problems.join(" ")]; }));
+          var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["﻿" + rows.map(function (r) { return r.map(cell).join(","); }).join("\r\n")], { type: "text/csv" })); a.download = "xkey-redirects.csv"; document.body.appendChild(a); a.click(); a.remove();
+        };
+      };
+      var next = 0;
+      var work = function () {
+        if (next >= batches.length) return; var start = batches[next++], part = list.slice(start, start + 10);
+        fetch("/api/redirects?agent=" + agent + part.map(function (x) { return "&u=" + encodeURIComponent(x); }).join("")).then(function (r) { return r.json(); }).then(function (j) {
+          if (j.error) throw new Error(j.error);
+          j.results.forEach(function (r, k) { res[start + k] = r; });
+        }).catch(function (e) {
+          failed = (e && e.message) || "Couldn't check those – please try again.";
+          part.forEach(function (s, k) { res[start + k] = { input: s, error: "Not checked" }; });
+        }).then(function () { draw(); work(); });
+      };
+      draw(); work(); work();
+    };
+    rd.addEventListener("submit", function (ev) { ev.preventDefault(); rdRun(); });
+    $("rd-four").addEventListener("click", function () {
+      var first = ($("rd-urls").value.split(/\s+/).filter(Boolean)[0] || "").replace(/^[a-z]+:\/\//i, "").split(/[\/?#]/)[0].replace(/^www\./i, "").toLowerCase();
+      if (!/\./.test(first)) { $("rd-urls").focus(); $("rd-out").innerHTML = '<p class="s-warn">Type your website address first.</p>'; return; }
+      $("rd-urls").value = ["http://" + first, "http://www." + first, "https://" + first, "https://www." + first].join("\n");
+      rdRun();
+    });
+  }
+
   // ---- domain age checker + WHOIS lookup (registry data via /api/whois)
   var ageText = function (iso) {
     if (!iso) return "";
