@@ -22,6 +22,10 @@ import { MORE_FORMS, MORE_INSTANT } from "./more-pages.js";
 import { moreApp, redirectPairs, redirectRules } from "./tools-more.js";
 import { PRO_FORMS, PRO_INSTANT } from "./pro-pages.js";
 import { proApp } from "./pro-client.js";
+import { A11Y_FORMS } from "./bundle5-pages.js";
+import { a11yApp } from "./a11y-client.js";
+import { a11yApi } from "./a11y.js";
+import { googleUpdatesSection, GSD_MARK } from "./google-updates.js";
 import { createUptime, getUptime, stopUptime, runUptime, uptimeDashboard, validUptimeId } from "./uptime.js";
 import { createSite, siteBySecret, statsApi, beacon, pruneAnalytics, validSecret, TRACKER_JS } from "./analytics.js";
 import { pluginZip } from "./wp-plugin.js";
@@ -40,6 +44,7 @@ const NAME_SHIM = "var __name=function(f){return f};";
 const MORE_JS = `var redirectPairs=${redirectPairs.toString()};var redirectRules=${redirectRules.toString()};(${moreApp.toString()})();`;
 const TOOLS_JS = `var W=${JSON.stringify(W)};(${toolsApp.toString()})();`;
 const PRO_JS = `(${proApp.toString()})();`;
+const A11Y_JS = `(${a11yApp.toString()})();`;
 
 // ---------- forms
 const input = (id, name, ph, extra = "") => `<label for="${id}" class="sr">Website address</label><input id="${id}" name="${name}" type="text" inputmode="url" autocomplete="url" placeholder="${ph}" required${extra}>`;
@@ -203,6 +208,7 @@ const MAKER = `<div class="maker"><p><strong>Want the fixes done for you?</stron
 Object.assign(FORMS, PRO_FORMS);
 Object.assign(FORMS, MORE_FORMS);
 const INSTANT = new Set([...PRO_INSTANT, ...MORE_INSTANT, "title", "robots", "llms", "meta", "og", "sitemap", "words", "keywords", "titles", "robotsgen", "schemagen", "localserp"]);
+Object.assign(FORMS, PRO_FORMS, A11Y_FORMS);
 const freeStrip = (f) => `<ul class="free" aria-label="What free means here"><li>No cost</li><li>No sign-up</li><li>No email</li><li>No Google sign-in</li><li>No subscription</li><li>${INSTANT.has(f) ? "Unlimited – runs in your browser" : "No limits for normal use"}</li></ul>`;
 function render(p) {
   const form = p.form ? FORMS[p.form](p) : "";
@@ -363,6 +369,7 @@ const worker = {
       case "/assets/tools.js": return send(NAME_SHIM + TOOLS_JS, JS, 200, "public, max-age=3600");
       case "/assets/more.js": return send(NAME_SHIM + MORE_JS, JS, 200, "public, max-age=3600");
       case "/assets/pro.js": return send(NAME_SHIM + PRO_JS, JS, 200, "public, max-age=3600");
+      case "/assets/a11y.js": return send(NAME_SHIM + A11Y_JS, JS, 200, "public, max-age=3600");
       case "/a.js": return new Response(TRACKER_JS, { headers: { "content-type": JS, "cache-control": "public, max-age=86400", "access-control-allow-origin": "*" } });
       case "/downloads/xkey-seo-fixer.zip": return new Response(pluginZip(), { headers: { "content-type": "application/zip", "content-disposition": 'attachment; filename="xkey-seo-fixer.zip"', "cache-control": "public, max-age=3600", "x-robots-tag": "noindex" } });
       case "/favicon.svg": return send(FAVICON, "image/svg+xml", 200, "public, max-age=31536000, immutable");
@@ -441,6 +448,11 @@ const worker = {
         const r = await sslApi(env || {}, url.searchParams, selfFetch(env, c));
         return Response.json(r.body, { status: r.status, headers: { "cache-control": "no-store" } });
       }
+      case "/api/a11y": {
+        if (await rateLimited(request, "a11y", 300)) return Response.json({ error: "You've checked a lot of pages this hour – please try again later." }, { status: 429 });
+        const r = await a11yApi(url.searchParams, selfFetch(env, c));
+        return Response.json(r.body, { status: r.status, headers: { "cache-control": "no-store" } });
+      }
       case "/api/tech": {
         if (await rateLimited(request, "tech", 300)) return Response.json({ error: "You've checked a lot of websites this hour – please try again later." }, { status: 429 });
         const r = await techApi(env || {}, url.searchParams, selfFetch(env, c));
@@ -508,6 +520,7 @@ const worker = {
       const m = await getMonitor(env, path.slice(9));
       if (m) return send(layout({ path, crumb: "SEO monitor", parent: ["/seo-monitoring", "SEO monitoring"], title: `SEO monitor: ${m.host}`, desc: "Weekly SEO monitoring dashboard.", noindex: true, body: dashboard(esc, m) }), HTMLT, 200, "no-store");
     }
+    if (path === "/google-algorithm-updates") return send(HTML[path].replace(GSD_MARK, await googleUpdatesSection(env || {}, c)), HTMLT);
     if (HTML[path]) return send(HTML[path], HTMLT);
     return send(NOT_FOUND, HTMLT, 404);
   },

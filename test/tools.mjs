@@ -5,7 +5,9 @@
 // fails on: a browser error (e.g. a script crashing on load), a missing/empty result, or a result
 // without the expected text. Checks run on xkey.co.uk itself, which the Worker handles
 // in-process, so no internet is needed.
-import { need, serve, blData, whoisStandIns, dnsStandIn, ctStandIn } from "./lib.mjs";
+import { need, serve, blData, whoisStandIns, dnsStandIn, ctStandIn, GSD_FIXTURE } from "./lib.mjs";
+import { a11yCheck } from "../src/a11y.js";
+import { parseIncidents, updatesHtml } from "../src/google-updates.js";
 import { whoisApi, whoisDate, parseWhois } from "../src/whois.js";
 import { traceRedirects, metaRefresh, redirectsApi } from "../src/redirects.js";
 import { extractLinks, linkStatus, linksCheckApi } from "../src/linkcheck.js";
@@ -131,6 +133,16 @@ if (!only || only.test("backlink") || only.test("whois") || only.test("redirect"
         && many.spf.lookups === 11 && lv(many.spf, /^fail:11 DNS lookups/) && lv(many.spf, /^fail:The record ends in \+all/) && many.mx.nullMx
         && sub.dmarc.at === "xkey.co.uk" && lv(sub.dmarc, /^ok:sp=quarantine/) && lv(sub.spf, /^warn:No SPF/) && nosel.dkim.found[0].selector === "selector1" && err.error
         && parseSpf("v=spf1 a/24 mx:m.example.com -all")[0].type === "a" && keyBits("rsa", "") === 0; }],
+    ["a11y: finds missing alt, labels, link names, blocked zoom and heading jumps", () => {
+      const st = (h) => Object.fromEntries(a11yCheck(h).map((c) => [c.id, c.status]));
+      const bad = st('<html><head><meta name="viewport" content="width=device-width, user-scalable=no"></head><body><h1>A</h1><h3>B</h3><img src="/a.jpg"><img src="/b.jpg" alt="IMG_2041.jpg"><a href="/x"><i class="icon"></i></a><a href="/y">Read more</a><button><svg></svg></button><input name="email" placeholder="Email"><iframe src="https://maps.example/"></iframe></body></html>');
+      const good = st('<html lang="en-GB"><head><title>Hi</title></head><body><a href="#main">Skip to content</a><main id="main"><h1>A</h1><h2>B</h2><img src="/a.jpg" alt="Our van"><label for="e">Email</label><input id="e"><button aria-label="Open menu"></button></main></body></html>');
+      return bad.lang === "fail" && bad.title === "fail" && bad.zoom === "fail" && bad.alt === "fail" && bad.altq === "warn" && bad.linkname === "fail" && bad.vague === "warn" && bad.button === "fail" && bad.labels === "fail" && bad.headings === "warn" && bad.iframe === "fail"
+        && ["lang", "title", "zoom", "alt", "linkname", "button", "labels", "headings", "main", "skip"].every((k) => good[k] === "pass") && !good.altq && !good.vague; }],
+    ["google updates: rolling-out banner, durations, other problems; honest fallback", () => {
+      const p = parseIncidents(GSD_FIXTURE), h = updatesHtml(p, Date.parse("2026-10-12T12:00:00Z"));
+      return p.ranking.length === 2 && p.ranking[0].kind === "Core update" && p.ranking[1].days === 14 && p.other[0].service === "Indexing"
+        && /Rolling out now:<\/strong> October 2026 core update/.test(h) && /Still rolling out/.test(h) && /Delays indexing/.test(h) && /couldn't read/.test(updatesHtml(null)) && /couldn't read/.test(updatesHtml(parseIncidents("nonsense"))); }],
     ["tech: no WordPress plugins without WordPress", () => { const t = detectTech('<div class="wpcf7 wp-block-group"></div>'); return !t.length; }],
   );
   for (let [name, fn] of checks) {
@@ -214,6 +226,9 @@ const S = [
     expect: ["#hl-out", /UK, but the country code[\s\S]*No x-default[\s\S]*2 of 3 alternate pages[\s\S]*fr-FR[\s\S]*Yes[\s\S]*de[\s\S]*No – add a tag/] },
   { name: "Website hosting checker", path: "/website-hosting-checker", fill: [["ho-d", "xkey.co.uk"]], click: "#ho-form button[type=submit]", expect: ["#ho-out", /Hosted by Cloudflare[\s\S]*192\.0\.2\.30[\s\S]*CLOUDFLARENET/] },
   { name: "Website hosting checker – opened from a link", path: "/website-hosting-checker?d=xkey.co.uk", expect: ["#ho-out", /192\.0\.2\.30/] },
+  { name: "Accessibility checker", path: "/accessibility-checker", fill: [["a11-url", "xkey.co.uk"]], click: "#a11-form button[type=submit]", expect: ["#a11-out", /out of 100[\s\S]*passed[\s\S]*Page language/] },
+  { name: "Google algorithm updates – live list", path: "/google-algorithm-updates", expect: ["main", /Rolling out now:[\s\S]*October 2026 core update[\s\S]*September 2026 spam update[\s\S]*14 days/] },
+  { name: "SEO course – ticks are saved", path: "/learn-seo", click: "main .ls-tasks input", expect: ["#ls-progress", /1 of \d+ tasks done/] },
   { name: "Website technology checker", path: "/website-technology-checker", fill: [["tc-url", "xkey.co.uk"]], click: "#tc-form button[type=submit]", expect: ["#tc-out", /technolog[\s\S]*Email provider[\s\S]*Google Workspace[\s\S]*DNS provider[\s\S]*Cloudflare[\s\S]*Google Search Console/] },
   { name: "Website technology checker – opened from a link", path: "/website-technology-checker?url=xkey.co.uk", expect: ["#tc-out", /Cloudflare/] },
   { name: "SSL checker", path: "/ssl-checker", fill: [["sl-d", "xkey.co.uk"]], click: "#sl-form button[type=submit]", expect: ["#sl-out", /Secure[\s\S]*loads over https[\s\S]*Google Trust Services[\s\S]*\*\.xkey\.co\.uk/] },
