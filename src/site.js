@@ -42,6 +42,8 @@ export const BRAND = { name: "XKey", fullName: "XKey", domain: "xkey.co.uk", tag
     "Heading structure": ["/guides/on-page-seo-checklist", "the on-page SEO checklist"],
     "Canonical URL": ["/guides/duplicate-content", "duplicate content"],
     "Redirects": ["/guides/broken-links-and-redirects", "broken links and redirects"],
+    "robots.txt": ["/guides/robots-txt", "robots.txt explained"],
+    "XML sitemap": ["/guides/xml-sitemaps", "XML sitemaps"],
     "Security headers": ["/guides/technical-seo-checklist", "the technical SEO checklist"],
     "HSTS": ["/guides/technical-seo-checklist", "the technical SEO checklist"],
     "Render-blocking resources": ["/guides/core-web-vitals", "Core Web Vitals"],
@@ -138,7 +140,7 @@ ${crumbs}<main>${p.body}${maker}</main>
 <div><a class="logo" href="/">X<b>Key</b></a><p>${BRAND.tagline}. No cost, no sign-up, no email, no subscription. Built in the UK.</p><p class="small">Made by <a href="${BRAND.makerUrl}" rel="noopener">${BRAND.maker}</a>, ${BRAND.town}.</p></div>
 <div><strong>SEO checks</strong><ul><li><a href="/">Free SEO check</a></li><li><a href="/website-crawler">Website crawler</a></li><li><a href="/ai-seo-checker">AI SEO checker</a></li><li><a href="/website-audit">Website audit</a></li><li><a href="/backlink-checker">Backlink checker</a></li><li><a href="/seo-comparison">Competitor comparison</a></li><li><a href="/seo-monitoring">SEO monitoring</a></li></ul></div>
 <div><strong>Free tools</strong><ul><li><a href="/title-tag-checker">Title tag checker</a></li><li><a href="/robots-txt-tester">robots.txt tester</a></li><li><a href="/llms-txt-generator">llms.txt generator</a></li><li><a href="/meta-tag-generator">Meta tag generator</a></li><li><a href="/xml-sitemap-generator">Sitemap generator</a></li><li><a href="/keyword-generator">Keyword generator</a></li><li><a href="/ai-meta-description-generator">AI description writer</a></li><li><a href="/keyword-difficulty-checker">Keyword difficulty</a></li><li><a href="/plagiarism-checker">Plagiarism checker</a></li><li><a href="/word-counter">Word counter</a></li><li><a href="/seo-tools">All 32 SEO tools</a></li></ul></div>
-<div><strong>XKey</strong><ul><li><a href="/guides">SEO guides</a></li><li><a href="/about">About</a></li><li><a href="/contact">Contact</a></li><li><a href="mailto:${BRAND.email}">${BRAND.email}</a></li><li><a href="/privacy">Privacy</a></li></ul></div>
+<div><strong>XKey</strong><ul><li><a href="/guides">SEO guides</a></li><li><a href="/learn-seo">Free SEO course</a></li><li><a href="/seo-glossary">SEO glossary</a></li><li><a href="/google-algorithm-updates">Google updates</a></li><li><a href="/uk-business-directories">UK directories</a></li><li><a href="/about">About</a></li><li><a href="/contact">Contact</a></li><li><a href="mailto:${BRAND.email}">${BRAND.email}</a></li><li><a href="/privacy">Privacy</a></li></ul></div>
 </div><p class="small">© ${UPDATED.slice(0, 4)} ${BRAND.name}. Scores are a guide, not a guarantee of rankings.</p></div></footer></body></html>`;
 }
 
