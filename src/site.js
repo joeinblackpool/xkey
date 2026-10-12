@@ -41,6 +41,8 @@ export const BRAND = { name: "XKey", fullName: "XKey", domain: "xkey.co.uk", tag
     "Heading structure": ["/guides/on-page-seo-checklist", "the on-page SEO checklist"],
     "Canonical URL": ["/guides/duplicate-content", "duplicate content"],
     "Redirects": ["/guides/broken-links-and-redirects", "broken links and redirects"],
+    "robots.txt": ["/guides/robots-txt", "robots.txt explained"],
+    "XML sitemap": ["/guides/xml-sitemaps", "XML sitemaps"],
     "Security headers": ["/guides/technical-seo-checklist", "the technical SEO checklist"],
     "HSTS": ["/guides/technical-seo-checklist", "the technical SEO checklist"],
     "Render-blocking resources": ["/guides/core-web-vitals", "Core Web Vitals"],
