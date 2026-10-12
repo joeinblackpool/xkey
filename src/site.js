@@ -39,7 +39,7 @@ export const BRAND = { name: "XKey", fullName: "XKey", domain: "xkey.co.uk", tag
     "Question-led content": ["/guides/how-to-write-seo-content", "how to write SEO content"],
     "Readability": ["/guides/how-to-write-seo-content", "how to write SEO content"],
     "Heading structure": ["/guides/on-page-seo-checklist", "the on-page SEO checklist"],
-    "Canonical URL": ["/guides/technical-seo-checklist", "the technical SEO checklist"],
+    "Canonical URL": ["/guides/duplicate-content", "duplicate content"],
     "Redirects": ["/guides/broken-links-and-redirects", "broken links and redirects"],
     "Security headers": ["/guides/technical-seo-checklist", "the technical SEO checklist"],
     "HSTS": ["/guides/technical-seo-checklist", "the technical SEO checklist"],
