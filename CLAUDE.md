@@ -73,6 +73,9 @@ Free SEO & AI search checker for UK businesses, made by IceWork (icework.co.uk).
 ## WordPress plugin (wordpress-plugin/xkey-seo-fixer, /wordpress-seo-plugin)
 - PHP plugin (Tools → XKey SEO Fixer): alt text, meta descriptions (Yoast/Rank Math/SEOPress fields, else its own tag), H1→H2 in content, broken internal links. Pure transforms in `includes/transforms.php`, tested by `php wordpress-plugin/test/run.php`.
 - Served as /downloads/xkey-seo-fixer.zip, zipped by the Worker from `src/wp-plugin-files.js`. After changing the plugin run `node wordpress-plugin/bundle.mjs` (test/pro.mjs fails if the bundle is stale).
+## Browser-only tools in tools-extra.js: QR code generator, Google review link generator, image compressor, privacy policy generator
+- `src/tools-extra.js` (served as /assets/extra.js: `qrMatrix` + `extraApp` via toString, so no imports or bundler helpers), pages and forms in `src/extra-pages.js`. Element id prefixes qr-, rv-, ic-, pp-. Nothing is sent to the server.
+- `qrMatrix(text, ecl)` is a full QR encoder (byte mode, versions 1–40, all four error levels, best mask). Static codes only: the link is in the code, no redirect. Verified by decoding with OpenCV; tools.mjs checks structure and the pages.
 
 ## UK business directories, redirect map generator, SEO ROI calculator
 - `src/directories-page.js`: /uk-business-directories – `GROUPS` list (name, domain, link, best for); the page fills each authority from /api/authority after load.

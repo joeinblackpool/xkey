@@ -25,6 +25,8 @@ import { proApp } from "./pro-client.js";
 import { createUptime, getUptime, stopUptime, runUptime, uptimeDashboard, validUptimeId } from "./uptime.js";
 import { createSite, siteBySecret, statsApi, beacon, pruneAnalytics, validSecret, TRACKER_JS } from "./analytics.js";
 import { pluginZip } from "./wp-plugin.js";
+import { EXTRA_FORMS, EXTRA_INSTANT } from "./extra-pages.js";
+import { extraApp, qrMatrix } from "./tools-extra.js";
 
 const BY_PATH = Object.fromEntries(PAGES.map((p) => [p.path, p]));
 const GUIDES = PAGES.filter((p) => p.path.startsWith("/guides/"));
@@ -38,6 +40,7 @@ for (const c of "–—£€’‘“”…·•é") W[c] = pixelWidth(c, 2048);
 // off; this shim keeps the scripts working even if that setting is ever lost.
 const NAME_SHIM = "var __name=function(f){return f};";
 const MORE_JS = `var redirectPairs=${redirectPairs.toString()};var redirectRules=${redirectRules.toString()};(${moreApp.toString()})();`;
+const EXTRA_JS = `var qrMatrix=${qrMatrix.toString()};(${extraApp.toString()})();`;
 const TOOLS_JS = `var W=${JSON.stringify(W)};(${toolsApp.toString()})();`;
 const PRO_JS = `(${proApp.toString()})();`;
 
@@ -172,6 +175,7 @@ Café &amp; Bistro – Blackpool's Finest!</textarea>
 <p style="margin:16px 0 0"><button class="btn" type="submit">Check them all</button></p><div id="bk-out" aria-live="polite"></div></form><script src="/assets/tools.js" defer></script>`,
   badge: () => `<form class="tool" id="bd-form"><label for="bd-site">Your website</label><input id="bd-site" type="text" inputmode="url" placeholder="yoursite.co.uk">
 <p style="margin:16px 0 6px;font-weight:600">Preview</p><div id="bd-prev"></div><p style="margin:16px 0 6px;font-weight:600">Code to paste into your site</p><pre class="out" id="bd-code"></pre><button class="btn" type="button" id="bd-copy">Copy</button></form><script src="/assets/tools.js" defer></script>`,
+  ...EXTRA_FORMS,
 };
 
 // crawlers offered by the robots tester: [token(s) in fallback order, label, purpose]
@@ -202,7 +206,7 @@ const MAKER = `<div class="maker"><p><strong>Want the fixes done for you?</stron
 
 Object.assign(FORMS, PRO_FORMS);
 Object.assign(FORMS, MORE_FORMS);
-const INSTANT = new Set([...PRO_INSTANT, ...MORE_INSTANT, "title", "robots", "llms", "meta", "og", "sitemap", "words", "keywords", "titles", "robotsgen", "schemagen", "localserp"]);
+const INSTANT = new Set([...PRO_INSTANT, ...MORE_INSTANT, ...EXTRA_INSTANT, "title", "robots", "llms", "meta", "og", "sitemap", "words", "keywords", "titles", "robotsgen", "schemagen", "localserp"]);
 const freeStrip = (f) => `<ul class="free" aria-label="What free means here"><li>No cost</li><li>No sign-up</li><li>No email</li><li>No Google sign-in</li><li>No subscription</li><li>${INSTANT.has(f) ? "Unlimited – runs in your browser" : "No limits for normal use"}</li></ul>`;
 function render(p) {
   const form = p.form ? FORMS[p.form](p) : "";
@@ -365,6 +369,7 @@ const worker = {
       case "/assets/pro.js": return send(NAME_SHIM + PRO_JS, JS, 200, "public, max-age=3600");
       case "/a.js": return new Response(TRACKER_JS, { headers: { "content-type": JS, "cache-control": "public, max-age=86400", "access-control-allow-origin": "*" } });
       case "/downloads/xkey-seo-fixer.zip": return new Response(pluginZip(), { headers: { "content-type": "application/zip", "content-disposition": 'attachment; filename="xkey-seo-fixer.zip"', "cache-control": "public, max-age=3600", "x-robots-tag": "noindex" } });
+      case "/assets/extra.js": return send(NAME_SHIM + EXTRA_JS, JS, 200, "public, max-age=3600");
       case "/favicon.svg": return send(FAVICON, "image/svg+xml", 200, "public, max-age=31536000, immutable");
       case "/favicon.ico": return Response.redirect(`${url.origin}/favicon.svg`, 301);
       case "/og.png": return send(OG_BYTES, "image/png", 200, "public, max-age=86400");

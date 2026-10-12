@@ -36,6 +36,9 @@ await expect("/nope", 404);
 for (const f of ["/og.png", "/favicon.svg", "/robots.txt", "/llms.txt", "/sitemap.xml", "/assets/tools.js", "/assets/more.js", "/assets/report.js", "/assets/audit.js", "/assets/compare.js", "/site.webmanifest"]) await expect(f, 200);
 new Function((await (await get("/assets/tools.js")).text())); // parses
 new Function((await (await get("/assets/more.js")).text()));
+for (const f of ["/og.png", "/favicon.svg", "/robots.txt", "/llms.txt", "/sitemap.xml", "/assets/tools.js", "/assets/extra.js", "/assets/report.js", "/assets/audit.js", "/assets/compare.js", "/site.webmanifest"]) await expect(f, 200);
+new Function((await (await get("/assets/tools.js")).text())); // parses
+new Function((await (await get("/assets/extra.js")).text()));
 const sm = await (await get("/sitemap.xml")).text(), locs = [...sm.matchAll(/<loc>(.*?)<\/loc>/g)].map((m) => m[1]);
 if (new Set(locs).size !== locs.length || locs.length !== PAGES.length) fail("sitemap URLs");
 // robots tester
