@@ -251,7 +251,7 @@ export function toolsApp() {
         if (j.cert) h += '<div class="tablewrap"><table><tbody><tr><th scope="row" style="text-align:left">Issued by</th><td>' + esc(j.cert.issuer) + '</td></tr><tr><th scope="row" style="text-align:left">Valid from</th><td>' + esc(j.cert.from) + '</td></tr><tr><th scope="row" style="text-align:left">Expires</th><td style="color:' + col(j.cert.daysLeft >= 21, j.cert.daysLeft >= 7) + '">' + esc(j.cert.to) + " (" + j.cert.daysLeft + ' days)</td></tr><tr><th scope="row" style="text-align:left;vertical-align:top">Covers</th><td style="overflow-wrap:anywhere">' + j.cert.names.map(esc).join(", ") + "</td></tr></tbody></table></div>";
         else h += '<p class="small">' + (j.ctError ? "The public certificate logs didn't answer just now, so we can't show the dates – try again in a minute." : "No current certificate for this exact name was found in the public certificate logs.") + "</p>";
         if (j.mixed.length) h += "<h3>Insecure items on the page</h3><ul>" + j.mixed.slice(0, 30).map(function (m) { return '<li style="overflow-wrap:anywhere">' + (m.active ? "<b>Blocked</b> " : "") + "&lt;" + esc(m.tag) + "&gt; " + esc(m.url) + "</li>"; }).join("") + "</ul><p class=\"small\">Change each address to start with https://, or remove it.</p>";
-        h += '<p class="small">Certificate dates come from public Certificate Transparency logs (crt.sh), which list every certificate issued; the server checks are made live. See all response headers with the <a href="/http-header-checker?url=' + encodeURIComponent("https://" + j.name) + '">HTTP header checker</a>.</p>';
+        h += '<p class="small">Certificate dates come from public Certificate Transparency logs (crt.sh or Cert Spotter), which list every certificate issued; the server checks are made live. See all response headers with the <a href="/http-header-checker?url=' + encodeURIComponent("https://" + j.name) + '">HTTP header checker</a>.</p>';
         out.innerHTML = h;
       }).catch(function () { out.innerHTML = '<p class="s-fail">Couldn\'t check that site – please try again.</p>'; });
     });
@@ -654,6 +654,64 @@ export function toolsApp() {
     var lc = { fail: "#cf222e", warn: "#9a6700", ok: "#1a7f37", info: "inherit" }, icon = { fail: "✗", warn: "!", ok: "✓", info: "•" };
     return notes.length ? '<ul style="list-style:none;padding:0;margin:8px 0">' + notes.map(function (n) { return '<li style="margin:6px 0;overflow-wrap:anywhere;color:' + lc[n[0]] + '"><b>' + icon[n[0]] + "</b> " + esc(n[1]) + "</li>"; }).join("") + "</ul>" : "";
   };
+
+  // ---- MX lookup, SPF, DMARC and DKIM checkers (one form, data-t picks the main result; /api/email)
+  var em = $("em-form");
+  if (em) {
+    var emT = em.getAttribute("data-t");
+    var emS = (location.search.match(/[?&]s=([^&]+)/) || [])[1];
+    if (emS && $("em-s") && !$("em-s").value) { try { $("em-s").value = decodeURIComponent(emS); } catch (e) {} }
+    prefill(em, "em-d", "d");
+    var emLabel = { mx: "MX lookup", spf: "SPF checker", dmarc: "DMARC checker", dkim: "DKIM checker" };
+    var emWorst = function (checks) { return checks.some(function (c) { return c.level === "fail"; }) ? "fail" : checks.some(function (c) { return c.level === "warn"; }) ? "warn" : "ok"; };
+    var emNotes = function (checks) { return noteList(checks.map(function (c) { return [c.level, c.text]; })); };
+    var row = function (k, v) { return '<tr><th scope="row" style="text-align:left;vertical-align:top">' + esc(k) + '</th><td style="overflow-wrap:anywhere">' + v + "</td></tr>"; };
+    var DM = { v: "Version", p: "Policy for this domain", sp: "Policy for subdomains", pct: "Share of failing email the policy applies to (%)", rua: "Where daily summary reports go", ruf: "Where failure reports go", adkim: "DKIM alignment (r = relaxed, s = strict)", aspf: "SPF alignment (r = relaxed, s = strict)", fo: "When to send failure reports", rf: "Failure report format", ri: "Seconds between summary reports", np: "Policy for subdomains that don't exist" };
+    var Q = { "+": "", "-": "-", "~": "~", "?": "?" };
+    var spfTree = function (node, depth) {
+      if (!node || !node.terms || !node.terms.length) return "";
+      return '<ul style="margin:4px 0;padding-left:' + (depth ? 18 : 0) + 'px;list-style:' + (depth ? "disc" : "none") + '">' + node.terms.map(function (t) {
+        var c = t.child, label = Q[t.q] + t.type + (t.value ? (/^\//.test(t.value) ? "" : t.type === "redirect" ? "=" : ":") + t.value : "");
+        var extra = t.sender ? " – " + esc(t.sender) : "";
+        if (c && c.missing) extra += ' <span style="color:#cf222e">– no SPF record here</span>';
+        if (c && c.loop) extra += ' <span style="color:#cf222e">– loop</span>';
+        if (c && c.skipped) extra += ' <span class="small">(not followed)</span>';
+        return '<li style="margin:4px 0;overflow-wrap:anywhere"><code>' + esc(label) + "</code>" + extra + (c && c.terms ? spfTree(c, depth + 1) : "") + "</li>";
+      }).join("") + "</ul>";
+    };
+    em.addEventListener("submit", function (ev) {
+      ev.preventDefault();
+      var d = $("em-d").value.trim(), out = $("em-out"), s = $("em-s") ? $("em-s").value.trim() : "";
+      if (!d) { $("em-d").focus(); return; }
+      out.innerHTML = "<p>Looking up the email records…</p>";
+      fetch("/api/email?d=" + encodeURIComponent(d) + "&t=" + emT + (s ? "&s=" + encodeURIComponent(s) : "")).then(function (r) { return r.json(); }).then(function (j) {
+        if (j.error) { out.innerHTML = '<p class="s-fail">' + esc(j.error) + "</p>"; return; }
+        var main = j[emT], worst = emWorst(main.checks), h = "";
+        var verdict = {
+          mx: j.mx.records.length ? j.mx.records.length + " mail server" + (j.mx.records.length > 1 ? "s" : "") : j.mx.nullMx ? "Doesn't receive email" : "No MX records",
+          spf: j.spf.root.record ? (worst === "fail" ? "SPF has problems" : "SPF is set up") : "No SPF record",
+          dmarc: j.dmarc.record ? (worst === "fail" ? "DMARC has problems" : "DMARC is set up") : "No DMARC record",
+          dkim: j.dkim && j.dkim.found.length ? j.dkim.found.length + " DKIM key" + (j.dkim.found.length > 1 ? "s" : "") + " found" : "No DKIM key found",
+        }[emT];
+        h += '<div class="card" style="margin:16px 0"><p class="ct" style="overflow-wrap:anywhere">' + esc(j.name) + '</p><p style="font-size:24px;margin:8px 0;color:' + col(worst === "ok", worst === "warn") + '"><b>' + esc(verdict) + "</b></p>" + emNotes(main.checks) + "</div>";
+        if (emT === "mx" && j.mx.records.length) h += '<div class="tablewrap"><table><thead><tr><th>Priority</th><th>Mail server</th><th>Provider</th><th>IP address</th></tr></thead><tbody>' + j.mx.records.map(function (m) { return "<tr><td>" + m.pref + '</td><td style="overflow-wrap:anywhere">' + esc(m.host) + "</td><td>" + esc(m.provider || "–") + '</td><td style="overflow-wrap:anywhere">' + (m.ips ? (m.ips.length ? m.ips.map(esc).join("<br>") : '<span style="color:#cf222e">doesn\'t resolve</span>') : "–") + "</td></tr>"; }).join("") + '</tbody></table></div><p class="small">The lowest priority number is tried first.</p>';
+        if (emT === "spf" && j.spf.root.record) h += '<h3>The SPF record</h3><p style="overflow-wrap:anywhere"><code id="em-rec">' + esc(j.spf.root.record) + '</code></p><p><b style="color:' + col(j.spf.lookups < 9, j.spf.lookups <= 10) + '">' + j.spf.lookups + " / 10</b> DNS lookups</p><h3>Every sender it allows</h3>" + spfTree(j.spf.root, 0) + '<p class="small">include, a, mx, ptr, exists and redirect each use one of the 10 lookups, counted through every include. ip4 and ip6 are free.</p>';
+        if (emT === "dmarc" && j.dmarc.record) h += '<h3>The DMARC record' + (j.dmarc.at !== j.name ? " (on " + esc(j.dmarc.at) + ")" : "") + '</h3><p style="overflow-wrap:anywhere"><code id="em-rec">' + esc(j.dmarc.record) + '</code></p><div class="tablewrap"><table><thead><tr><th>Tag</th><th>Value</th><th>Meaning</th></tr></thead><tbody>' + Object.keys(j.dmarc.tags).map(function (k) { return "<tr><td><code>" + esc(k) + '</code></td><td style="overflow-wrap:anywhere">' + esc(j.dmarc.tags[k]) + "</td><td>" + esc(DM[k] || "Unknown tag – check for a typo") + "</td></tr>"; }).join("") + "</tbody></table></div>";
+        if (emT === "dkim") {
+          if (j.dkim.found.length) h += '<div class="tablewrap"><table><thead><tr><th>Selector</th><th>Key</th><th>Record</th></tr></thead><tbody>' + j.dkim.found.map(function (f) { return "<tr><td><code>" + esc(f.selector) + "</code></td><td>" + (f.revoked ? "revoked" : f.k === "ed25519" ? "ed25519" : f.bits + "-bit RSA") + '</td><td style="overflow-wrap:anywhere;font-size:13px">' + esc(f.record.length > 160 ? f.record.slice(0, 160) + "…" : f.record) + "</td></tr>"; }).join("") + "</tbody></table></div>";
+          if (!s) h += '<p class="small">Selectors tried: ' + j.dkim.selectors.map(esc).join(", ") + ".</p>";
+        }
+        var others = ["mx", "spf", "dmarc", "dkim"].filter(function (k) { return k !== emT; });
+        h += "<h3>The rest of " + esc(j.name) + "'s email set-up</h3><ul>" + others.map(function (k) {
+          var link = '<a href="/' + { mx: "mx-lookup", spf: "spf-checker", dmarc: "dmarc-checker", dkim: "dkim-checker" }[k] + "?d=" + encodeURIComponent(j.name) + '">' + emLabel[k] + "</a>";
+          if (k === "dkim") return "<li>DKIM: check the keys with the " + link + ".</li>";
+          var w = emWorst(j[k].checks), first = j[k].checks.filter(function (c) { return c.level === w; })[0] || j[k].checks[0];
+          return '<li style="overflow-wrap:anywhere"><b style="color:' + col(w === "ok", w === "warn") + '">' + (k === "mx" ? "MX" : k.toUpperCase()) + ":</b> " + esc(first ? first.text : "") + " " + link + "</li>";
+        }).join("") + '</ul><p class="small">We read the public DNS records, live. That shows what the domain publishes, not whether one particular email passed – for that, look at the Authentication-Results header of an email you\'ve received.</p>';
+        out.innerHTML = h;
+      }).catch(function () { out.innerHTML = '<p class="s-fail">Couldn\'t look that up – please try again.</p>'; });
+    });
+  }
 
   // ---- website down checker (uses /api/redirects)
   var ud = $("ud-form");

@@ -17,6 +17,7 @@ import { techApi } from "./tech.js";
 import { hostingApi } from "./hosting.js";
 import { metaApi } from "./meta.js";
 import { sslApi } from "./ssl.js";
+import { emailApi } from "./email.js";
 
 const BY_PATH = Object.fromEntries(PAGES.map((p) => [p.path, p]));
 const GUIDES = PAGES.filter((p) => p.path.startsWith("/guides/"));
@@ -120,6 +121,7 @@ Contact | /contact | Phone, email and opening hours</textarea>
   ogcheck: () => `<form class="ck-form" id="oc-form"><label for="oc-url" class="sr">Page address</label><input id="oc-url" type="text" inputmode="url" autocomplete="url" placeholder="yourwebsite.co.uk/page" required><button class="btn" type="submit">Check sharing tags</button></form><div id="oc-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
   hreflang: () => `<form class="ck-form" id="hl-form"><label for="hl-url" class="sr">Page address</label><input id="hl-url" type="text" inputmode="url" autocomplete="url" placeholder="yourwebsite.com/en-gb/" required><button class="btn" type="submit">Check hreflang</button></form><div id="hl-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
   hosting: () => `<form class="ck-form" id="ho-form"><label for="ho-d" class="sr">Website address</label><input id="ho-d" type="text" inputmode="url" autocomplete="url" placeholder="anywebsite.co.uk" required><button class="btn" type="submit">Find the host</button></form><div id="ho-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
+  email: (p) => `<form class="ck-form" id="em-form" data-t="${p.emailType}"><label for="em-d" class="sr">Domain name</label><input id="em-d" type="text" inputmode="url" autocomplete="url" placeholder="yourbusiness.co.uk" required>${p.emailType === "dkim" ? `<label for="em-s" class="sr">DKIM selector (optional)</label><input id="em-s" type="text" autocomplete="off" placeholder="Selector (optional)">` : ""}<button class="btn" type="submit">${{ mx: "Look up MX", spf: "Check SPF", dmarc: "Check DMARC", dkim: "Check DKIM" }[p.emailType]}</button></form><div id="em-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
   ssl: () => `<form class="ck-form" id="sl-form"><label for="sl-d" class="sr">Website address</label><input id="sl-d" type="text" inputmode="url" autocomplete="url" placeholder="yourbusiness.co.uk" required><button class="btn" type="submit">Check SSL</button></form><div id="sl-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
   utm: () => `<form class="tool" id="ut-form"><label for="ut-url">Page address</label><input id="ut-url" type="text" inputmode="url" value="https://smithplumbing.co.uk/boiler-service">
 <label for="ut-source">Campaign source (utm_source) – where the link is, e.g. facebook, newsletter</label><input id="ut-source" type="text" value="facebook">
@@ -391,6 +393,11 @@ const worker = {
       case "/api/hosting": {
         if (await rateLimited(request, "hosting", 300)) return Response.json({ error: "You've checked a lot of websites this hour – please try again later." }, { status: 429 });
         const r = await hostingApi(env || {}, url.searchParams, selfFetch(env, c));
+        return Response.json(r.body, { status: r.status, headers: { "cache-control": "no-store" } });
+      }
+      case "/api/email": {
+        if (await rateLimited(request, "email", 300)) return Response.json({ error: "You've looked up a lot of domains this hour – please try again later." }, { status: 429 });
+        const r = await emailApi(env || {}, url.searchParams);
         return Response.json(r.body, { status: r.status, headers: { "cache-control": "no-store" } });
       }
       case "/api/ssl": {

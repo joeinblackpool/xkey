@@ -119,6 +119,27 @@ export function dnsStandIn() {
     "10.2.0.192.in-addr.arpa": { PTR: ["server12.krystal.uk."] },
     "xkey.co.uk": { A: ["192.0.2.30"], MX: ["1 smtp.google.com."], NS: ["ada.ns.cloudflare.com.", "bob.ns.cloudflare.com."], TXT: ['"v=spf1 include:_spf.google.com ~all"', '"google-site-verification=xyz789"'] },
     "badmail.co.uk": { A: ["192.0.2.20"], MX: ["10 mx.badmail.co.uk."], TXT: ['"v=spf1 a mx ~all"', '"v=spf1 include:sendgrid.net -all"'] },
+    // email checks (src/email.js): SPF includes, DMARC on the parent, DKIM keys of 2048 and 1024 bits
+    "mail.smithplumbing.co.uk": { A: ["192.0.2.11"] },
+    "smtp.google.com": { A: ["192.0.2.40"] },
+    "_spf.google.com": { TXT: ['"v=spf1 include:_netblocks.google.com ~all"'] },
+    "_netblocks.google.com": { TXT: ['"v=spf1 ip4:192.0.2.0/24 ip6:2001:db8::/32 ~all"'] },
+    "google._domainkey.smithplumbing.co.uk": { TXT: ['"v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA8Q/pvx6XZeQ0mhWPMBXv7R4HLmw5QxdeuSZdzHsPtuSPXR8HYeXPusGAJaENDayv4YFOktOtODGS0xndrA8tZeCQCnuJrtKfXY27bJGmvwbpH6Yjwd5of+IC5dTFxEGt67nxau87XDFneFFIZ/EwrCNlqruN" "8zMSkmCd/EeyyRPz0HndKhzcEiAprDWP3fVylYEWvUIpWjZQnVm8/PhGqWWnhrfcsue7ZPpgKMI6i4Kc+sUsn/Mv5TBHbieei1aHU+AgzyCsl+aoT7BDcn2Pl3CWVZr3gHDfczrVpw2W5FkbMVuXo8GAYGNXVwaiSqZxkMX6ZFA0d0rybJnNLjqI5wIDAQAB"'] },
+    "selector1._domainkey.xkey.co.uk": { TXT: ['"v=DKIM1; k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDOX7sVgs/e+VlJDigQRLh2egsUg5KiSj6f+LTIyCtqZnRsfs7+JexoE/dCDWbWXDYb4l7tn4Q+3/PnuBQ31TlvkY2JLa+9uht4px8FLAvzcnB9u1wB59HiZC5kIvbCQ7X5+L2boYPoyxYQN7XsRM8dqdEDPShElDYC53f9V4GmPwIDAQAB"'] },
+    "_dmarc.xkey.co.uk": { TXT: ['"v=DMARC1; p=reject; sp=quarantine; rua=mailto:dmarc@xkey.co.uk"'] },
+    "shop.xkey.co.uk": { A: ["192.0.2.30"] },
+    "toomany.co.uk": { MX: ["0 ."], TXT: ['"v=spf1 include:s1.toomany.co.uk include:s2.toomany.co.uk include:s3.toomany.co.uk include:s4.toomany.co.uk include:s5.toomany.co.uk include:s6.toomany.co.uk include:s7.toomany.co.uk include:s8.toomany.co.uk include:s9.toomany.co.uk include:s10.toomany.co.uk include:s11.toomany.co.uk +all"'] },
+    "s1.toomany.co.uk": { TXT: ['"v=spf1 ip4:192.0.2.1 -all"'] },
+    "s2.toomany.co.uk": { TXT: ['"v=spf1 ip4:192.0.2.2 -all"'] },
+    "s3.toomany.co.uk": { TXT: ['"v=spf1 ip4:192.0.2.3 -all"'] },
+    "s4.toomany.co.uk": { TXT: ['"v=spf1 ip4:192.0.2.4 -all"'] },
+    "s5.toomany.co.uk": { TXT: ['"v=spf1 ip4:192.0.2.5 -all"'] },
+    "s6.toomany.co.uk": { TXT: ['"v=spf1 ip4:192.0.2.6 -all"'] },
+    "s7.toomany.co.uk": { TXT: ['"v=spf1 ip4:192.0.2.7 -all"'] },
+    "s8.toomany.co.uk": { TXT: ['"v=spf1 ip4:192.0.2.8 -all"'] },
+    "s9.toomany.co.uk": { TXT: ['"v=spf1 ip4:192.0.2.9 -all"'] },
+    "s10.toomany.co.uk": { TXT: ['"v=spf1 ip4:192.0.2.10 -all"'] },
+    "s11.toomany.co.uk": { TXT: ['"v=spf1 ip4:192.0.2.11 -all"'] },
   };
   return async (url) => {
     const u = new URL(url), name = u.searchParams.get("name"), type = u.searchParams.get("type");
@@ -129,12 +150,18 @@ export function dnsStandIn() {
 }
 
 /** Stand-in for crt.sh's JSON (see src/ssl.js): a current and an expired certificate for xkey.co.uk,
- *  a wildcard one for smithplumbing.co.uk that expires in 5 days, and an error for down.co.uk. */
+ *  a wildcard one for smithplumbing.co.uk that expires in 5 days, slowlogs.co.uk only from Cert Spotter, and an error for down.co.uk. */
 export function ctStandIn() {
   const day = (n) => new Date(Date.now() + n * 86_400_000).toISOString().slice(0, 19);
   const certs = {
     "xkey.co.uk": [{ id: 2, issuer_name: "C=US, O=Google Trust Services, CN=WE1", name_value: "xkey.co.uk\n*.xkey.co.uk", not_before: day(-30), not_after: day(60) }, { id: 1, issuer_name: "C=US, O=Let's Encrypt, CN=R3", name_value: "xkey.co.uk", not_before: day(-120), not_after: day(-30) }],
     "smithplumbing.co.uk": [{ id: 3, issuer_name: "C=US, O=Let's Encrypt, CN=R11", name_value: "*.co.uk\nsmithplumbing.co.uk", not_before: day(-85), not_after: day(5) }],
   };
-  return async (url) => { const q = new URL(url).searchParams.get("q"); if (q === "down.co.uk") return new Response("busy", { status: 502 }); return Response.json(certs[q] || []); };
+  // Cert Spotter (the fallback) knows slowlogs.co.uk, which crt.sh is too busy to answer for
+  const spotter = { "slowlogs.co.uk": [{ id: "77", dns_names: ["slowlogs.co.uk", "www.slowlogs.co.uk"], issuer: { name: "C=US, O=Let's Encrypt, CN=E6" }, not_before: day(-10), not_after: day(80) }] };
+  return async (url) => {
+    const u = new URL(url);
+    if (u.hostname === "api.certspotter.com") { const d = u.searchParams.get("domain"); return d === "down.co.uk" ? new Response("busy", { status: 503 }) : Response.json(spotter[d] || []); }
+    const q = u.searchParams.get("q"); if (q === "down.co.uk" || q === "slowlogs.co.uk") return new Response("busy", { status: 502 }); return Response.json(certs[q] || []);
+  };
 }

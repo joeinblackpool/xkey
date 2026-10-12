@@ -1,6 +1,6 @@
 // SSL checker: does the site load securely, does http:// redirect to https://, is HSTS on, does the
 // page load anything insecure (mixed content), and the certificate's issuer and dates from public
-// Certificate Transparency logs (crt.sh). Workers can't read the certificate a server presents, so
+// Certificate Transparency logs (crt.sh, then Cert Spotter). Workers can't read the certificate a server presents, so
 // we say where the dates come from. Tests pass env.CT_FETCH(url) -> Response.
 import { dnsName } from "./dns.js";
 import { traceRedirects } from "./redirects.js";
@@ -29,29 +29,47 @@ export function mixedContent(html) {
 const covers = (pattern, name) => { pattern = pattern.toLowerCase().trim(); return pattern === name || (pattern.startsWith("*.") && name.endsWith(pattern.slice(1)) && name.split(".").length === pattern.split(".").length); };
 const orgOf = (issuer) => (String(issuer).match(/(?:^|,\s*)O=("?)([^,"]+)\1/) || [])[2] || (String(issuer).match(/CN=([^,]+)/) || [])[1] || String(issuer);
 
-/** The newest unexpired certificate for name in the CT logs (crt.sh), or null. A wildcard
- *  certificate is listed under its parent name, so www.example.co.uk also tries example.co.uk. */
+/** The newest unexpired certificate for name in the CT logs, or null ({ error } if no log search
+ *  answered). crt.sh first; it is often slow, so Cert Spotter's free API is the fallback. A wildcard
+ *  certificate is listed under its parent name, so www.example.co.uk also tries example.co.uk.
+ *  Answers are cached for 6 hours. */
 export async function ctLookup(env, name) {
-  const first = await ctSearch(env, name, name);
+  const key = `https://xkey.co.uk/_cache/ct/${encodeURIComponent(name)}`;
+  const cache = typeof caches !== "undefined" && !env.CT_FETCH ? caches.default : null;
+  try { const hit = cache && await cache.match(key); if (hit) return (await hit.json()).cert; } catch {}
+  let cert = await ctSearch(env, name, name);
   const parent = name.split(".").slice(1).join(".");
-  if (first !== null || parent.split(".").length < 2 || /^(?:co|org|me|ltd|plc|net|ac|gov|nhs|sch|com|edu|gen)\.[a-z]{2}$/.test(parent)) return first;
-  return ctSearch(env, parent, name);
+  if (cert === null && parent.split(".").length >= 2 && !/^(?:co|org|me|ltd|plc|net|ac|gov|nhs|sch|com|edu|gen)\.[a-z]{2}$/.test(parent)) cert = await ctSearch(env, parent, name);
+  if (cert && cert.error) cert = await spotter(env, name);
+  if (cache && !(cert && cert.error)) { try { await cache.put(key, new Response(JSON.stringify({ cert }), { headers: { "content-type": "application/json", "cache-control": "public, max-age=21600" } })); } catch {} }
+  return cert;
+}
+
+const UA = { accept: "application/json", "user-agent": "XKeySSLChecker/1.0 (+https://xkey.co.uk/ssl-checker)" };
+async function getJson(env, url, ms) {
+  const f = env.CT_FETCH || fetch;
+  const ac = new AbortController(), t = setTimeout(() => ac.abort(), ms);
+  try { const r = await f(url, { headers: UA, signal: ac.signal }); return r.ok ? await r.json() : { error: true }; } catch { return { error: true }; } finally { clearTimeout(t); }
+}
+function newest(list, name, names, issuer, id) {
+  const now = Date.now();
+  const certs = list.filter((c) => names(c).some((n) => covers(n, name)) && Date.parse(c.not_after) > now && Date.parse(c.not_before) <= now);
+  if (!certs.length) return null;
+  certs.sort((a, b) => Date.parse(b.not_before) - Date.parse(a.not_before) || (Number(id(b)) || 0) - (Number(id(a)) || 0));
+  const c = certs[0];
+  return { issuer: orgOf(issuer(c)), from: c.not_before.slice(0, 10), to: c.not_after.slice(0, 10), daysLeft: Math.floor((Date.parse(c.not_after) - now) / DAY), names: [...new Set(names(c).map((s) => s.trim().toLowerCase()))].slice(0, 50), id: id(c) };
 }
 
 async function ctSearch(env, q, name) {
-  const f = env.CT_FETCH || fetch;
-  const ac = new AbortController(), t = setTimeout(() => ac.abort(), 9000);
-  try {
-    const r = await f(`https://crt.sh/?q=${encodeURIComponent(q)}&output=json&exclude=expired`, { headers: { accept: "application/json", "user-agent": "XKeySSLChecker/1.0 (+https://xkey.co.uk/ssl-checker)" }, signal: ac.signal });
-    if (!r.ok) return { error: true };
-    const list = await r.json();
-    const now = Date.now();
-    const certs = (Array.isArray(list) ? list : []).filter((c) => String(c.name_value || "").split(/\n/).some((n) => covers(n, name)) && Date.parse(c.not_after) > now && Date.parse(c.not_before) <= now);
-    if (!certs.length) return null;
-    certs.sort((a, b) => Date.parse(b.not_before) - Date.parse(a.not_before) || b.id - a.id);
-    const c = certs[0];
-    return { issuer: orgOf(c.issuer_name), from: c.not_before.slice(0, 10), to: c.not_after.slice(0, 10), daysLeft: Math.floor((Date.parse(c.not_after) - now) / DAY), names: [...new Set(String(c.name_value).split(/\n/).map((s) => s.trim().toLowerCase()))].slice(0, 50), id: c.id };
-  } catch { return { error: true }; } finally { clearTimeout(t); }
+  const list = await getJson(env, `https://crt.sh/?q=${encodeURIComponent(q)}&output=json&exclude=expired`, 9000);
+  if (list && list.error) return list;
+  return newest(Array.isArray(list) ? list : [], name, (c) => String(c.name_value || "").split(/\n/), (c) => c.issuer_name, (c) => c.id);
+}
+
+async function spotter(env, name) {
+  const list = await getJson(env, `https://api.certspotter.com/v1/issuances?domain=${encodeURIComponent(name)}&match_wildcards=true&expand=dns_names&expand=issuer`, 8000);
+  if (list && list.error) return list;
+  return newest((Array.isArray(list) ? list : []).filter((c) => !c.revoked), name, (c) => c.dns_names || [], (c) => (c.issuer && c.issuer.name) || "", (c) => c.id);
 }
 
 /** GET /api/ssl?d=example.co.uk */
