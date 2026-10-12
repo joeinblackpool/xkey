@@ -80,6 +80,10 @@ Free SEO & AI search checker for UK businesses, made by IceWork (icework.co.uk).
 ## UK business directories, redirect map generator, SEO ROI calculator
 - `src/directories-page.js`: /uk-business-directories – `GROUPS` list (name, domain, link, best for); the page fills each authority from /api/authority after load.
 - `src/tools-more.js` (served as /assets/more.js: `redirectPairs`, `redirectRules` and `moreApp` via toString) with pages in `src/more-pages.js`. Element id prefixes rm-, roi-. Browser-only.
+## Accessibility checker (/accessibility-checker), Google updates tracker (/google-algorithm-updates), SEO course (/learn-seo)
+- Pages in `src/bundle5-pages.js`. Accessibility: `src/a11y.js` (`a11yCheck(html)` pure WCAG 2.2 checks from HTML; `GET /api/a11y?url=` via `getPage`), browser code `src/a11y-client.js` served as /assets/a11y.js (ids a11-). Says plainly it can't test contrast, keyboard or screen-reader flow.
+- Google updates: `src/google-updates.js` reads Google's public Search Status Dashboard feed (status.search.google.com/incidents.json), cached 1 h; index.js swaps the `<!--gsd-->` marker on the page. If the feed fails the page says so – never add unconfirmed updates. Tests: `env.GSD_FETCH` (`gsdStandIn()` in test/lib.mjs).
+- Course: 10 lessons linking to existing guides and tools; task ticks in localStorage `xk-course`.
 
 ## Layout
 - `src/` – XKey pages (`content.js`), shell/styles (`site.js`), routing + APIs (`index.js`), browser tools (`tools-client.js`, served as /assets/tools.js), page parser (`page-parse.js`), OG image (`og.js`).
