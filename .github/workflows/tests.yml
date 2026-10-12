@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: ${{ github.event_name == 'workflow_dispatch' && 0 || 1 }}
+          fetch-depth: 0 # full history, so a by-hand run can merge origin/main below
       - name: Merge the newest main in (by-hand runs on a branch)
         if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main'
         run: |
