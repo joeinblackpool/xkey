@@ -74,6 +74,7 @@ export const toolCards = (except) => `<div class="grid">${TOOLS.filter(([p]) => 
 
 const toolPage = (path, crumb, title, desc, h1, lead, focus, app, sections, faqs) => ({ path, crumb, title, desc, h1, lead, form: "check", focus, app, parent: ["/seo-tools", "SEO tools"], sections, faqs });
 
+import { GUIDES_11 } from "./guides-11.js";
 import { MORE_GUIDES } from "./more-guides.js";
 import { GUIDES_8 } from "./guides-8.js";
 import { GUIDES_10 } from "./guides-10.js";
@@ -1265,6 +1266,7 @@ Sitemap: https://yourdomain.co.uk/sitemap.xml</code></pre>
   },
   ...PRO_PAGES,
   ...BUNDLE5_PAGES,
+  ...GUIDES_11,
   ...MORE_GUIDES,
   ...GUIDES_8,
   ...GUIDES_10,
