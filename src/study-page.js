@@ -48,7 +48,7 @@ ${table([
   row("DMARC reject (fully protected)", pc(E.email.dmarc.reject), pc(T.email.dmarc.reject)),
   row("No SPF record", pc(E.email.spfNone), pc(T.email.spfNone)),
 ])}
-<p>Since 2024 Gmail, Yahoo and Microsoft have pushed senders to set up SPF, DKIM and DMARC, and messages from domains without them are more likely to land in spam. Some domains in the sample don't send email at all (${pc(E.email.noMx)} of everyday domains have no mail servers) – but those still need a DMARC record so nobody can fake mail from them. Check yours with the <a href="/dmarc-checker">DMARC checker</a> and <a href="/spf-checker">SPF checker</a>.</p>
+<p>Since 2024 Gmail, Yahoo and Microsoft have <a href="/guides/gmail-yahoo-microsoft-sender-rules">pushed senders</a> to set up SPF, DKIM and DMARC, and messages from domains without them are more likely to land in spam. Some domains in the sample don't send email at all (${pc(E.email.noMx)} of everyday domains have no mail servers) – but those still need a DMARC record so nobody can fake mail from them. Check yours with the <a href="/dmarc-checker">DMARC checker</a> and <a href="/spf-checker">SPF checker</a>, then follow our <a href="/guides/how-to-set-up-dmarc">step-by-step DMARC rollout</a>.</p>
 <h2>AI search: open doors, little to quote</h2>
 ${table([
   row("Block at least one AI crawler", pc(E.ai.blocksAny), pc(T.ai.blocksAny)),
@@ -69,7 +69,7 @@ ${table([
   row("Mobile viewport set", pc(ck(E, "Mobile viewport")), pc(ck(T, "Mobile viewport"))),
   row("Every image has alt text", pc(ck(E, "Image alt text")), pc(ck(T, "Image alt text"))),
 ])}
-<p>Heavy images were the most common speed problem. The <a href="/page-speed-checker">page speed checker</a> shows which ones.</p>
+<p>Heavy images were the most common speed problem. The <a href="/page-speed-checker">page speed checker</a> shows which ones, and the <a href="/image-compressor">image compressor</a> shrinks them in your browser. Missing alt text is also an accessibility problem – the <a href="/accessibility-checker">accessibility checker</a> finds it and other common WCAG issues.</p>
 <h2>What UK sites are built with</h2>
 <div class="tablewrap"><table><thead><tr><th>Platform</th><th>Share of everyday sites</th></tr></thead><tbody>${cms.map(([n, v]) => row(n, pc(v), "").replace(/<td><\/td><\/tr>$/, "</tr>")).join("")}<tr><td>Custom or couldn't tell</td><td>${pc(E.cms.none)}</td></tr></tbody></table></div>
 <p>${pc(E.analytics.none)} of everyday sites had no analytics we could detect, and ${pc(E.analytics.top.find(([n]) => /Universal/.test(n))?.[1] || 0)} still load Universal Analytics, which stopped collecting data in 2023. ${pc(E.consent)} show a cookie consent banner. Find out what any site runs on with the <a href="/website-technology-checker">website technology checker</a>.</p>
