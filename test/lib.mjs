@@ -49,7 +49,7 @@ export async function serve(port = 8789, workerPath = "../src/index.js") {
   }) }) };
   // Backlink index stand-in: the files build.py publishes (format 2), from test/fixtures/backlinks.
   const BL_DATA = blData("backlinks");
-  const env = { STATE, AI, BL_DATA, ...whoisStandIns(), DNS_FETCH: dnsStandIn(), CT_FETCH: ctStandIn() };
+  const env = { STATE, AI, BL_DATA, ...whoisStandIns(), DNS_FETCH: dnsStandIn(), CT_FETCH: ctStandIn(), ...dohStandIn() };
   const worker = (await import(new URL(workerPath, import.meta.url).href)).default;
   const server = http.createServer(async (req, res) => {
     const chunks = []; for await (const c of req) chunks.push(c);
@@ -117,6 +117,8 @@ export function dnsStandIn() {
     "www.smithplumbing.co.uk": { A: ["192.0.2.10"] },
     "_dmarc.smithplumbing.co.uk": { TXT: ['"v=DMARC1; p=none; rua=mailto:d@smithplumbing.co.uk"'] },
     "10.2.0.192.in-addr.arpa": { PTR: ["server12.krystal.uk."] },
+    "ada.ns.cloudflare.com": { A: ["192.0.2.53"] },
+    "server12.krystal.uk": { A: ["192.0.2.10"] },
     "xkey.co.uk": { A: ["192.0.2.30"], MX: ["1 smtp.google.com."], NS: ["ada.ns.cloudflare.com.", "bob.ns.cloudflare.com."], TXT: ['"v=spf1 include:_spf.google.com ~all"', '"google-site-verification=xyz789"'] },
     "badmail.co.uk": { A: ["192.0.2.20"], MX: ["10 mx.badmail.co.uk."], TXT: ['"v=spf1 a mx ~all"', '"v=spf1 include:sendgrid.net -all"'] },
     // email checks (src/email.js): SPF includes, DMARC on the parent, DKIM keys of 2048 and 1024 bits
@@ -147,6 +149,32 @@ export function dnsStandIn() {
     const data = (zone[name] && zone[name][type]) || [];
     return Response.json({ Status: 0, AD: name.startsWith("smith"), Answer: data.map((d) => ({ name: name + ".", type: T[type], TTL: 300, data: d })) });
   };
+}
+
+/** Stand-ins for DNS wire format (see src/propagation.js): DOH_FETCH answers RFC 8484 GETs and DNS_TCP the
+ *  authoritative name server, both from dnsStandIn()'s zone. Quad9 still has an old A record for xkey.co.uk
+ *  and AliDNS is down. */
+export function dohStandIn() {
+  const json = dnsStandIn(), TYPES = { 1: "A", 2: "NS", 5: "CNAME", 15: "MX", 16: "TXT", 28: "AAAA" };
+  const answer = async (q, aa, rewrite) => {
+    let p = 12; const labels = []; while (q[p]) { labels.push(Buffer.from(q.subarray(p + 1, p + 1 + q[p])).toString()); p += q[p] + 1; }
+    const name = labels.join("."), type = TYPES[(q[p + 1] << 8) | q[p + 2]], question = q.subarray(12, p + 5);
+    const j = await (await json(`https://dns/?name=${name}&type=${type}`)).json();
+    const data = rewrite ? rewrite(name, type, j) : (j.Answer || []).map((a) => a.data);
+    const enc = (n) => Buffer.concat([...n.replace(/\.$/, "").split(".").map((l) => Buffer.concat([Buffer.from([l.length]), Buffer.from(l)])), Buffer.from([0])]);
+    const rdata = (d) => type === "A" ? Buffer.from(d.split(".").map(Number)) : type === "AAAA" ? Buffer.from(d.replace("::", ":" + "0:".repeat(9 - d.split(":").length)).split(":").flatMap((h) => { const v = parseInt(h || "0", 16); return [v >> 8, v & 255]; })) : type === "MX" ? Buffer.concat([Buffer.from([0, +d.split(" ")[0]]), enc(d.split(" ")[1])]) : type === "TXT" ? Buffer.concat(d.replace(/^"|"$/g, "").split(/"\s+"/).map((t) => Buffer.concat([Buffer.from([t.length]), Buffer.from(t)]))) : enc(d);
+    const rrs = data.map((d) => { const r = rdata(d), h = Buffer.alloc(12); h.writeUInt16BE(0xc00c, 0); h.writeUInt16BE((q[p + 1] << 8) | q[p + 2], 2); h.writeUInt16BE(1, 4); h.writeUInt32BE(300, 6); h.writeUInt16BE(r.length, 10); return Buffer.concat([h, r]); });
+    const head = Buffer.alloc(12); head.writeUInt16BE(0x8180 | (aa ? 0x400 : 0) | (j.Status === 3 ? 3 : 0), 2); head.writeUInt16BE(1, 4); head.writeUInt16BE(rrs.length, 6);
+    return new Uint8Array(Buffer.concat([head, question, ...rrs]));
+  };
+  const DOH_FETCH = async (url) => {
+    const u = new URL(url), q = new Uint8Array(Buffer.from(u.searchParams.get("dns"), "base64url"));
+    if (u.hostname === "dns.alidns.com") return new Response("busy", { status: 503 });
+    const old = u.hostname === "dns.quad9.net" ? (name, type, j) => name === "xkey.co.uk" && type === "A" ? ["192.0.2.99"] : (j.Answer || []).map((a) => a.data) : null;
+    return new Response(await answer(q, false, old), { headers: { "content-type": "application/dns-message" } });
+  };
+  const DNS_TCP = async (host, q) => { if (host !== "192.0.2.53") throw new Error("unexpected name server " + host); return answer(q, true); };
+  return { DOH_FETCH, DNS_TCP };
 }
 
 /** Stand-in for crt.sh's JSON (see src/ssl.js): a current and an expired certificate for xkey.co.uk,

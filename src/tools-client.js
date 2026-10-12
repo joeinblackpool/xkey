@@ -888,6 +888,116 @@ export function toolsApp() {
     });
   }
 
+  // ---- DNS propagation checker (/api/propagation)
+  var dp = $("dp-form");
+  if (dp) {
+    var dpq = (location.search.match(/[?&]t=([A-Za-z]+)/) || [])[1];
+    if (dpq) $("dp-t").value = dpq.toUpperCase();
+    prefill(dp, "dp-d", "d");
+    dp.addEventListener("submit", function (ev) {
+      ev.preventDefault();
+      var d = $("dp-d").value.trim(), t = $("dp-t").value, out = $("dp-out");
+      if (!d) { $("dp-d").focus(); return; }
+      out.innerHTML = "<p>Asking " + t + " records from DNS services around the world…</p>";
+      fetch("/api/propagation?d=" + encodeURIComponent(d) + "&t=" + t).then(function (r) { return r.json(); }).then(function (j) {
+        if (!j.resolvers) { out.innerHTML = '<p class="s-fail">' + esc(j.error || "Couldn't check that domain.") + "</p>"; return; }
+        var ok = j.resolvers.filter(function (r) { return r.ok; }), same = ok.filter(function (r) { return r.match; }).length;
+        var show = function (k) { return esc(k).replace(/\n/g, "<br>"); };
+        var n = [];
+        if (!ok.length) n.push(["fail", "None of the DNS services answered. Please try again in a moment."]);
+        else if (same === ok.length) n.push(["ok", "All " + ok.length + " DNS services that answered give the same " + j.type + " record" + (j.fromAuthority ? " as your own name server" : "") + ". The change has spread."]);
+        else n.push(["warn", same + " of " + ok.length + " DNS services give the " + (j.fromAuthority ? "same answer as your own name server" : "most common answer") + ". The others still have an older answer saved; it clears when its TTL (time to live) runs out."]);
+        if (j.authority && !j.authority.ok) n.push(["info", "Your name server (" + j.authority.label + ") didn't answer us directly, so we compared the services with each other."]);
+        if (j.expected === "(does not exist)") n.push(["info", j.name + " doesn't exist in DNS yet, or has been removed."]);
+        else if (j.expected === "(no record)") n.push(["info", j.name + " has no " + j.type + " record" + (j.type === "A" ? ". If you've just added one, check the type and the host name (@ or www)." : ".")]);
+        var maxTtl = 0; ok.forEach(function (r) { (r.answers || []).forEach(function (a) { if (a.ttl > maxTtl) maxTtl = a.ttl; }); });
+        if (same < ok.length && maxTtl) n.push(["info", "The longest time left on a saved answer is about " + (maxTtl < 120 ? maxTtl + " seconds" : maxTtl < 7200 ? Math.round(maxTtl / 60) + " minutes" : Math.round(maxTtl / 3600) + " hours") + "."]);
+        var row = function (r, label, place) {
+          var st = !r.ok ? '<span class="small">' + esc(r.error) + "</span>" : r.match === false ? '<b class="s-warn">Different</b>' : r.match ? '<b class="s-pass">✓ Same</b>' : "";
+          return "<tr><td><b>" + esc(label) + '</b><br><span class="small">' + esc(place) + '</span></td><td style="overflow-wrap:anywhere;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px">' + (r.ok ? show(r.key) : "–") + "</td><td>" + st + '</td><td class="small">' + (r.ok ? r.ms + " ms" : "") + "</td></tr>";
+        };
+        var h = '<div class="card" style="margin:16px 0"><p class="ct">' + esc(j.type) + " records for " + esc(j.name) + "</p>" + noteList(n) + "</div>" + '<div class="tablewrap"><table><thead><tr><th>DNS service</th><th>Answer</th><th>Status</th><th>Time</th></tr></thead><tbody>';
+        if (j.authority) h += row({ ok: j.authority.ok, key: j.authority.key, error: j.authority.error, ms: j.authority.ms, match: j.authority.ok ? true : null }, "Your name server", j.authority.label + " (the source)");
+        h += j.resolvers.map(function (r) { return row(r, r.label, "Run from " + r.country); }).join("") + "</tbody></table></div>";
+        h += '<p class="small">Big public DNS services answer from the server nearest our checker, so this shows whether the main services have your change, not every broadband provider. See all of ' + esc(j.name) + '\'s records with our <a href="/dns-lookup?d=' + encodeURIComponent(j.name) + '">DNS lookup</a>.</p>';
+        out.innerHTML = h;
+      }).catch(function () { out.innerHTML = '<p class="s-fail">Couldn\'t check that domain – please try again.</p>'; });
+    });
+  }
+
+  // ---- reverse DNS lookup (/api/ptr)
+  var pt = $("pt-form");
+  if (pt) {
+    prefill(pt, "pt-q", "q");
+    pt.addEventListener("submit", function (ev) {
+      ev.preventDefault();
+      var q = $("pt-q").value.trim(), out = $("pt-out");
+      if (!q) { $("pt-q").focus(); return; }
+      out.innerHTML = "<p>Looking up…</p>";
+      fetch("/api/ptr?q=" + encodeURIComponent(q)).then(function (r) { return r.json(); }).then(function (j) {
+        if (!j.results) { out.innerHTML = '<p class="s-fail">' + esc(j.error || "Couldn't look that up.") + "</p>"; return; }
+        var rows = j.results, good = rows.filter(function (r) { return r.confirmed; }).length, none = rows.filter(function (r) { return !r.error && !r.ptr.length; }).length, n = [];
+        if (none) n.push(["warn", none + " address" + (none > 1 ? "es have" : " has") + " no reverse DNS (PTR) record. A mail server without one gets most of its email rejected or marked as spam. Your hosting company or ISP sets PTR records, not your domain's DNS."]);
+        var bad = rows.filter(function (r) { return r.ptr && r.ptr.length && !r.confirmed; }).length;
+        if (bad) n.push(["warn", bad + " hostname" + (bad > 1 ? "s don't" : " doesn't") + " point back to the same IP address (no forward match). Gmail and Outlook check this for mail servers."]);
+        if (good) n.push(["ok", good + " address" + (good > 1 ? "es have" : " has") + " a reverse DNS name that points back to the same IP (forward-confirmed)."]);
+        var h = noteList(n) + '<div class="tablewrap"><table><thead><tr><th>IP address</th><th>Reverse DNS (PTR)</th><th>Points back?</th></tr></thead><tbody>' + rows.map(function (r) {
+          if (r.error) return '<tr><td style="overflow-wrap:anywhere">' + esc(r.input) + '</td><td colspan="2" class="s-fail">' + esc(r.error) + "</td></tr>";
+          return '<tr><td style="overflow-wrap:anywhere"><b>' + esc(r.ip) + "</b>" + (r.domain ? '<br><span class="small">' + esc(r.domain) + "</span>" : "") + '</td><td style="overflow-wrap:anywhere">' + (r.ptr.length ? r.ptr.map(esc).join("<br>") : '<span class="small">none</span>') + "</td><td>" + (r.confirmed ? '<b class="s-pass">✓ Yes</b>' : r.ptr.length ? '<b class="s-warn">No</b>' + (r.forward && r.forward.length ? '<br><span class="small">→ ' + esc(r.forward.join(", ")) + "</span>" : "") : "–") + "</td></tr>";
+        }).join("") + "</tbody></table></div>";
+        h += '<p class="small">Find who owns an address with our <a href="/website-hosting-checker">hosting checker</a>, and check a domain\'s email setup with the <a href="/mx-lookup">MX lookup</a>.</p>';
+        out.innerHTML = h;
+      }).catch(function () { out.innerHTML = '<p class="s-fail">Couldn\'t look that up – please try again.</p>'; });
+    });
+  }
+
+  // ---- meta tag checker (/api/meta)
+  var mc = $("mc-form");
+  if (mc) {
+    prefill(mc, "mc-url", "url");
+    mc.addEventListener("submit", function (ev) {
+      ev.preventDefault();
+      var u = $("mc-url").value.trim(), out = $("mc-out");
+      if (!u) { $("mc-url").focus(); return; }
+      out.innerHTML = "<p>Reading the page…</p>";
+      fetch("/api/meta?url=" + encodeURIComponent(u)).then(function (r) { return r.json(); }).then(function (j) {
+        if (!j.metas) { out.innerHTML = '<p class="s-fail">' + esc(j.error || "Couldn't read that page.") + "</p>"; return; }
+        if (j.status !== 200) { out.innerHTML = '<p class="s-fail">' + esc(j.error || "The page answered with HTTP " + j.status + ", so we couldn't read its tags.") + "</p>"; return; }
+        var m = {}, cnt = {}; j.metas.forEach(function (x) { cnt[x.key] = (cnt[x.key] || 0) + 1; if (m[x.key] == null) m[x.key] = x.content; });
+        var rel = function (r) { return j.links.filter(function (l) { return l.rel.split(/\s+/).indexOf(r) >= 0; }); };
+        var t = j.title, d = m.description || "", tw = px(t, 20), dw = px(d, 14), n = [];
+        if (!t) n.push(["fail", "No title tag. It's the headline Google shows for the page."]);
+        else if (tw > 580) n.push(["warn", "The title is " + tw + " px wide (" + t.length + " characters). Google cuts titles at about 580 px, so the end won't show."]);
+        else if (tw < 250) n.push(["info", "The title is short (" + t.length + " characters). There's room to add your main service or town."]);
+        else n.push(["ok", "Title: " + t.length + " characters, " + tw + " px – a good length."]);
+        if (!d) n.push(["warn", "No meta description. Google will write its own snippet from the page, which may not sell it."]);
+        else if (dw > 990) n.push(["warn", "The description is " + dw + " px (" + d.length + " characters). Google cuts it at about 990 px on desktop."]);
+        else if (dw < 400) n.push(["info", "The description is short (" + d.length + " characters). Aim for 120 to 155 characters with a reason to click."]);
+        else n.push(["ok", "Description: " + d.length + " characters – a good length."]);
+        if (cnt.description > 1) n.push(["warn", cnt.description + " meta descriptions. Keep one; often a theme and an SEO plugin both add it."]);
+        if (cnt.title > 1) n.push(["info", "There's also a meta tag named \"title\", which Google ignores."]);
+        var robots = ((m.robots || "") + "," + (m.googlebot || "")).toLowerCase();
+        if (/noindex|none/.test(robots)) n.push(["fail", "robots says noindex, so Google won't show this page in search."]);
+        else if (m.robots) n.push(["ok", "robots: " + m.robots]);
+        if (/nofollow/.test(robots)) n.push(["info", "nofollow is set: Google won't follow links on this page."]);
+        if (!m.viewport) n.push(["fail", "No viewport tag. Phones will show a shrunk desktop page; add <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">."]);
+        else if (/user-scalable\s*=\s*no|maximum-scale\s*=\s*1(\.0)?\b/i.test(m.viewport)) n.push(["warn", "The viewport stops people zooming in, which makes the page hard to read for some visitors."]);
+        var canon = rel("canonical");
+        if (!canon.length) n.push(["warn", "No canonical tag. Add one pointing to the page's own clean address, so copies with tracking codes don't split its ranking."]);
+        else if (canon.length > 1) n.push(["warn", canon.length + " canonical tags. Keep one."]);
+        if (!j.lang) n.push(["warn", "No language on the <html> tag. Add lang=\"en-GB\" so browsers and screen readers know the language."]);
+        if (!m["og:title"] || !m["og:image"]) n.push(["info", "Open Graph tags are " + (m["og:title"] || m["og:image"] ? "incomplete" : "missing") + ", so links shared on social media and messaging apps may look plain."]);
+        if (!rel("icon").length && !rel("shortcut").length) n.push(["info", "No favicon link. Browsers will try /favicon.ico; Google needs a favicon to show next to your result."]);
+        if (m.keywords) n.push(["info", "There's a meta keywords tag. Google has ignored it since 2009; it's harmless but shows competitors your keywords."]);
+        var host = j.url.replace(/^https?:\/\//, "").split(/[\/?#]/)[0], crumbs = j.url.replace(/^https?:\/\//, "").split(/[?#]/)[0].split("/").filter(Boolean).slice(1).join(" › ");
+        var h = '<div class="card" style="margin:16px 0"><p class="ct" style="overflow-wrap:anywhere">' + esc(j.url) + '</p><div class="serp"><div class="u">' + esc(host) + (crumbs ? " › " + esc(crumbs) : "") + '</div><div class="t">' + esc(tw > 580 ? cut(t, 20, 580) : t || "(no title)") + '</div><div class="d">' + esc(dw > 990 ? cut(d, 14, 990) : d || "(no description – Google will pick text from the page)") + "</div></div>" + noteList(n) + "</div>";
+        h += '<h3>Every meta tag on the page</h3><div class="tablewrap"><table><thead><tr><th>Name</th><th>Content</th></tr></thead><tbody><tr><td><b>title</b></td><td style="overflow-wrap:anywhere">' + esc(t) + "</td></tr>" + (j.lang ? '<tr><td><b>html lang</b></td><td>' + esc(j.lang) + "</td></tr>" : "") + j.metas.map(function (x) { return "<tr><td><b>" + esc(x.key) + '</b></td><td style="overflow-wrap:anywhere">' + esc(x.content) + "</td></tr>"; }).join("") + canon.map(function (l) { return '<tr><td><b>link canonical</b></td><td style="overflow-wrap:anywhere">' + esc(l.href) + "</td></tr>"; }).join("") + "</tbody></table></div>";
+        h += '<p class="small">Write better tags with our <a href="/meta-tag-generator">meta tag generator</a>, and preview sharing cards with the <a href="/open-graph-checker?url=' + encodeURIComponent(j.url) + '">Open Graph checker</a>.</p>';
+        out.innerHTML = h;
+      }).catch(function () { out.innerHTML = '<p class="s-fail">Couldn\'t check that page – please try again.</p>'; });
+    });
+  }
+
   // ---- HTTP header checker (/api/headers)
   var hd = $("hd-form");
   if (hd) {

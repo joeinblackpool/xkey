@@ -18,6 +18,8 @@ import { hostingApi } from "./hosting.js";
 import { metaApi } from "./meta.js";
 import { sslApi } from "./ssl.js";
 import { emailApi } from "./email.js";
+import { propagationApi } from "./propagation.js";
+import { ptrApi } from "./ptr.js";
 
 const BY_PATH = Object.fromEntries(PAGES.map((p) => [p.path, p]));
 const GUIDES = PAGES.filter((p) => p.path.startsWith("/guides/"));
@@ -120,6 +122,9 @@ Contact | /contact | Phone, email and opening hours</textarea>
   updown: () => `<form class="ck-form" id="ud-form"><label for="ud-url" class="sr">Website address</label><input id="ud-url" type="text" inputmode="url" autocomplete="url" placeholder="anywebsite.co.uk" required><button class="btn" type="submit">Is it down?</button></form><div id="ud-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
   ogcheck: () => `<form class="ck-form" id="oc-form"><label for="oc-url" class="sr">Page address</label><input id="oc-url" type="text" inputmode="url" autocomplete="url" placeholder="yourwebsite.co.uk/page" required><button class="btn" type="submit">Check sharing tags</button></form><div id="oc-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
   hreflang: () => `<form class="ck-form" id="hl-form"><label for="hl-url" class="sr">Page address</label><input id="hl-url" type="text" inputmode="url" autocomplete="url" placeholder="yourwebsite.com/en-gb/" required><button class="btn" type="submit">Check hreflang</button></form><div id="hl-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
+  propagation: () => `<form class="ck-form" id="dp-form"><label for="dp-d" class="sr">Domain name</label><input id="dp-d" type="text" inputmode="url" autocomplete="url" placeholder="yourbusiness.co.uk" required><label for="dp-t" class="sr">Record type</label><select id="dp-t" style="flex:0 0 auto;min-height:52px;font:inherit;font-size:18px;padding:0 12px;border:2px solid var(--line);border-radius:14px;background:var(--card);color:var(--fg)"><option>A</option><option>AAAA</option><option>CNAME</option><option>MX</option><option>NS</option><option>TXT</option></select><button class="btn" type="submit">Check propagation</button></form><div id="dp-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
+  ptr: () => `<form class="ck-form" id="pt-form"><label for="pt-q" class="sr">IP addresses or domain</label><input id="pt-q" type="text" autocomplete="off" placeholder="192.0.2.10 or yourbusiness.co.uk" required><button class="btn" type="submit">Look up</button></form><div id="pt-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
+  metacheck: () => `<form class="ck-form" id="mc-form"><label for="mc-url" class="sr">Page address</label><input id="mc-url" type="text" inputmode="url" autocomplete="url" placeholder="yourwebsite.co.uk/page" required><button class="btn" type="submit">Check meta tags</button></form><div id="mc-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
   hosting: () => `<form class="ck-form" id="ho-form"><label for="ho-d" class="sr">Website address</label><input id="ho-d" type="text" inputmode="url" autocomplete="url" placeholder="anywebsite.co.uk" required><button class="btn" type="submit">Find the host</button></form><div id="ho-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
   email: (p) => `<form class="ck-form" id="em-form" data-t="${p.emailType}"><label for="em-d" class="sr">Domain name</label><input id="em-d" type="text" inputmode="url" autocomplete="url" placeholder="yourbusiness.co.uk" required>${p.emailType === "dkim" ? `<label for="em-s" class="sr">DKIM selector (optional)</label><input id="em-s" type="text" autocomplete="off" placeholder="Selector (optional)">` : ""}<button class="btn" type="submit">${{ mx: "Look up MX", spf: "Check SPF", dmarc: "Check DMARC", dkim: "Check DKIM" }[p.emailType]}</button></form><div id="em-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
   ssl: () => `<form class="ck-form" id="sl-form"><label for="sl-d" class="sr">Website address</label><input id="sl-d" type="text" inputmode="url" autocomplete="url" placeholder="yourbusiness.co.uk" required><button class="btn" type="submit">Check SSL</button></form><div id="sl-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
@@ -398,6 +403,16 @@ const worker = {
       case "/api/email": {
         if (await rateLimited(request, "email", 300)) return Response.json({ error: "You've looked up a lot of domains this hour – please try again later." }, { status: 429 });
         const r = await emailApi(env || {}, url.searchParams);
+        return Response.json(r.body, { status: r.status, headers: { "cache-control": "no-store" } });
+      }
+      case "/api/propagation": {
+        if (await rateLimited(request, "propagation", 200)) return Response.json({ error: "You've checked a lot of domains this hour – please try again later." }, { status: 429 });
+        const r = await propagationApi(env || {}, url.searchParams);
+        return Response.json(r.body, { status: r.status, headers: { "cache-control": "no-store" } });
+      }
+      case "/api/ptr": {
+        if (await rateLimited(request, "ptr", 300)) return Response.json({ error: "You've looked up a lot of addresses this hour – please try again later." }, { status: 429 });
+        const r = await ptrApi(env || {}, url.searchParams);
         return Response.json(r.body, { status: r.status, headers: { "cache-control": "no-store" } });
       }
       case "/api/ssl": {

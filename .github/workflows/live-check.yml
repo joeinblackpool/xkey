@@ -5,7 +5,7 @@
 name: Live check
 on:
   push:
-    paths: ["src/whois.js", "src/backlinks.js", "test/live.mjs", ".github/workflows/live-check.yml"]
+    paths: ["src/whois.js", "src/backlinks.js", "src/propagation.js", "src/ptr.js", "test/live.mjs", ".github/workflows/live-check.yml"]
   schedule:
     - cron: "0 6 * * 1"
   workflow_dispatch:
@@ -20,7 +20,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: node test/live.mjs registries
+      - run: node test/live.mjs registries dns
   site:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
