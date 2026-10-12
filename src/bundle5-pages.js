@@ -44,6 +44,7 @@ const LESSONS = [
 ];
 const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 const COURSE = `<p class="small" id="ls-progress" aria-live="polite">Tick tasks as you go – your progress is saved in this browser only.</p>
+<p class="small">Stuck on a word? The <a href="/seo-glossary">SEO glossary</a> explains every term in plain English.</p>
 <ol class="small">${LESSONS.map(([t], i) => `<li><a href="#${slug(t)}">${t}</a></li>`).join("")}</ol>
 ${LESSONS.map(([t, why, links, tasks], i) => `<h2 id="${slug(t)}">Lesson ${i + 1}: ${t}</h2><p>${why}</p><p><strong>Read and use:</strong> ${links.map(([h, l]) => `<a href="${h}">${l}</a>`).join(" · ")}</p><div class="ls-tasks">${tasks.map((k, j) => `<label style="display:flex;gap:10px;align-items:center;min-height:44px"><input type="checkbox" data-k="${i}-${j}" style="width:22px;height:22px"> ${k}</label>`).join("")}</div>`).join("\n")}
 <script>(function(){var K="xk-course",s={};try{s=JSON.parse(localStorage.getItem(K)||"{}")||{};}catch(e){}var b=[].slice.call(document.querySelectorAll(".ls-tasks input")),p=document.getElementById("ls-progress");
