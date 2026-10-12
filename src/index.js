@@ -31,6 +31,8 @@ import { createSite, siteBySecret, statsApi, beacon, pruneAnalytics, validSecret
 import { pluginZip } from "./wp-plugin.js";
 import { EXTRA_FORMS, EXTRA_INSTANT } from "./extra-pages.js";
 import { extraApp, qrMatrix } from "./tools-extra.js";
+import { siteReport } from "./site-report.js";
+import { siteDomain } from "./backlinks.js";
 
 const BY_PATH = Object.fromEntries(PAGES.map((p) => [p.path, p]));
 const GUIDES = PAGES.filter((p) => p.path.startsWith("/guides/"));
@@ -165,6 +167,7 @@ Café &amp; Bistro – Blackpool's Finest!</textarea>
 <div class="row" style="margin-top:16px"><button class="btn" type="submit">Check redirects</button><button class="btn ghost" type="button" id="rd-four">Test http, https, www versions</button></div><div id="rd-out" aria-live="polite"></div></form><script src="/assets/tools.js" defer></script>`,
   domainage: () => `<form class="tool" id="dg-form"><label for="dg-urls">Domains – one per line, up to 100</label><textarea id="dg-urls" spellcheck="false" placeholder="yourbusiness.co.uk&#10;competitor.com&#10;bbc.co.uk"></textarea>
 <p style="margin:16px 0 0"><button class="btn" type="submit">Check domain age</button></p><div id="dg-out" aria-live="polite"></div></form><script src="/assets/tools.js" defer></script>`,
+  sitereport: () => `<form class="ck-form" action="/site" method="get"><label for="sr-d" class="sr">Website</label><input id="sr-d" name="d" type="text" inputmode="url" autocomplete="url" placeholder="yourbusiness.co.uk" required><button class="btn" type="submit">See report</button></form>`,
   whois: () => `<form class="ck-form" id="wh-form"><label for="wh-d" class="sr">Domain name</label><input id="wh-d" type="text" inputmode="url" autocomplete="url" placeholder="yourbusiness.co.uk" required><button class="btn" type="submit">Look up</button></form><div id="wh-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
   difficulty: () => `<form class="tool" id="kd-form"><label for="kd-kw">Keyword</label><input id="kd-kw" type="text" placeholder="boiler repair blackpool" required>
 <p style="margin:12px 0 0"><strong>Step 1:</strong> <a class="btn ghost" id="kd-google" href="https://www.google.co.uk/search" target="_blank" rel="noopener">Search Google</a></p>
@@ -526,6 +529,12 @@ const worker = {
       if (m) return send(layout({ path, crumb: "SEO monitor", parent: ["/seo-monitoring", "SEO monitoring"], title: `SEO monitor: ${m.host}`, desc: "Weekly SEO monitoring dashboard.", noindex: true, body: dashboard(esc, m) }), HTMLT, 200, "no-store");
     }
     if (path === "/google-algorithm-updates") return send(HTML[path].replace(GSD_MARK, await googleUpdatesSection(env || {}, c)), HTMLT);
+    if (path === "/site") {
+      let d = null; try { d = siteDomain(url.searchParams.get("d")).domain; } catch {}
+      return Response.redirect(d ? `${SITE}/site/${d}` : `${SITE}/website-report`, d ? 302 : 301);
+    }
+    const sr = path.match(/^\/site\/([^/]+)$/);
+    if (sr) { const r = await siteReport(request, env, c, sr[1], () => rateLimited(request, "site", 1200)); if (r) return r; }
     if (HTML[path]) return send(HTML[path], HTMLT);
     return send(NOT_FOUND, HTMLT, 404);
   },
