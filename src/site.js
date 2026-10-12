@@ -22,9 +22,39 @@ export const BRAND = { name: "XKey", fullName: "XKey", domain: "xkey.co.uk", tag
     "Word count": ["/word-counter", "Count words and keywords with the free word counter"],
     "Topic focus": ["/keyword-generator", "Find the phrases people search with the free keyword generator"],
     "Anchor text quality": ["/anchor-text-checker", "Check every link's wording with the free anchor text checker"],
+  },
+  // check name → [guide, title] – shown under each fix in the report
+  learn: {
+    "Indexable": ["/guides/why-is-my-website-not-on-google", "why isn't my website on Google?"],
+    "Title tag": ["/guides/title-tags", "how to write title tags"],
+    "Meta description": ["/guides/meta-descriptions", "how to write meta descriptions"],
+    "Image alt text": ["/guides/image-seo", "image SEO"],
+    "Images": ["/guides/image-seo", "image SEO"],
+    "Internal linking": ["/guides/internal-linking", "internal linking"],
+    "Link names": ["/guides/internal-linking", "internal linking"],
+    "Anchor text quality": ["/guides/internal-linking", "internal linking"],
+    "Breadcrumbs": ["/guides/internal-linking", "internal linking"],
+    "Word count": ["/guides/how-to-write-seo-content", "how to write SEO content"],
+    "Topic focus": ["/guides/how-to-write-seo-content", "how to write SEO content"],
+    "Question-led content": ["/guides/how-to-write-seo-content", "how to write SEO content"],
+    "Readability": ["/guides/how-to-write-seo-content", "how to write SEO content"],
+    "Heading structure": ["/guides/on-page-seo-checklist", "the on-page SEO checklist"],
+    "Canonical URL": ["/guides/technical-seo-checklist", "the technical SEO checklist"],
+    "Redirects": ["/guides/broken-links-and-redirects", "broken links and redirects"],
+    "Security headers": ["/guides/technical-seo-checklist", "the technical SEO checklist"],
+    "HSTS": ["/guides/technical-seo-checklist", "the technical SEO checklist"],
+    "Render-blocking resources": ["/guides/core-web-vitals", "Core Web Vitals"],
+    "Scripts & third parties": ["/guides/core-web-vitals", "Core Web Vitals"],
+    "LocalBusiness markup": ["/guides/schema-markup", "schema markup"],
+    "JSON-LD present & valid": ["/guides/schema-markup", "schema markup"],
+    "Entity clarity": ["/guides/schema-markup", "schema markup"],
+    "AI crawler access": ["/guides/block-ai-training-bots", "blocking AI training bots"],
+    "llms.txt": ["/guides/llms-txt", "do you need llms.txt?"],
+    "Map & directions": ["/guides/local-seo-checklist", "the local SEO checklist"],
+    "Contact details on page": ["/guides/local-seo-checklist", "the local SEO checklist"],
   } };
 export const SITE = `https://${BRAND.domain}`;
-export const UPDATED = "2026-10-10";
+export const UPDATED = "2026-10-12";
 
 export const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
