@@ -135,7 +135,7 @@ export const COMPARE_PAGES = [
     desc: `SEO glossary for business owners: ${TERMS.length} SEO terms from 301 redirect to zero-click search, each explained in plain English with a free tool or guide.`,
     h1: "SEO glossary: every term explained in plain English",
     lead: "SEO is full of jargon. Here's what each term means in a sentence or two, with a link to a free tool or guide where you can see it in action on your own site.",
-    sections: glossary() + `<h2>Still stuck?</h2><p>Run the <a href="/">free SEO check</a> on your website – every result in the report explains what it means and how to fix it, in the same plain English. New to SEO? Start with <a href="/guides/seo-for-small-businesses">SEO for small businesses</a>.</p>`,
+    sections: glossary() + `<h2>Still stuck?</h2><p>Run the <a href="/">free SEO check</a> on your website – every result in the report explains what it means and how to fix it, in the same plain English. New to SEO? Start with <a href="/guides/seo-for-small-businesses">SEO for small businesses</a>, or take the <a href="/learn-seo">free 10-lesson SEO course</a>.</p>`,
     faqs: [["What does SEO stand for?", "Search engine optimisation: making your website easier for search engines like Google to find, understand and recommend."], ["What's the difference between SEO and SEM?", "SEO is about unpaid results. SEM (search engine marketing) usually means paid search adverts such as Google Ads, and sometimes covers both."], ["Which SEO terms matter most for a small business?", "Title tags, Google Business Profile, backlinks, page speed and indexing. Get those right and you're ahead of most competitors."]],
   },
   {
