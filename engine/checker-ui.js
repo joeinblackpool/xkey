@@ -74,7 +74,7 @@ ${form(esc, r.url)}</div>
 <div class="card noprint" style="margin:24px 0"><p class="ct">Check the whole website</p><p>This report covers one page. The full-site audit crawls up to ${AUDIT_MAX} pages to find broken links, duplicate titles, orphan pages and more.</p><a class="btn" href="/site-audit?url=${encodeURIComponent(r.url)}">Run a full-site audit</a></div>
 <div class="grid noprint" style="margin:0 0 24px"><div class="card"><p class="ct">Monitor this site weekly</p><p>We'll re-check it every week and track the score, with a history graph and a list of anything that breaks.</p><form method="post" action="/api/monitor"><input type="hidden" name="url" value="${esc(r.url)}"><button class="btn" type="submit">Start free monitoring</button></form></div><div class="card"><p class="ct">Compare with competitors</p><p>See how this page scores against up to two competitors, side by side, and where they beat you.</p><a class="btn ghost" href="/seo-compare?u=${encodeURIComponent(r.url)}">Compare sites</a></div></div>
 <div id="vitals" class="catsec" data-url="${esc(r.url)}"><h3>Real-world speed <span class="small">Google PageSpeed</span></h3><p class="blurb">Loading Core Web Vitals from Google… this can take up to 30 seconds.</p></div>
-${BUSINESS.offsite ? `<div id="offsite" class="catsec" data-host="${esc(host)}"><h3>Authority &amp; backlinks</h3><p class="blurb">Looking up which websites link to ${esc(host.replace(/^www\./, ""))}…</p></div>` : ""}
+${BUSINESS.offsite ? `<div id="offsite" class="catsec" data-host="${esc(host)}"${BUSINESS.whois ? ' data-whois="1"' : ""}><h3>Authority &amp; backlinks</h3><p class="blurb">Looking up which websites link to ${esc(host.replace(/^www\./, ""))}…</p></div>` : ""}
 ${r.categories.map((c) => `<div class="catsec" id="${slug(c.name)}"><h3>${esc(c.name)} ${c.info ? '<span class="small">not scored</span>' : `<span style="color:${colour(c.score)}">${c.score}%</span>`}</h3><p class="blurb">${esc(c.blurb)}</p><ul class="chk">${c.checks.map((k) => `<li id="chk-${slug(k.name)}"><span class="ic s-${k.status}" aria-label="${LABEL[k.status]}">${ICON[k.status]}</span><div><h4>${esc(k.name)}<span class="imp">${k.impact}</span></h4>${k.notes.map((n) => `<p>${esc(n)}</p>`).join("")}${k.fix ? `<p class="fix"><strong>Fix:</strong> ${esc(k.fix)}</p>${help(k)}` : ""}</div></li>`).join("")}</ul></div>`).join("")}
 <p class="small noprint" style="margin-top:28px">This report checks one page. Scores are a guide, not a guarantee of rankings. <a href="/seo-checker">Check another page</a> · <a href="#" id="ck-print">Print or save as PDF</a></p></div></section>
 <script src="/assets/report.js" defer></script>`;
@@ -115,7 +115,19 @@ function reportApp() {
     var oe = function (s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
     var oh = off.getAttribute("data-host").replace(/^www\./, ""), q = encodeURIComponent(oh);
     var links = '<p class="noprint"><a class="btn ghost" href="/backlink-checker?d=' + q + '">See every linking website</a> <a class="btn ghost" href="/backlink-checker">Find links your competitors have</a></p>';
-    fetch("/api/authority?d=" + q).then(function (r) { return r.json(); }).then(function (j) {
+    // domain age comes from /api/whois where the site has it (BUSINESS.whois); a failed lookup just leaves it out
+    var age = off.getAttribute("data-whois") ? fetch("/api/whois?d=" + q).then(function (r) { return r.json(); }).then(function (w) { return w.results && w.results[0]; }, function () { return null; }) : null;
+    var ageHtml = function (w) {
+      if (!w || w.error || !w.registered || !w.created) return ["", ""];
+      var made = new Date(w.created), yrs = (Date.now() - made) / 31557600000, exp = w.expires ? (new Date(w.expires) - Date.now()) / 86400000 : null;
+      var when = made.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+      var tile = "<div><small>Domain age</small><b>" + (yrs >= 1 ? Math.floor(yrs) + " year" + (Math.floor(yrs) === 1 ? "" : "s") : Math.max(0, Math.floor(yrs * 12)) + " months") + "</b><small>since " + oe(when) + "</small></div>";
+      var note = exp != null && exp < 60 ? '<p class="s-fail"><strong>The domain expires in ' + Math.max(0, Math.round(exp)) + " days.</strong> Renew it now: if it lapses, the website and email stop working and the rankings can be lost for good.</p>"
+        : yrs < 1 ? "<p>The domain is less than a year old. New sites usually take a few months to build trust with Google, so steady, useful pages and a few good links matter most right now.</p>" : "";
+      return [tile, note];
+    };
+    Promise.all([fetch("/api/authority?d=" + q).then(function (r) { return r.json(); }), age]).then(function (both) {
+      var j = both[0], ag = ageHtml(both[1]);
       if (j.error) throw new Error(j.error);
       var x = j.results && j.results[0];
       if (!x || x.error) throw new Error((x && x.error) || "No result.");
@@ -126,8 +138,8 @@ function reportApp() {
         : oe(x.domain) + " has a strong link profile. Focus on the on-page fixes above, and on links from sites in your own field.";
       var steps = n < 100 ? '<ul><li>Claim your free Google Business Profile and list the same name, address and phone on Bing Places, Apple Business Connect and Yell.</li><li>Ask suppliers, trade bodies and local groups you belong to for a link from their website.</li><li>Write one genuinely useful local guide (prices, a checklist, a “how to choose”) – it gives people a reason to link to you.</li><li>Never buy links: Google can ignore or penalise them.</li></ul>' : "";
       off.innerHTML = '<h3>Authority &amp; backlinks <span class="' + c + '">' + a + '/100</span></h3><p class="blurb">How much of the web points to ' + oe(x.domain) + ". Search engines treat links from other websites as votes of trust. This covers the whole site, not just this page.</p>" +
-        '<div class="vit"><div><small>Authority</small><b class="' + c + '">' + a + "</b><small>out of 100</small></div><div><small>Websites linking to it</small><b>" + Number(n).toLocaleString("en-GB") + "</b></div>" + (x.rank ? "<div><small>Rank on the web</small><b>#" + Number(x.rank).toLocaleString("en-GB") + "</b><small>of " + Number(j.ranked).toLocaleString("en-GB") + "</small></div>" : "") + "</div>" +
-        "<p>" + say + "</p>" + (x.top && x.top.length ? '<p class="small">Strongest links: ' + x.top.map(oe).join(", ") + ".</p>" : "") + steps + links +
+        '<div class="vit"><div><small>Authority</small><b class="' + c + '">' + a + "</b><small>out of 100</small></div><div><small>Websites linking to it</small><b>" + Number(n).toLocaleString("en-GB") + "</b></div>" + (x.rank ? "<div><small>Rank on the web</small><b>#" + Number(x.rank).toLocaleString("en-GB") + "</b><small>of " + Number(j.ranked).toLocaleString("en-GB") + "</small></div>" : "") + ag[0] + "</div>" +
+        ag[1] + "<p>" + say + "</p>" + (x.top && x.top.length ? '<p class="small">Strongest links: ' + x.top.map(oe).join(", ") + ".</p>" : "") + steps + links +
         '<p class="small">Link data: Common Crawl\'s public web graph, ' + oe(j.months) + ". Some links are missed and the data is refreshed every three months.</p>";
     }).catch(function (err) {
       off.innerHTML = '<h3>Authority &amp; backlinks</h3><p class="blurb">The link data couldn\'t be loaded (' + oe(err.message) + "). Reload to try again.</p>" + links;

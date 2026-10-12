@@ -6,6 +6,7 @@ import { GUIDE_FOR } from "./builder-guides.js";
 export const BRAND = { name: "XKey", fullName: "XKey", domain: "xkey.co.uk", tagline: "Free SEO & AI search check", maker: "IceWork", makerUrl: "https://icework.co.uk", email: "iceworks@f1rst.co.uk", price: 350, town: "Blackpool",
   // SEO report extras (engine/checker-ui.js): the authority & backlinks section, and our free tool for each fix
   offsite: true,
+  whois: true,
   guides: GUIDE_FOR,
   tools: {
     "Title tag": ["/title-tag-checker", "Preview and measure your title with the free title tag checker"],
