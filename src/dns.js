@@ -17,7 +17,7 @@ export function dnsName(input) {
   return h;
 }
 
-async function query(env, name, type) {
+export async function query(env, name, type) {
   const f = env.DNS_FETCH || fetch;
   let last;
   for (const base of RESOLVERS) {

@@ -11,6 +11,7 @@ import { traceRedirects, metaRefresh, redirectsApi } from "../src/redirects.js";
 import { extractLinks, linkStatus, linksCheckApi } from "../src/linkcheck.js";
 import { headerNotes } from "../src/headers.js";
 import { dnsApi, dnsName } from "../src/dns.js";
+import { techApi, detectTech } from "../src/tech.js";
 import { backlinksApi, authorityApi, crc32 } from "../src/backlinks.js";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
@@ -76,6 +77,26 @@ if (!only || only.test("backlink") || only.test("whois") || only.test("redirect"
     ["dns: two SPF records, no www, no DMARC", async () => { const t = (await dq("badmail.co.uk")).checks.map((c) => c.level + ":" + c.text).join("|"); return /fail:2 SPF records/.test(t) && /warn:www\.badmail/.test(t) && /warn:No DMARC/.test(t); }],
     ["dns: missing domain, bad input", async () => { const r = await dq("nothing-here.co.uk"); let bad = false; try { dnsName("not a domain"); } catch { bad = true; } return r.exists === false && /doesn't exist/.test(r.checks[0].text) && bad && dnsName("https://Shop.Example.com/x") === "shop.example.com"; }],
   );
+  // a fake web for the technology checker: a WordPress shop, a Shopify store, a blocked site and a redirect
+  const wpPage = `<html><head><title>Smith Plumbing</title><meta name="generator" content="WordPress 6.6.2"><meta name="generator" content="Powered by Slider Revolution 6.7"><link rel="stylesheet" href="/wp-content/themes/astra/style.css"><link rel="stylesheet" href="/wp-content/plugins/elementor/assets/css/frontend.min.css"><script src="/wp-includes/js/jquery/jquery.min.js?ver=3.7.1"></script><script src="https://www.google-analytics.com/analytics.js"></script><script src="https://connect.facebook.net/en_GB/fbevents.js"></script><!-- This site is optimized with the Yoast SEO plugin v23.5 - https://yoast.com/ --></head><body class="woocommerce-page"><a href="https://wa.me/447700900000">WhatsApp</a></body></html>`;
+  const techWeb = {
+    "https://smithplumbing.co.uk/": [301, "https://www.smithplumbing.co.uk/"],
+    "https://www.smithplumbing.co.uk/": [200, wpPage, { server: "nginx/1.24.0", "x-powered-by": "PHP/8.2.10", "set-cookie": "woocommerce_items_in_cart=0" }],
+    "https://shop.example.com/": [200, `<html><head><script>Shopify.theme = {"name":"Dawn","id":1};</script><script src="//cdn.shopify.com/s/files/x.js"></script><script src="https://consent.cookiebot.com/uc.js"></script><script async src="https://www.googletagmanager.com/gtag/js?id=G-ABC123"></script></head><body><div id="___gatsby"></div></body></html>`, { server: "cloudflare", "cf-ray": "1-LHR", "x-shopid": "1" }],
+    "https://blocked.co.uk/": [403, "<html>Access denied</html>", { server: "cloudflare", "cf-ray": "2-LHR" }],
+  };
+  const techFetch = async (u) => { const [st, body, h = {}] = techWeb[u] || [404, ""]; return st >= 300 && st < 400 ? new Response(null, { status: st, headers: { location: body } }) : new Response(body, { status: st, headers: { "content-type": "text/html; charset=utf-8", ...h } }); };
+  const tq = async (url) => (await techApi({ DNS_FETCH: dnsStandIn() }, new URLSearchParams({ url }), techFetch)).body;
+  const names = (r) => r.tech.map((t) => `${t.cat}:${t.name}${t.version ? " " + t.version : ""}`).join("|");
+  checks.push(
+    ["tech: WordPress site after a redirect, with theme, plugins, versions, server, email and DNS", async () => { const r = await tq("smithplumbing.co.uk"); const n = names(r);
+      return r.url === "https://www.smithplumbing.co.uk/" && r.title === "Smith Plumbing" && /cms:WordPress 6\.6\.2/.test(n) && /theme:Astra \(WordPress theme\)/.test(n) && /builder:Elementor/.test(n) && /seo:Yoast SEO 23\.5/.test(n) && /shop:WooCommerce/.test(n) && /wp:Slider Revolution 6\.7/.test(n) && /lib:jQuery 3\.7\.1/.test(n) && /lang:PHP 8\.2\.10/.test(n) && /server:nginx 1\.24\.0/.test(n) && /ads:Meta \(Facebook\) Pixel/.test(n) && /email:Own or other mail server \(mail\.smithplumbing\.co\.uk\)/.test(n) && /dns:Other \(ns1\.host\.co\.uk\)/.test(n) && /sending:Google Workspace/.test(n) && /verified:Google Search Console/.test(n) && /chat:WhatsApp/.test(n)
+        && r.notes.some((x) => /Universal Analytics/.test(x.text)) && r.notes.some((x) => /no known cookie banner/.test(x.text)) && r.guide && r.guide.name === "WordPress"; }],
+    ["tech: Shopify with theme, consent banner and CDN; no duplicate hosting or React", async () => { const r = await tq("https://shop.example.com/"); const n = names(r);
+      return /shop:Shopify/.test(n) && /theme:Dawn \(Shopify theme\)/.test(n) && /consent:Cookiebot/.test(n) && /cdn:Cloudflare/.test(n) && /analytics:Google Analytics 4/.test(n) && /js:Gatsby/.test(n) && !/Shopify hosting|js:React/.test(n) && !r.notes.some((x) => /cookie banner|No analytics/.test(x.text)); }],
+    ["tech: blocked site still shows hosting; bad input", async () => { const r = await tq("blocked.co.uk"); const bad = (await techApi({}, new URLSearchParams({ url: "http://localhost/" }), techFetch)); return r.status === 403 && /bot protection/.test(r.notes[0].text) && /cdn:Cloudflare/.test(names(r)) && bad.status === 400; }],
+    ["tech: no WordPress plugins without WordPress", () => { const t = detectTech('<div class="wpcf7 wp-block-group"></div>'); return !t.length; }],
+  );
   for (let [name, fn] of checks) {
     let ok = false; try { ok = await fn(); } catch (e) { name += " – " + e.message; }
     console.log(`${ok ? " ok " : "FAIL"}  ${name}`);
@@ -129,6 +150,8 @@ const S = [
   { name: "Domain authority checker – 25 sites in batches", path: "/domain-authority-checker", fill: [["da-urls", Array.from({ length: 24 }, (_, i) => `site${i}.co.uk`).concat("bbc.co.uk").join("\n")]], click: "#da-form button[type=submit]", expect: ["#da-out", /bbc\.co\.uk[\s\S]*#2[\s\S]*Sort by authority/] },
   { name: "Broken link checker – whole site", path: "/broken-link-checker", fill: [["lk-url", "xkey.co.uk"]], select: [["lk-max", "50"], ["lk-ext", "0"]], click: "#lk-form button[type=submit]", expect: ["#lk-out", /Finished\. Crawled 50 pages[\s\S]*No broken links found/], timeout: 120000 },
   { name: "DNS lookup", path: "/dns-lookup", fill: [["dn-d", "smithplumbing.co.uk"]], click: "#dn-form button[type=submit]", expect: ["#dn-out", /smithplumbing\.co\.uk[\s\S]*DNSSEC signed[\s\S]*SPF is set up[\s\S]*MX[\s\S]*10 mail\.smithplumbing\.co\.uk[\s\S]*_dmarc\.smithplumbing\.co\.uk[\s\S]*v=DMARC1/] },
+  { name: "Website technology checker", path: "/website-technology-checker", fill: [["tc-url", "xkey.co.uk"]], click: "#tc-form button[type=submit]", expect: ["#tc-out", /technolog[\s\S]*Email provider[\s\S]*Google Workspace[\s\S]*DNS provider[\s\S]*Cloudflare[\s\S]*Google Search Console/] },
+  { name: "Website technology checker – opened from a link", path: "/website-technology-checker?url=xkey.co.uk", expect: ["#tc-out", /Cloudflare/] },
   { name: "DNS lookup – problems, opened from a link", path: "/dns-lookup?d=badmail.co.uk", expect: ["#dn-out", /www\.badmail\.co\.uk doesn't resolve[\s\S]*2 SPF records/] },
   { name: "HTTP header checker", path: "/http-header-checker", fill: [["hd-url", "http://www.xkey.co.uk/about"]], click: "#hd-form button[type=submit]", expect: ["#hd-out", /Step 1: http:\/\/www\.xkey\.co\.uk\/about[\s\S]*301[\s\S]*location[\s\S]*Step 2: https:\/\/xkey\.co\.uk\/about[\s\S]*200[\s\S]*content-type[\s\S]*text\/html/] },
   { name: "HTTP header checker – opened from a link", path: "/http-header-checker?url=xkey.co.uk", expect: ["#hd-out", /https:\/\/xkey\.co\.uk\/[\s\S]*200[\s\S]*content-type/] },

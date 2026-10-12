@@ -55,6 +55,9 @@ if (process.argv.includes("site")) {
   check("links: ok and 404", s === 200 && lc[0] && /ok|redirect/.test(lc[0].verdict) && lc[1] && lc[1].verdict === "broken", lc.map((r) => r.verdict + " " + r.status).join("; "));
   [s, j] = await api("/api/dns?d=bbc.co.uk");
   check("dns: bbc.co.uk records", s === 200 && j.exists && (j.records.A || []).length > 0 && (j.records.MX || []).length > 0 && (j.records.NS || []).length > 0, `${s} ${j.error || ""}`);
+  [s, j] = await api("/api/tech?url=wordpress.org");
+  const tk = (j.tech || []).map((t) => t.cat + ":" + t.name);
+  check("tech: wordpress.org is WordPress, with DNS details", s === 200 && tk.includes("cms:WordPress") && tk.some((t) => t.startsWith("dns:")), `${s} ${j.error || ""} ${tk.join(", ")}`);
   [s, j] = await api("/api/whois?d=bbc.co.uk,github.com,rte.ie,google.de");
   const w = j.results || [];
   for (const r of w) console.log(JSON.stringify(r).slice(0, 300));
