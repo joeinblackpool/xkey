@@ -1,0 +1,89 @@
+# Squash-merges Claude's pull requests (open, not draft, branch name starting claude/, from this repo)
+# once the Tests workflow has passed on the PR's latest commit, so Joe doesn't have to press merge.
+# Never merges a PR that has conflicts, a failing or unfinished check, or a test run older than main
+# (that PR is re-tested with the newest main merged in first). Cloudflare's "Workers Builds" preview
+# check is ignored: it always fails on branches. PRs that change .github/workflows/ are left for Joe,
+# because GITHUB_TOKEN isn't allowed to change workflow files.
+# Merges made with GITHUB_TOKEN don't start push workflows, so after each merge this starts the
+# live check (and the backlink build when backlinks/ changed) itself. Cloudflare still deploys main.
+name: Auto-merge Claude PRs
+on:
+  workflow_run:
+    workflows: ["Tests", "Live check"]
+    types: [completed]
+  pull_request_target:
+    types: [ready_for_review, reopened]
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+  checks: read
+concurrency: auto-merge
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      R: ${{ github.repository }}
+    steps:
+      # No checkout: nothing from a PR branch is ever run here.
+      - name: Merge every Claude PR that is ready
+        run: |
+          set -euo pipefail
+          prs=$(gh pr list -R "$R" --state open --base main --limit 100 \
+            --json number,headRefName,headRefOid,isDraft,isCrossRepository \
+            --jq '.[] | select(.headRefName | startswith("claude/")) | select(.isDraft | not) | select(.isCrossRepository | not) | [.number, .headRefName, .headRefOid] | @tsv')
+          [ -n "$prs" ] || { echo "No Claude PRs ready."; exit 0; }
+          while IFS=$'\t' read -r n branch sha; do
+            echo "::group::#$n $branch ($sha)"
+            if gh pr view "$n" -R "$R" --json files --jq '.files[].path' | grep -q '^\.github/workflows/'; then
+              echo "Changes workflow files, which GITHUB_TOKEN can't merge: left for Joe."; echo "::endgroup::"; continue
+            fi
+            # Every check on the latest commit, newest run of each (Workers Builds previews ignored).
+            checks=$(gh api "repos/$R/commits/$sha/check-runs?per_page=100" \
+              --jq '.check_runs[] | select(.name | startswith("Workers Builds") | not) | select(.name != "auto-merge") | [.name, .status, (.conclusion // ""), .started_at] | @tsv')
+            echo "$checks"
+            test_line=$(printf '%s\n' "$checks" | awk -F'\t' '$1 == "test"' | head -1)
+            if [ -z "$test_line" ]; then
+              echo "Tests haven't run on this commit: starting them."
+              gh workflow run tests.yml -R "$R" --ref "$branch" || echo "::warning::Couldn't start the tests for #$n."
+              echo "::endgroup::"; continue
+            fi
+            if printf '%s\n' "$checks" | awk -F'\t' '$2 != "completed"' | grep -q .; then
+              echo "A check is still running."; echo "::endgroup::"; continue
+            fi
+            if printf '%s\n' "$checks" | awk -F'\t' '$3 != "success" && $3 != "skipped" && $3 != "neutral"' | grep -q .; then
+              echo "A check didn't pass: not merging."; echo "::endgroup::"; continue
+            fi
+            # Tests must have run after main last changed, unless the branch already contains main.
+            tested_at=$(printf '%s\n' "$test_line" | cut -f4)
+            main_at=$(gh api "repos/$R/commits/main" --jq '.commit.committer.date')
+            behind=$(gh api "repos/$R/compare/main...$sha" --jq '.behind_by')
+            if [ "$behind" != "0" ] && [[ "$tested_at" < "$main_at" ]]; then
+              echo "Tested before main changed: re-testing with the newest main merged in."
+              gh workflow run tests.yml -R "$R" --ref "$branch" || echo "::warning::Couldn't start the tests for #$n."
+              echo "::endgroup::"; continue
+            fi
+            mergeable=""
+            for try in 1 2 3 4 5; do
+              mergeable=$(gh pr view "$n" -R "$R" --json mergeable --jq '.mergeable')
+              [ "$mergeable" != "UNKNOWN" ] && break; sleep 5
+            done
+            if [ "$mergeable" != "MERGEABLE" ]; then echo "Not mergeable ($mergeable): not merging."; echo "::endgroup::"; continue; fi
+            files=$(gh pr view "$n" -R "$R" --json files --jq '.files[].path')
+            # --match-head-commit: refuses if anything was pushed after the checks above.
+            if gh pr merge "$n" -R "$R" --squash --delete-branch --match-head-commit "$sha"; then
+              echo "Merged #$n."
+              gh workflow run live-check.yml -R "$R" --ref main -f wait_for_deploy=true || echo "::warning::Couldn't start the live check."
+              if printf '%s\n' "$files" | grep -q '^backlinks/'; then
+                gh workflow run backlinks.yml -R "$R" --ref main || echo "::warning::Couldn't start the backlink build."
+              fi
+            else
+              echo "::warning::Merging #$n failed."
+            fi
+            echo "::endgroup::"
+          done <<< "$prs"

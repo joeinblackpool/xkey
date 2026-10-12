@@ -9,6 +9,8 @@
   ],
   "kv_namespaces": [{ "binding": "STATE", "id": "c677314f15644c22873e1098406a5c69" }],
   "ai": { "binding": "AI" },
+  // Website analytics (/website-analytics): aggregated counts only, see src/analytics.js
+  "d1_databases": [{ "binding": "ANALYTICS", "database_name": "xkey-analytics", "database_id": "d5cd5a89-8972-485a-bbae-a6fd2be1b995" }],
   "triggers": { "crons": ["*/15 * * * *"] },
   "observability": { "enabled": true },
   // Browser scripts are served from Function#toString (src/index.js); keep_names would inject
