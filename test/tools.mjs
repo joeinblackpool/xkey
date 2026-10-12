@@ -5,11 +5,12 @@
 // fails on: a browser error (e.g. a script crashing on load), a missing/empty result, or a result
 // without the expected text. Checks run on xkey.co.uk itself, which the Worker handles
 // in-process, so no internet is needed.
-import { need, serve, blData, whoisStandIns } from "./lib.mjs";
+import { need, serve, blData, whoisStandIns, dnsStandIn } from "./lib.mjs";
 import { whoisApi, whoisDate, parseWhois } from "../src/whois.js";
 import { traceRedirects, metaRefresh, redirectsApi } from "../src/redirects.js";
 import { extractLinks, linkStatus, linksCheckApi } from "../src/linkcheck.js";
 import { headerNotes } from "../src/headers.js";
+import { dnsApi, dnsName } from "../src/dns.js";
 import { backlinksApi, authorityApi, crc32 } from "../src/backlinks.js";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
@@ -22,7 +23,7 @@ const only = process.argv[2] ? new RegExp(process.argv[2], "i") : null;
 // 0) Backlink lookups straight against the index files: format 2 (all domains) and the older
 //    format 1 (.uk only), which the site must keep reading until a format-2 release is published.
 let apiFailed = 0;
-if (!only || only.test("backlink") || only.test("whois") || only.test("redirect") || only.test("link") || only.test("header")) {
+if (!only || only.test("backlink") || only.test("whois") || only.test("redirect") || only.test("link") || only.test("header") || only.test("dns")) {
   const bl = async (dir, d, vs) => (await backlinksApi({ BL_DATA: blData(dir) }, { waitUntil() {} }, new URLSearchParams(vs ? { d, vs } : { d }))).body;
   const da = async (dir, d) => (await authorityApi({ BL_DATA: blData(dir) }, { waitUntil() {} }, new URLSearchParams({ d }))).body;
   const checks = [
@@ -68,6 +69,12 @@ if (!only || only.test("backlink") || only.test("whois") || only.test("redirect"
   checks.push(
     ["headers: noindex, compression, HSTS, version notes", () => { const n = headerNotes([["Content-Type", "text/html"], ["X-Robots-Tag", "noindex"], ["Server", "Apache/2.4.1"], ["Link", '<https://site.co.uk/a>; rel="canonical"']], "https://site.co.uk/", 200); const t = n.map((x) => x.level + ":" + x.text).join("|"); return /fail:X-Robots-Tag tells/.test(t) && /warn:Content-Type doesn't say/.test(t) && /warn:No Content-Encoding/.test(t) && /warn:No Strict-Transport/.test(t) && /Apache\/2\.4\.1/.test(t) && /Canonical address .*site\.co\.uk\/a/.test(t); }],
     ["headers: a well-set-up page", () => headerNotes([["content-type", "text/html; charset=utf-8"], ["content-encoding", "br"], ["strict-transport-security", "max-age=31536000"], ["cache-control", "max-age=60"], ["x-content-type-options", "nosniff"]], "https://site.co.uk/", 200).every((x) => x.level === "ok" || x.level === "info")],
+  );
+  const dq = async (d) => (await dnsApi({ DNS_FETCH: dnsStandIn() }, new URLSearchParams({ d }))).body;
+  checks.push(
+    ["dns: records and good set-up", async () => { const r = await dq("https://www.SmithPlumbing.co.uk/x".replace("www.", "")); const t = r.checks.map((c) => c.level + ":" + c.text).join("|"); return r.exists && r.dnssec && r.records.MX[0].data.startsWith("10 mail") && /ok:SPF is set up/.test(t) && /info:DMARC is set to p=none/.test(t) && /ok:www\.smithplumbing\.co\.uk resolves/.test(t) && !/fail|warn:/.test(t); }],
+    ["dns: two SPF records, no www, no DMARC", async () => { const t = (await dq("badmail.co.uk")).checks.map((c) => c.level + ":" + c.text).join("|"); return /fail:2 SPF records/.test(t) && /warn:www\.badmail/.test(t) && /warn:No DMARC/.test(t); }],
+    ["dns: missing domain, bad input", async () => { const r = await dq("nothing-here.co.uk"); let bad = false; try { dnsName("not a domain"); } catch { bad = true; } return r.exists === false && /doesn't exist/.test(r.checks[0].text) && bad && dnsName("https://Shop.Example.com/x") === "shop.example.com"; }],
   );
   for (let [name, fn] of checks) {
     let ok = false; try { ok = await fn(); } catch (e) { name += " – " + e.message; }
@@ -119,6 +126,8 @@ const S = [
   { name: "Domain authority checker", path: "/domain-authority-checker", fill: [["da-urls", "smithplumbing.co.uk\nhttps://www.wikipedia.org/\nnothing.co.uk"]], click: "#da-form button[type=submit]", expect: ["#da-out", /smithplumbing\.co\.uk[\s\S]*33[\s\S]*#5[\s\S]*wikipedia\.org[\s\S]*100[\s\S]*#1[\s\S]*No links found[\s\S]*Download CSV/] },
   { name: "Domain authority checker – 25 sites in batches", path: "/domain-authority-checker", fill: [["da-urls", Array.from({ length: 24 }, (_, i) => `site${i}.co.uk`).concat("bbc.co.uk").join("\n")]], click: "#da-form button[type=submit]", expect: ["#da-out", /bbc\.co\.uk[\s\S]*#2[\s\S]*Sort by authority/] },
   { name: "Broken link checker – whole site", path: "/broken-link-checker", fill: [["lk-url", "xkey.co.uk"]], select: [["lk-max", "50"], ["lk-ext", "0"]], click: "#lk-form button[type=submit]", expect: ["#lk-out", /Finished\. Crawled 50 pages[\s\S]*No broken links found/], timeout: 120000 },
+  { name: "DNS lookup", path: "/dns-lookup", fill: [["dn-d", "smithplumbing.co.uk"]], click: "#dn-form button[type=submit]", expect: ["#dn-out", /smithplumbing\.co\.uk[\s\S]*DNSSEC signed[\s\S]*SPF is set up[\s\S]*MX[\s\S]*10 mail\.smithplumbing\.co\.uk[\s\S]*_dmarc\.smithplumbing\.co\.uk[\s\S]*v=DMARC1/] },
+  { name: "DNS lookup – problems, opened from a link", path: "/dns-lookup?d=badmail.co.uk", expect: ["#dn-out", /www\.badmail\.co\.uk doesn't resolve[\s\S]*2 SPF records/] },
   { name: "HTTP header checker", path: "/http-header-checker", fill: [["hd-url", "http://www.xkey.co.uk/about"]], click: "#hd-form button[type=submit]", expect: ["#hd-out", /Step 1: http:\/\/www\.xkey\.co\.uk\/about[\s\S]*301[\s\S]*location[\s\S]*Step 2: https:\/\/xkey\.co\.uk\/about[\s\S]*200[\s\S]*content-type[\s\S]*text\/html/] },
   { name: "HTTP header checker – opened from a link", path: "/http-header-checker?url=xkey.co.uk", expect: ["#hd-out", /https:\/\/xkey\.co\.uk\/[\s\S]*200[\s\S]*content-type/] },
   { name: "Redirect checker", path: "/redirect-checker", fill: [["rd-urls", "http://www.xkey.co.uk/seo-checker"]], click: "#rd-form button[type=submit]", expect: ["#rd-out", /http:\/\/www\.xkey\.co\.uk\/seo-checker[\s\S]*2 redirects, ends 200[\s\S]*301[\s\S]*301[\s\S]*200[\s\S]*Final address: https:\/\/xkey\.co\.uk\/[\s\S]*2 redirects in a row[\s\S]*Download CSV/] },
