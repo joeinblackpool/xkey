@@ -53,6 +53,8 @@ const { chromium } = await need("playwright");
 // 2) Scenarios. fill: [id, value]; click: id; expect: [selector, /regex/] checked after waiting.
 const S = [
   { name: "SEO check → report", path: "/", fill: [["ck-url", "xkey.co.uk"]], click: "button[type=submit]", nav: /\/seo-checker/, expect: ["main", /SEO score|score/i], wait: "main .score, main [class*=score]" },
+  { name: "SEO report – authority & backlinks", path: "/seo-checker?url=xkey.co.uk", expect: ["#offsite", /Authority[\s\S]*Websites linking to it[\s\S]*See every linking website/], timeout: 30000 },
+  { name: "SEO report – links to our tools", path: "/seo-checker?url=xkey.co.uk", expect: ["main", /keyword generator|schema generator|word counter|title tag checker/i], timeout: 30000 },
   { name: "AI SEO checker", path: "/ai-seo-checker", fill: [["ck-url", "xkey.co.uk"]], click: "button[type=submit]", nav: /\/seo-checker/, expect: ["main", /AI/i] },
   { name: "Website audit", path: "/website-audit", fill: [["au-url", "xkey.co.uk"]], click: "button[type=submit]", nav: /\/site-audit/, expect: ["main", /pages? (crawled|checked)|broken|issues/i], timeout: 90000, wait: "#au-done, .au-done, [data-done], #au-report" },
   { name: "Competitor comparison", path: "/seo-comparison", fill: [["main form input[name=u] >> nth=0", "xkey.co.uk"], ["main form input[name=u] >> nth=1", "xkey.co.uk/guides"]], click: "button[type=submit]", nav: /\/seo-compare/, expect: ["main", /\b\d{1,3}\b/], timeout: 60000 },

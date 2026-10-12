@@ -2,7 +2,24 @@
 import { CHECKER_CSS } from "../engine/checker-ui.js";
 import { MONITOR_CSS } from "../engine/monitor.js";
 
-export const BRAND = { name: "XKey", fullName: "XKey", domain: "xkey.co.uk", tagline: "Free SEO & AI search check", maker: "IceWork", makerUrl: "https://icework.co.uk", email: "iceworks@f1rst.co.uk", price: 350, town: "Blackpool" };
+export const BRAND = { name: "XKey", fullName: "XKey", domain: "xkey.co.uk", tagline: "Free SEO & AI search check", maker: "IceWork", makerUrl: "https://icework.co.uk", email: "iceworks@f1rst.co.uk", price: 350, town: "Blackpool",
+  // SEO report extras (engine/checker-ui.js): the authority & backlinks section, and our free tool for each fix
+  offsite: true,
+  tools: {
+    "Title tag": ["/title-tag-checker", "Preview and measure your title with the free title tag checker"],
+    "Meta description": ["/ai-meta-description-generator", "Write one free with the AI title & description writer"],
+    "Open Graph & social cards": ["/open-graph-generator", "Make the tags with the free Open Graph generator"],
+    "XML sitemap": ["/xml-sitemap-generator", "Make one with the free XML sitemap generator"],
+    "AI crawler access": ["/robots-txt-generator", "Make a new robots.txt with the free generator"],
+    "Indexable": ["/robots-txt-tester", "Test your robots.txt rules with the free tester"],
+    "llms.txt": ["/llms-txt-generator", "Make one with the free llms.txt generator"],
+    "LocalBusiness markup": ["/schema-generator", "Make the code with the free local business schema generator"],
+    "Entity clarity": ["/schema-generator", "Make the code with the free local business schema generator"],
+    "JSON-LD present & valid": ["/schema-generator", "Make valid code with the free schema generator"],
+    "Word count": ["/word-counter", "Count words and keywords with the free word counter"],
+    "Topic focus": ["/keyword-generator", "Find the phrases people search with the free keyword generator"],
+    "Anchor text quality": ["/anchor-text-checker", "Check every link's wording with the free anchor text checker"],
+  } };
 export const SITE = `https://${BRAND.domain}`;
 export const UPDATED = "2026-10-10";
 
