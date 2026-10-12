@@ -5,6 +5,8 @@ import { SECTOR_GUIDES } from "./sector-guides.js";
 import { BUILDER_GUIDES } from "./builder-guides.js";
 import { BEGINNER_GUIDES } from "./beginner-guides.js";
 import { TRADE_GUIDES } from "./trade-guides.js";
+import { PRO_PAGES, PRO_TOOLS } from "./pro-pages.js";
+import { BUNDLE5_PAGES } from "./bundle5-pages.js";
 
 const TOOLS = [
   ["/", "Free SEO check", "Full single-page audit: Google readiness, AI search, speed, security and local SEO."],
@@ -57,7 +59,16 @@ const TOOLS = [
   ["/local-search-checker", "Local search checker", "See Google results as they appear in any UK town."],
   ["/ai-meta-description-generator", "AI title & description writer", "AI reads your page and writes titles and descriptions that fit Google."],
   ["/bulk-seo-checker", "Bulk SEO checker", "Score up to 20 websites at once and download a CSV."],
+  ["/redirect-map-generator", "Redirect map generator", "301 rules for .htaccess, Nginx, Cloudflare and more."],
+  ["/seo-roi-calculator", "SEO ROI calculator", "What a better Google position could earn you."],
+  ["/image-compressor", "Image compressor", "Shrink photos and convert to WebP in your browser – no upload."],
+  ["/qr-code-generator", "QR code generator", "QR codes that never expire, as PNG or SVG."],
+  ["/google-review-link-generator", "Google review link generator", "A one-tap review link, QR code and printable card."],
+  ["/privacy-policy-generator", "Privacy policy generator", "A UK GDPR privacy policy and cookie wording for your site."],
+  ["/website-report", "Website report", "Authority, rank, linking sites, age and hosting for any domain."],
   ["/seo-badge", "SEO score badge", "Show your score on your site – it updates itself weekly."],
+  ...PRO_TOOLS,
+  ["/accessibility-checker", "Accessibility checker", "Test any page for WCAG problems: alt text, labels, link names, zoom and headings."],
 ];
 export const toolCards = (except) => `<div class="grid">${TOOLS.filter(([p]) => p !== except).map(([p, t, d]) => `<a class="card" href="${p}"><p class="ct">${t}</p><p>${d}</p></a>`).join("")}</div>`;
 
@@ -66,6 +77,13 @@ const toolPage = (path, crumb, title, desc, h1, lead, focus, app, sections, faqs
 import { GUIDES_11 } from "./guides-11.js";
 import { MORE_GUIDES } from "./more-guides.js";
 import { GUIDES_8 } from "./guides-8.js";
+import { GUIDES_10 } from "./guides-10.js";
+import { DIRECTORIES_PAGE } from "./directories-page.js";
+import { MORE_PAGES } from "./more-pages.js";
+import { EXTRA_PAGES } from "./extra-pages.js";
+import { SITE_REPORT_PAGE } from "./site-report.js";
+import { EMAIL_GUIDES } from "./email-guides.js";
+import { COMPARE_PAGES } from "./compare-pages.js";
 
 export const PAGES = [
   {
@@ -918,7 +936,7 @@ export const PAGES = [
   {
     path: "/guides", crumb: "Guides", title: "Free SEO Guides | Plain-English Help From XKey",
     desc: "Free plain-English SEO guides for UK businesses: why a site isn't on Google, Search Console, title tags, local SEO, schema, AI search and more.",
-    h1: "SEO guides", eyebrow: "Plain English", lead: "Short, practical guides for business owners who want to understand their SEO report.", sections: `<h2>Who are these guides for?</h2><p>Business owners, marketers and anyone who has run an SEO check and wants to know what the results mean. Each guide explains one topic in plain English, says what matters and what doesn't, and links to the free tool that checks it. We update them when Google or the AI providers change their guidance.</p><h2>Where should I start?</h2><p>If you're new to SEO, read <a href="/guides/what-is-an-seo-check">what an SEO check is</a>, then follow the <a href="/guides/how-to-check-website-seo">10-minute routine</a>. If your site doesn't appear in Google at all, start with <a href="/guides/why-is-my-website-not-on-google">why isn't my website on Google?</a></p><h2>Guides for local businesses</h2><p>Serve customers in a particular town? The <a href="/guides/local-seo-checklist">local SEO checklist</a> and <a href="/guides/google-business-profile">Google Business Profile guide</a> cover the steps that put you in the map pack.</p><h2>Guides for AI search</h2><p>To get recommended by ChatGPT, Claude, Perplexity and Google's AI Overviews, read <a href="/guides/ai-search-optimisation">AI search optimisation</a>, then decide which crawlers to let in with our guide to <a href="/guides/block-ai-training-bots">blocking AI training bots</a>, and find out <a href="/guides/llms-txt">whether you need llms.txt</a>.</p>`, guides: true,
+    h1: "SEO guides", eyebrow: "Plain English", lead: "Short, practical guides for business owners who want to understand their SEO report.", sections: `<h2>Who are these guides for?</h2><p>Business owners, marketers and anyone who has run an SEO check and wants to know what the results mean. Each guide explains one topic in plain English, says what matters and what doesn't, and links to the free tool that checks it. We update them when Google or the AI providers change their guidance.</p><h2>Where should I start?</h2><p>If you're new to SEO, read <a href="/guides/what-is-an-seo-check">what an SEO check is</a>, then follow the <a href="/guides/how-to-check-website-seo">10-minute routine</a>. If your site doesn't appear in Google at all, start with <a href="/guides/why-is-my-website-not-on-google">why isn't my website on Google?</a> To learn step by step, take the <a href="/learn-seo">free 10-lesson SEO course</a>, and look up any jargon in the <a href="/seo-glossary">SEO glossary</a>. If your traffic fell suddenly, check the <a href="/google-algorithm-updates">Google algorithm updates tracker</a> first.</p><h2>Guides for local businesses</h2><p>Serve customers in a particular town? The <a href="/guides/local-seo-checklist">local SEO checklist</a> and <a href="/guides/google-business-profile">Google Business Profile guide</a> cover the steps that put you in the map pack.</p><h2>Guides for AI search</h2><p>To get recommended by ChatGPT, Claude, Perplexity and Google's AI Overviews, read <a href="/guides/ai-search-optimisation">AI search optimisation</a>, then decide which crawlers to let in with our guide to <a href="/guides/block-ai-training-bots">blocking AI training bots</a>, and find out <a href="/guides/llms-txt">whether you need llms.txt</a>.</p>`, guides: true,
   },
   {
     path: "/guides/what-is-an-seo-check", crumb: "What is an SEO check?", parent: ["/guides", "Guides"], article: true,
@@ -1240,10 +1258,22 @@ Sitemap: https://yourdomain.co.uk/sitemap.xml</code></pre>
     sections: `<h2>What we collect</h2><p>When you run a check we receive the web address you entered and your IP address. We use the IP address only for short-term rate limiting to stop abuse; it's held in a temporary cache for about an hour.</p>
 <h2>Reports</h2><p>Finished reports are cached for up to an hour so repeat views are fast. We don't store the content of the pages we check.</p>
 <h2>Monitoring</h2><p>If you start monitoring, we store the web address and a weekly summary of the check results so we can show your history. Anyone with the dashboard link can view it. To have a monitor deleted, email us with the link.</p>
+<h2>Uptime monitoring</h2><p>If you start an uptime monitor, we store the web address, where to send alerts (an ntfy topic or a Slack, Discord or Teams webhook address) and a summary of recent checks. Anyone with the dashboard link can view it. Pressing "Stop monitoring" deletes it within 15 minutes.</p>
+<h2>Website analytics</h2><p>If you add our analytics script to your website, we count visits to that site without cookies or any other storage on your visitors' devices. We keep totals only: pages, the website a visitor came from, country (from the connection, not stored), screen size group and clicks on phone, email, outbound and goal links. To count unique visitors we make a one-way code from the connection's IP address, browser and a secret that changes daily; the IP address itself isn't stored and the code can't be linked between days. Visitor codes are deleted after 31 days and totals after 400 days.</p>
+<h2>Tools that run in your browser</h2><p>The rank tracker, SEO content editor and brand monitoring tool work in your browser. Search Console exports and drafts you use with them are kept in your browser's storage on your device and never sent to us.</p>
 <h2>Cookies and your browser</h2><p>XKey doesn't set advertising or tracking cookies. To show "Your recent checks", your browser keeps a short list of the addresses you checked and their scores – it stays on your device, is never sent to us, and you can clear it with one click.</p>
 <h2>Your rights</h2><p>You can contact us about your data at <a href="mailto:iceworks@f1rst.co.uk">iceworks@f1rst.co.uk</a>, or complain to the Information Commissioner's Office at <a href="https://ico.org.uk/" rel="noopener">ico.org.uk</a>.</p>`,
   },
+  ...PRO_PAGES,
+  ...BUNDLE5_PAGES,
   ...GUIDES_11,
   ...MORE_GUIDES,
   ...GUIDES_8,
+  ...GUIDES_10,
+  DIRECTORIES_PAGE,
+  ...MORE_PAGES,
+  ...EXTRA_PAGES,
+  SITE_REPORT_PAGE,
+  ...EMAIL_GUIDES,
+  ...COMPARE_PAGES,
 ];

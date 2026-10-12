@@ -18,6 +18,21 @@ import { hostingApi } from "./hosting.js";
 import { metaApi } from "./meta.js";
 import { sslApi } from "./ssl.js";
 import { emailApi } from "./email.js";
+import { MORE_FORMS, MORE_INSTANT } from "./more-pages.js";
+import { moreApp, redirectPairs, redirectRules } from "./tools-more.js";
+import { PRO_FORMS, PRO_INSTANT } from "./pro-pages.js";
+import { proApp } from "./pro-client.js";
+import { A11Y_FORMS } from "./bundle5-pages.js";
+import { a11yApp } from "./a11y-client.js";
+import { a11yApi } from "./a11y.js";
+import { googleUpdatesSection, GSD_MARK } from "./google-updates.js";
+import { createUptime, getUptime, stopUptime, runUptime, uptimeDashboard, validUptimeId } from "./uptime.js";
+import { createSite, siteBySecret, statsApi, beacon, pruneAnalytics, validSecret, TRACKER_JS } from "./analytics.js";
+import { pluginZip } from "./wp-plugin.js";
+import { EXTRA_FORMS, EXTRA_INSTANT } from "./extra-pages.js";
+import { extraApp, qrMatrix } from "./tools-extra.js";
+import { siteReport } from "./site-report.js";
+import { siteDomain } from "./backlinks.js";
 
 const BY_PATH = Object.fromEntries(PAGES.map((p) => [p.path, p]));
 const GUIDES = PAGES.filter((p) => p.path.startsWith("/guides/"));
@@ -30,7 +45,11 @@ for (const c of "–—£€’‘“”…·•é") W[c] = pixelWidth(c, 2048);
 // isn't shipped – the script then dies with "__name is not defined". wrangler.jsonc turns keep_names
 // off; this shim keeps the scripts working even if that setting is ever lost.
 const NAME_SHIM = "var __name=function(f){return f};";
+const MORE_JS = `var redirectPairs=${redirectPairs.toString()};var redirectRules=${redirectRules.toString()};(${moreApp.toString()})();`;
+const EXTRA_JS = `var qrMatrix=${qrMatrix.toString()};(${extraApp.toString()})();`;
 const TOOLS_JS = `var W=${JSON.stringify(W)};(${toolsApp.toString()})();`;
+const PRO_JS = `(${proApp.toString()})();`;
+const A11Y_JS = `(${a11yApp.toString()})();`;
 
 // ---------- forms
 const input = (id, name, ph, extra = "") => `<label for="${id}" class="sr">Website address</label><input id="${id}" name="${name}" type="text" inputmode="url" autocomplete="url" placeholder="${ph}" required${extra}>`;
@@ -148,6 +167,7 @@ Café &amp; Bistro – Blackpool's Finest!</textarea>
 <div class="row" style="margin-top:16px"><button class="btn" type="submit">Check redirects</button><button class="btn ghost" type="button" id="rd-four">Test http, https, www versions</button></div><div id="rd-out" aria-live="polite"></div></form><script src="/assets/tools.js" defer></script>`,
   domainage: () => `<form class="tool" id="dg-form"><label for="dg-urls">Domains – one per line, up to 100</label><textarea id="dg-urls" spellcheck="false" placeholder="yourbusiness.co.uk&#10;competitor.com&#10;bbc.co.uk"></textarea>
 <p style="margin:16px 0 0"><button class="btn" type="submit">Check domain age</button></p><div id="dg-out" aria-live="polite"></div></form><script src="/assets/tools.js" defer></script>`,
+  sitereport: () => `<form class="ck-form" action="/site" method="get"><label for="sr-d" class="sr">Website</label><input id="sr-d" name="d" type="text" inputmode="url" autocomplete="url" placeholder="yourbusiness.co.uk" required><button class="btn" type="submit">See report</button></form>`,
   whois: () => `<form class="ck-form" id="wh-form"><label for="wh-d" class="sr">Domain name</label><input id="wh-d" type="text" inputmode="url" autocomplete="url" placeholder="yourbusiness.co.uk" required><button class="btn" type="submit">Look up</button></form><div id="wh-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
   difficulty: () => `<form class="tool" id="kd-form"><label for="kd-kw">Keyword</label><input id="kd-kw" type="text" placeholder="boiler repair blackpool" required>
 <p style="margin:12px 0 0"><strong>Step 1:</strong> <a class="btn ghost" id="kd-google" href="https://www.google.co.uk/search" target="_blank" rel="noopener">Search Google</a></p>
@@ -163,6 +183,7 @@ Café &amp; Bistro – Blackpool's Finest!</textarea>
 <p style="margin:16px 0 0"><button class="btn" type="submit">Check them all</button></p><div id="bk-out" aria-live="polite"></div></form><script src="/assets/tools.js" defer></script>`,
   badge: () => `<form class="tool" id="bd-form"><label for="bd-site">Your website</label><input id="bd-site" type="text" inputmode="url" placeholder="yoursite.co.uk">
 <p style="margin:16px 0 6px;font-weight:600">Preview</p><div id="bd-prev"></div><p style="margin:16px 0 6px;font-weight:600">Code to paste into your site</p><pre class="out" id="bd-code"></pre><button class="btn" type="button" id="bd-copy">Copy</button></form><script src="/assets/tools.js" defer></script>`,
+  ...EXTRA_FORMS,
 };
 
 // crawlers offered by the robots tester: [token(s) in fallback order, label, purpose]
@@ -191,7 +212,10 @@ const guideCards = () => `<div class="grid">${GUIDES.map((g) => `<a class="card"
 const CTA = `<div class="cta"><p class="ct" style="font-size:26px">Run a free SEO check now</p><p>About 50 checks covering Google, AI search, speed, security and local SEO. No sign-up.</p><form class="ck-form" action="/seo-checker" method="get" role="search"><label for="cta-url" class="sr">Website address</label><input id="cta-url" name="url" type="text" inputmode="url" placeholder="yourwebsite.co.uk" required><button class="btn" type="submit">Check my site</button></form></div>`;
 const MAKER = `<div class="maker"><p><strong>Want the fixes done for you?</strong> XKey is made by <a href="https://icework.co.uk/" rel="noopener">IceWork</a>, a web studio in ${BRAND.town}. IceWork builds fast, search-ready websites – a 3-page site including domain and a year's hosting is £${BRAND.price} all in.</p></div>`;
 
-const INSTANT = new Set(["title", "robots", "llms", "meta", "og", "sitemap", "words", "keywords", "titles", "robotsgen", "schemagen", "localserp"]);
+Object.assign(FORMS, PRO_FORMS);
+Object.assign(FORMS, MORE_FORMS);
+const INSTANT = new Set([...PRO_INSTANT, ...MORE_INSTANT, ...EXTRA_INSTANT, "title", "robots", "llms", "meta", "og", "sitemap", "words", "keywords", "titles", "robotsgen", "schemagen", "localserp"]);
+Object.assign(FORMS, PRO_FORMS, A11Y_FORMS);
 const freeStrip = (f) => `<ul class="free" aria-label="What free means here"><li>No cost</li><li>No sign-up</li><li>No email</li><li>No Google sign-in</li><li>No subscription</li><li>${INSTANT.has(f) ? "Unlimited – runs in your browser" : "No limits for normal use"}</li></ul>`;
 function render(p) {
   const form = p.form ? FORMS[p.form](p) : "";
@@ -214,7 +238,7 @@ const enginePage = (k) => BY_PATH[ENGINE_PAGE[k] || "/"];
 const OG_BYTES = Uint8Array.from(atob(OG_PNG), (c) => c.charCodeAt(0));
 const INDEXED = PAGES.filter((p) => !p.noindex);
 const SITEMAP = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${INDEXED.map((p) => `<url><loc>${SITE}${p.path}</loc><lastmod>${UPDATED}</lastmod></url>`).join("\n")}\n</urlset>\n`;
-const ROBOTS = `User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /monitor/\n\nSitemap: ${SITE}/sitemap.xml\n`;
+const ROBOTS = `User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /monitor/\nDisallow: /uptime/\nDisallow: /analytics/\n\nSitemap: ${SITE}/sitemap.xml\n`;
 const LLMS = `# ${BRAND.name}\n\n> Free SEO and AI search checker for UK websites, made by ${BRAND.maker} (${BRAND.makerUrl}), a web studio in ${BRAND.town}. No sign-up.\n\nXKey checks a page for Google readiness, AI search visibility (ChatGPT, Claude, Perplexity, Google AI Overviews), Core Web Vitals, structured data, security and local SEO, and gives a ranked list of fixes. It also crawls whole sites, compares competitors and monitors sites weekly.\n\n## Tools\n\n${INDEXED.filter((p) => !p.article && !["/about", "/contact", "/privacy"].includes(p.path)).map((p) => `- [${p.crumb === "Home" ? "Free SEO check" : p.crumb}](${SITE}${p.path}): ${p.desc}`).join("\n")}\n\n## Guides\n\n${GUIDES.map((p) => `- [${p.crumb}](${SITE}${p.path}): ${p.desc}`).join("\n")}\n\n## About\n\n- [About XKey](${SITE}/about)\n- [Contact](${SITE}/contact)\n- [Privacy](${SITE}/privacy)\n`;
 const MANIFEST = JSON.stringify({ name: BRAND.name, short_name: BRAND.name, start_url: "/", display: "browser", background_color: "#f6f8fb", theme_color: "#0e1726", icons: [{ src: "/favicon.svg", sizes: "any", type: "image/svg+xml" }] });
 
@@ -295,6 +319,27 @@ const worker = {
         let body; try { body = JSON.parse((await request.text()).slice(0, 20_000)); } catch { return Response.json({ error: "Bad request" }, { status: 400 }); }
         return Response.json(await aiSnippet(env, c, body || {}), { headers: { "cache-control": "no-store" } });
       }
+      if (url.pathname === "/api/a") {
+        if (!(await rateLimited(request, "beacon", 1200))) await beacon(request, env || {});
+        return new Response(null, { status: 204, headers: { "access-control-allow-origin": "*", "cache-control": "no-store" } });
+      }
+      if (url.pathname === "/api/uptime") {
+        if (!env || !env.STATE) return send("Uptime monitoring isn't available here.", TXT, 503);
+        if (await rateLimited(request, "upcreate", 10)) return send("Too many monitors created from your connection this hour.", TXT, 429);
+        let id; try { id = await createUptime(env, await request.formData(), selfFetch(env, c)); } catch (e) { return send((e && e.message) || "Couldn't start monitoring.", TXT, 400); }
+        return new Response(null, { status: 303, headers: { location: `/uptime/${id}` } });
+      }
+      const stop = url.pathname.match(/^\/api\/uptime\/([A-Za-z0-9_-]{16})\/stop$/);
+      if (stop) {
+        if (!env || !env.STATE || !(await stopUptime(env, stop[1]))) return send("Not found", TXT, 404);
+        return send(layout({ path: "/uptime-monitor", crumb: "Uptime monitor", title: "Monitoring stopped | XKey", desc: "Uptime monitoring stopped.", noindex: true, body: `<div class="wrap hero"><h1>Monitoring stopped</h1><p class="lead">We'll stop checking the site and delete its history within 15 minutes.</p><a class="btn" href="/uptime-monitor">Watch another site</a></div>` }), HTMLT, 200, "no-store");
+      }
+      if (url.pathname === "/api/analytics") {
+        if (!env || !env.ANALYTICS) return send("Analytics isn't available here.", TXT, 503);
+        if (await rateLimited(request, "ancreate", 10)) return send("Too many sites added from your connection this hour.", TXT, 429);
+        let secret; try { secret = await createSite(env, (await request.formData()).get("url")); } catch (e) { return send((e && e.message) || "Couldn't add that site.", TXT, 400); }
+        return new Response(null, { status: 303, headers: { location: `/analytics/${secret}` } });
+      }
       if (url.pathname.startsWith("/api/monitor")) {
         if (!env || !env.STATE) return send("Monitoring isn't available here.", TXT, 503);
         const back = (id) => new Response(null, { status: 303, headers: { location: `/monitor/${id}` } });
@@ -329,6 +374,12 @@ const worker = {
       case "/assets/compare.js": return send(NAME_SHIM + COMPARE_JS, JS, 200, "public, max-age=3600");
       case "/assets/report.js": return send(NAME_SHIM + REPORT_JS, JS, 200, "public, max-age=3600");
       case "/assets/tools.js": return send(NAME_SHIM + TOOLS_JS, JS, 200, "public, max-age=3600");
+      case "/assets/more.js": return send(NAME_SHIM + MORE_JS, JS, 200, "public, max-age=3600");
+      case "/assets/pro.js": return send(NAME_SHIM + PRO_JS, JS, 200, "public, max-age=3600");
+      case "/assets/a11y.js": return send(NAME_SHIM + A11Y_JS, JS, 200, "public, max-age=3600");
+      case "/a.js": return new Response(TRACKER_JS, { headers: { "content-type": JS, "cache-control": "public, max-age=86400", "access-control-allow-origin": "*" } });
+      case "/downloads/xkey-seo-fixer.zip": return new Response(pluginZip(), { headers: { "content-type": "application/zip", "content-disposition": 'attachment; filename="xkey-seo-fixer.zip"', "cache-control": "public, max-age=3600", "x-robots-tag": "noindex" } });
+      case "/assets/extra.js": return send(NAME_SHIM + EXTRA_JS, JS, 200, "public, max-age=3600");
       case "/favicon.svg": return send(FAVICON, "image/svg+xml", 200, "public, max-age=31536000, immutable");
       case "/favicon.ico": return Response.redirect(`${url.origin}/favicon.svg`, 301);
       case "/og.png": return send(OG_BYTES, "image/png", 200, "public, max-age=86400");
@@ -405,6 +456,11 @@ const worker = {
         const r = await sslApi(env || {}, url.searchParams, selfFetch(env, c));
         return Response.json(r.body, { status: r.status, headers: { "cache-control": "no-store" } });
       }
+      case "/api/a11y": {
+        if (await rateLimited(request, "a11y", 300)) return Response.json({ error: "You've checked a lot of pages this hour – please try again later." }, { status: 429 });
+        const r = await a11yApi(url.searchParams, selfFetch(env, c));
+        return Response.json(r.body, { status: r.status, headers: { "cache-control": "no-store" } });
+      }
       case "/api/tech": {
         if (await rateLimited(request, "tech", 300)) return Response.json({ error: "You've checked a lot of websites this hour – please try again later." }, { status: 429 });
         const r = await techApi(env || {}, url.searchParams, selfFetch(env, c));
@@ -449,15 +505,44 @@ const worker = {
       if (r) return r;
       if (path === "/seo-compare") return send(render({ ...BY_PATH["/seo-comparison"], noindex: true, prefill: url.searchParams.getAll("u").slice(0, 3) }), HTMLT, 200, "no-store");
     }
+    if (path.startsWith("/uptime/") && env && env.STATE) {
+      const id = path.slice(8), m = validUptimeId(id) ? await getUptime(env, id) : null;
+      if (m) return send(layout({ path, crumb: "Uptime dashboard", parent: ["/uptime-monitor", "Uptime monitor"], title: `Uptime: ${new URL(m.url).hostname}`, desc: "Private uptime monitoring dashboard.", noindex: true, body: uptimeDashboard(esc, id, m) }), HTMLT, 200, "no-store");
+    }
+    if (path.startsWith("/api/analytics/")) {
+      if (await rateLimited(request, "anstats", 600)) return Response.json({ error: "Too many requests – please wait a minute." }, { status: 429 });
+      const r = await statsApi(env || {}, path.slice(15), url.searchParams);
+      return Response.json(r.body, { status: r.status, headers: { "cache-control": "no-store" } });
+    }
+    if (path.startsWith("/analytics/") && env && env.ANALYTICS && validSecret(path.slice(11))) {
+      const site = await siteBySecret(env, path.slice(11));
+      if (site) {
+        const tag = `<script defer data-site="${site.key}" src="${SITE}/a.js"></script>`;
+        return send(layout({ path, crumb: "Analytics dashboard", parent: ["/website-analytics", "Website analytics"], title: `Analytics: ${site.host}`, desc: "Private website analytics dashboard.", noindex: true, body: `<div class="wrap hero"><h1>Analytics: ${esc(site.host)}</h1><p class="lead">Your private dashboard – bookmark this page and keep the link to yourself. It updates every 30 seconds.</p></div>
+<section style="padding-top:0"><div class="wrap prose"><div id="an-dash" data-secret="${esc(site.secret)}"><p>Loading…</p></div>
+<h2>Your tracking code</h2><p>Paste this just before <code>&lt;/head&gt;</code> on every page of ${esc(site.host)}:</p><pre style="white-space:pre-wrap;overflow-wrap:anywhere"><code>${esc(tag)}</code></pre>
+<p class="small">Phone and email clicks count as conversions automatically. To count a button or form as a goal, add <code>data-xkey-goal="Quote form"</code> to it. No cookies are used, so no cookie banner is needed for this script.</p></div></section><script src="/assets/pro.js" defer></script>` }), HTMLT, 200, "no-store");
+      }
+    }
     if (path.startsWith("/monitor/") && env && env.STATE) {
       const m = await getMonitor(env, path.slice(9));
       if (m) return send(layout({ path, crumb: "SEO monitor", parent: ["/seo-monitoring", "SEO monitoring"], title: `SEO monitor: ${m.host}`, desc: "Weekly SEO monitoring dashboard.", noindex: true, body: dashboard(esc, m) }), HTMLT, 200, "no-store");
     }
+    if (path === "/google-algorithm-updates") return send(HTML[path].replace(GSD_MARK, await googleUpdatesSection(env || {}, c)), HTMLT);
+    if (path === "/site") {
+      let d = null; try { d = siteDomain(url.searchParams.get("d")).domain; } catch {}
+      return Response.redirect(d ? `${SITE}/site/${d}` : `${SITE}/website-report`, d ? 302 : 301);
+    }
+    const sr = path.match(/^\/site\/([^/]+)$/);
+    if (sr) { const r = await siteReport(request, env, c, sr[1], () => rateLimited(request, "site", 1200)); if (r) return r; }
     if (HTML[path]) return send(HTML[path], HTMLT);
     return send(NOT_FOUND, HTMLT, 404);
   },
   async scheduled(event, env, ctx) {
     ctx.waitUntil(submitIndexNow(env).then((r) => console.log("IndexNow:", r)));
+    ctx.waitUntil(runUptime(env, selfFetch(env, ctx), +(env && env.UPTIME_PER_RUN) || 30).then((r) => console.log("Uptime:", r)).catch((e) => console.log("Uptime error:", e && e.message)));
+    const t = new Date(event && event.scheduledTime ? event.scheduledTime : Date.now());
+    if (t.getUTCHours() === 3 && t.getUTCMinutes() < 15) ctx.waitUntil(pruneAnalytics(env || {}).catch((e) => console.log("Analytics prune error:", e && e.message)));
     ctx.waitUntil(runDueMonitors(env, selfFetch(env, ctx), []).then((r) => console.log("Monitor:", r)).catch((e) => console.log("Monitor error:", e && e.message)));
   },
 };

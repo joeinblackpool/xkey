@@ -5,7 +5,9 @@
 // fails on: a browser error (e.g. a script crashing on load), a missing/empty result, or a result
 // without the expected text. Checks run on xkey.co.uk itself, which the Worker handles
 // in-process, so no internet is needed.
-import { need, serve, blData, whoisStandIns, dnsStandIn, ctStandIn } from "./lib.mjs";
+import { need, serve, blData, whoisStandIns, dnsStandIn, ctStandIn, GSD_FIXTURE } from "./lib.mjs";
+import { a11yCheck } from "../src/a11y.js";
+import { parseIncidents, updatesHtml } from "../src/google-updates.js";
 import { whoisApi, whoisDate, parseWhois } from "../src/whois.js";
 import { traceRedirects, metaRefresh, redirectsApi } from "../src/redirects.js";
 import { extractLinks, linkStatus, linksCheckApi } from "../src/linkcheck.js";
@@ -17,6 +19,10 @@ import { headTags, metaApi } from "../src/meta.js";
 import { sslApi, mixedContent, ctLookup } from "../src/ssl.js";
 import { emailApi, parseSpf, keyBits } from "../src/email.js";
 import { backlinksApi, authorityApi, crc32 } from "../src/backlinks.js";
+import { redirectPairs, redirectRules } from "../src/tools-more.js";
+import { qrMatrix } from "../src/tools-extra.js";
+import { OG_PNG } from "../src/og.js";
+import { indexable } from "../src/site-report.js";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import fs from "node:fs";
@@ -104,6 +110,11 @@ if (!only || only.test("backlink") || only.test("whois") || only.test("redirect"
       return r.exists && r.provider === "Krystal Hosting Ltd" && a.ip === "192.0.2.10" && a.ptr === "server12.krystal.uk" && a.country === "GB" && a.network === "KRYSTAL-UK" && b.version === 6 && b.org === "Krystal Hosting Ltd" && !r.notes.some((n) => /IPv6/.test(n.text)); }],
     ["hosting: Cloudflare hides the host; missing domain; bad input", async () => { const env = { DNS_FETCH: dnsStandIn(), ...whoisStandIns() }; const r = (await hostingApi(env, new URLSearchParams({ d: "xkey.co.uk" }), techFetch)).body; const n = (await hostingApi(env, new URLSearchParams({ d: "nothing-here.co.uk" }), techFetch)).body; const bad = await hostingApi(env, new URLSearchParams({ d: "not a site" }), techFetch);
       return r.provider === null && /behind Cloudflare/.test(r.how) && r.ips[0].org === "Cloudflare, Inc." && n.exists === false && bad.status === 400; }],
+    ["redirect map: parsing and rules", () => { const p = redirectPairs("old,new\n/a.html\t/a\nhttps://x.co.uk/b?id=2 -> /b\n/a.html /dup\n\n# note"); const h = redirectRules(p, "htaccess"), n = redirectRules(p, "nginx"), c = redirectRules(p, "cloudflare", "https://x.co.uk");
+      return p.length === 2 && p[1].fromPath === "/b?id=2" && /RewriteRule \^a\\\.html\$ \/a \[R=301,L\]/.test(h) && /RewriteCond %\{QUERY_STRING\} \^id=2\$\nRewriteRule \^b\$ \/b \[R=301,L,QSD\]/.test(h) && /location = \/a\.html \{ return 301 \/a; \}/.test(n) && /https:\/\/x\.co\.uk\/a\.html,https:\/\/x\.co\.uk\/a,301/.test(c); }],
+    ["qr: versions, finder patterns, too-long text", () => { const a = qrMatrix("https://xkey.co.uk", "M"), b = qrMatrix("x".repeat(150), "Q"), f = (m, x, y) => [0, 1, 2, 3, 4, 5, 6].every((i) => m[y][x + i] && m[y + 6][x + i] && m[y + i][x] && m[y + i][x + 6]) && m[y + 3][x + 3] && !m[y + 1][x + 1];
+      return a.length === 25 && b.length === 57 && f(a, 0, 0) && f(a, 18, 0) && f(a, 0, 18) && f(b, 50, 0) && qrMatrix("y".repeat(3000), "H") === null && qrMatrix("£ café", "L").length === 21; }],
+    ["site report: only strong sites are indexable", () => indexable({ found: true, rank: 5000, refDomains: 120 }) && !indexable({ found: true, rank: 2_000_000, refDomains: 500 }) && !indexable({ found: true, rank: 10, refDomains: 3 }) && !indexable({ found: true, rank: 0, refDomains: 900 }) && !indexable({ found: false })],
     ["hosting: CIDR matching and RDAP parsing", () => inCidr("192.0.2.10", "192.0.0.0/8") && !inCidr("193.0.2.10", "192.0.0.0/8") && inCidr("2001:db8::10", "2001:db8::/32") && !inCidr("2001:db9::1", "2001:db8::/32") && !inCidr("192.0.2.1", "2001:db8::/32") && parseIpRdap({ name: "N", entities: [{ roles: ["technical"], vcardArray: ["vcard", [["fn", {}, "text", "T Ltd"]]] }] }).org === "T Ltd"],
     ["meta: head tags, hreflang in <head> and Link header, after a redirect", async () => { const t = headTags(`<html lang="en-GB"><head><title>T &amp; Co</title><meta property="og:title" content="OG"><meta name="description" content='D'><link rel="alternate" hreflang="en-GB" href="/en-gb/"><link rel="canonical" href="https://a.co.uk/"><!-- <meta property="og:image" content="x"> --></head><body><meta property="og:image" content="late"></body></html>`, "https://a.co.uk/");
       const r = (await metaApi(new URLSearchParams({ url: "smithplumbing.co.uk" }), async (u) => u === "https://smithplumbing.co.uk/" ? new Response(null, { status: 301, headers: { location: "https://www.smithplumbing.co.uk/" } }) : new Response("<html><head><title>W</title></head></html>", { headers: { "content-type": "text/html", link: '<https://www.smithplumbing.ie/>; rel="alternate"; hreflang="en-IE"' } }))).body;
@@ -128,6 +139,16 @@ if (!only || only.test("backlink") || only.test("whois") || only.test("redirect"
         && many.spf.lookups === 11 && lv(many.spf, /^fail:11 DNS lookups/) && lv(many.spf, /^fail:The record ends in \+all/) && many.mx.nullMx
         && sub.dmarc.at === "xkey.co.uk" && lv(sub.dmarc, /^ok:sp=quarantine/) && lv(sub.spf, /^warn:No SPF/) && nosel.dkim.found[0].selector === "selector1" && err.error
         && parseSpf("v=spf1 a/24 mx:m.example.com -all")[0].type === "a" && keyBits("rsa", "") === 0; }],
+    ["a11y: finds missing alt, labels, link names, blocked zoom and heading jumps", () => {
+      const st = (h) => Object.fromEntries(a11yCheck(h).map((c) => [c.id, c.status]));
+      const bad = st('<html><head><meta name="viewport" content="width=device-width, user-scalable=no"></head><body><h1>A</h1><h3>B</h3><img src="/a.jpg"><img src="/b.jpg" alt="IMG_2041.jpg"><a href="/x"><i class="icon"></i></a><a href="/y">Read more</a><button><svg></svg></button><input name="email" placeholder="Email"><iframe src="https://maps.example/"></iframe></body></html>');
+      const good = st('<html lang="en-GB"><head><title>Hi</title></head><body><a href="#main">Skip to content</a><main id="main"><h1>A</h1><h2>B</h2><img src="/a.jpg" alt="Our van"><label for="e">Email</label><input id="e"><button aria-label="Open menu"></button></main></body></html>');
+      return bad.lang === "fail" && bad.title === "fail" && bad.zoom === "fail" && bad.alt === "fail" && bad.altq === "warn" && bad.linkname === "fail" && bad.vague === "warn" && bad.button === "fail" && bad.labels === "fail" && bad.headings === "warn" && bad.iframe === "fail"
+        && ["lang", "title", "zoom", "alt", "linkname", "button", "labels", "headings", "main", "skip"].every((k) => good[k] === "pass") && !good.altq && !good.vague; }],
+    ["google updates: rolling-out banner, durations, other problems; honest fallback", () => {
+      const p = parseIncidents(GSD_FIXTURE), h = updatesHtml(p, Date.parse("2026-10-12T12:00:00Z"));
+      return p.ranking.length === 2 && p.ranking[0].kind === "Core update" && p.ranking[1].days === 14 && p.other[0].service === "Indexing"
+        && /Rolling out now:<\/strong> October 2026 core update/.test(h) && /Still rolling out/.test(h) && /Delays indexing/.test(h) && /couldn't read/.test(updatesHtml(null)) && /couldn't read/.test(updatesHtml(parseIncidents("nonsense"))); }],
     ["tech: no WordPress plugins without WordPress", () => { const t = detectTech('<div class="wpcf7 wp-block-group"></div>'); return !t.length; }],
   );
   for (let [name, fn] of checks) {
@@ -175,6 +196,27 @@ const S = [
   { name: "Local search checker", path: "/local-search-checker", fill: [["ls-q", "plumber"], ["ls-town", "Preston"]], expect: ["#ls-go", null], attr: ["#ls-go", "href", /google\.[a-z.]+\/search/] },
   { name: "AI title & description writer", path: "/ai-meta-description-generator", fill: [["ai-about", "Emergency plumbers in Preston, Gas Safe, fixed prices."], ["ai-kw", "emergency plumber"], ["ai-town", "Preston"]], click: "#ai-form button[type=submit]", expect: ["#ai-out", /Preston/], timeout: 30000 },
   { name: "Bulk SEO checker", path: "/bulk-seo-checker", fill: [["bk-urls", "xkey.co.uk\nxkey.co.uk/guides"]], click: "#bk-form button[type=submit]", expect: ["#bk-out", /xkey\.co\.uk[\s\S]*\d/], timeout: 90000 },
+  { name: "Rank tracker – sample data", path: "/rank-tracker", click: "#rk-demo", expect: ["#rk-out", /page two[\s\S]*emergency plumber blackpool[\s\S]*▲/i] },
+  { name: "Rank tracker – pasted table", path: "/rank-tracker", fill: [["rk-paste", "Top queries\tClicks\tImpressions\tCTR\tPosition\nboiler service preston\t4\t300\t1.3%\t12.4"], ["rk-site", "test.co.uk"]], click: "#rk-go", expect: ["#rk-out", /boiler service preston[\s\S]*12\.4/] },
+  { name: "SEO content editor", path: "/seo-content-editor", fill: [["ce-kw", "free seo check"], ["ce-comp", "xkey.co.uk\nxkey.co.uk/website-audit"], ["ce-title", "Free SEO Check for UK Small Businesses"], ["#ce-ed", "A free SEO check shows what to fix. Run a free seo check today and see your score."]], click: "#ce-load", expect: ["#ce-out", /Content score[\s\S]*Related terms/], timeout: 30000 },
+  { name: "Toxic backlink checker", path: "/toxic-backlink-checker", fill: [["ba-url", "smithplumbing.co.uk"]], click: "#ba-form button[type=submit]", expect: ["#ba-out", /Backlink audit[\s\S]*bbc\.co\.uk[\s\S]*Disavow/] },
+  { name: "Competitor ad checker", path: "/competitor-ads-checker", fill: [["ad-url", "xkey.co.uk"]], click: "#ad-form button[type=submit]", expect: ["#ad-out", /advertising tags|Transparency Centre/], timeout: 30000 },
+  { name: "Brand monitoring", path: "/brand-monitoring", fill: [["bm-brand", "XKey"], ["bm-site", "xkey.co.uk"]], click: "#bm-form button[type=submit]", expect: ["#bm-out", /Google Alert[\s\S]*Audit the sites/] },
+  { name: "Uptime monitor", path: "/uptime-monitor", fill: [["up-url", "xkey.co.uk"]], click: "button[type=submit]", nav: /\/uptime\//, expect: ["main", /\bUp\b[\s\S]*Last checked[\s\S]*ms/], timeout: 30000 },
+  { name: "Website analytics", path: "/website-analytics", fill: [["an-url", "shop.co.uk"]], click: "button[type=submit]", nav: /\/analytics\//, expect: ["#an-dash", /Live now[\s\S]*Top pages/], timeout: 15000 },
+  { name: "WordPress plugin download", path: "/wordpress-seo-plugin", attr: ["a[download]", "href", /xkey-seo-fixer\.zip$/] },
+  { name: "UK business directories – live authority", path: "/uk-business-directories", routes: [[/\/api\/authority/, (u) => ({ results: u.searchParams.get("d").split(",").map((d) => ({ input: d, domain: d, found: d === "yell.com", authority: 61 })) })]], expect: ["td[data-d='yell.com']", /^61$/] },
+  { name: "Redirect map generator", path: "/redirect-map-generator", fill: [["rm-in", "/old-page.html\t/new-page\n/new-page\t/final"]], expect: ["#rm-out", /RewriteRule \^old-page\\\.html\$ \/new-page \[R=301,L\]/] },
+  { name: "Redirect map – chain warning", path: "/redirect-map-generator", fill: [["rm-in", "/a\t/b\n/b\t/c"]], expect: ["#rm-notes", /chain/] },
+  { name: "SEO ROI calculator", path: "/seo-roi-calculator", fill: [["roi-vol", "1000"], ["roi-now", "0"], ["roi-pos", "1"], ["roi-conv", "5"], ["roi-close", "50"], ["roi-val", "100"], ["roi-cost", "100"]], expect: ["#roi-out", /280[\s\S]*extra visits[\s\S]*14\.0[\s\S]*£700[\s\S]*600%/] },
+  { name: "QR code generator", path: "/qr-code-generator", fill: [["qr-text", "https://smithplumbing.co.uk/contact"]], expect: ["#qr-out", /Download PNG[\s\S]*Download SVG/], attr: ["#qr-out svg path", "d", /^M\d+ \d+h1v1h-1z(M\d+ \d+h1v1h-1z){200,}$/] },
+  { name: "Google review link generator", path: "/google-review-link-generator", fill: [["rv-id", "ChIJN1t_tDeuEmsRUsoyG83frY4"], ["rv-name", "Smith Plumbing"]], expect: ["#rv-out", /Smith Plumbing[\s\S]*Please leave us a Google review[\s\S]*Download QR code/], attr: ["#rv-link", "value", /^https:\/\/search\.google\.com\/local\/writereview\?placeid=ChIJN1t_tDeuEmsRUsoyG83frY4$/] },
+  { name: "Google review link – bad input", path: "/google-review-link-generator", fill: [["rv-id", "my shop"]], expect: ["#rv-out", /doesn't look like a Place ID/] },
+  { name: "Image compressor – PNG to WebP", path: "/image-compressor", files: [["ic-file", { name: "banner.png", mimeType: "image/png", buffer: Buffer.from(OG_PNG, "base64") }]], expect: ["#ic-out", /banner\.png[\s\S]*1200×630[\s\S]*Download/], attr: ["#ic-out a[download]", "download", /^banner(-min\.webp|\.png)$/] },
+  { name: "Privacy policy generator", path: "/privacy-policy-generator", fill: [["pp-name", "Smith Plumbing Ltd"], ["pp-email", "hello@smithplumbing.co.uk"]], expect: ["#pp-preview", /Smith Plumbing Ltd is the controller[\s\S]*hello@smithplumbing\.co\.uk[\s\S]*Information Commissioner/] },
+  { name: "Website report – search to report", path: "/website-report", fill: [["sr-d", "https://www.example.com/about"]], click: "main form button[type=submit]", nav: /\/site\/example\.com$/, expect: ["main", /authority[\s\S]*3[\s\S]*websites link to it[\s\S]*wikipedia\.org[\s\S]*registered on 14 August 1995/i] },
+  { name: "Website report – hosting and technology on request", path: "/site/smithplumbing.co.uk", click: "#sr-live", routes: [[/\/api\/hosting/, () => ({ name: "smithplumbing.co.uk", exists: true, provider: "Krystal Hosting Ltd", how: "From the owner of the site's IP address in the internet registry.", ips: [] })], [/\/api\/tech/, () => ({ tech: [{ name: "WordPress", cat: "cms" }, { name: "Google Analytics 4", cat: "analytics" }], groups: [["cms", "Website builder or CMS"], ["analytics", "Analytics"]], notes: [] })]], expect: ["#sr-out", /Krystal Hosting Ltd[\s\S]*WordPress[\s\S]*Google Analytics 4/] },
+  { name: "Backlink checker – links to the website report", path: "/backlink-checker", fill: [["bl-d", "smithplumbing.co.uk"]], click: "#bl-form button[type=submit]", expect: ["#bl-out a[href='/site/smithplumbing.co.uk']", /Full website report/] },
   { name: "Backlink checker", path: "/backlink-checker", fill: [["bl-d", "https://www.smithplumbing.co.uk/contact"]], click: "#bl-form button[type=submit]", expect: ["#bl-out", /3[\s\S]*websites link to it[\s\S]*bbc\.co\.uk/] },
   { name: "Backlink checker – link gap", path: "/backlink-checker", fill: [["bl-d", "smithplumbing.co.uk"], ["bl-vs", "rival.co.uk"]], click: "#bl-form button[type=submit]", expect: ["#bl-out", /2 websites link to rival\.co\.uk but not to you[\s\S]*wikipedia\.org[\s\S]*localpaper\.co\.uk/] },
   { name: "Backlink checker – .com", path: "/backlink-checker", fill: [["bl-d", "https://www.example.com/about"]], click: "#bl-form button[type=submit]", expect: ["#bl-out", /example\.com[\s\S]*3[\s\S]*websites link to it[\s\S]*wikipedia\.org/] },
@@ -198,6 +240,9 @@ const S = [
     expect: ["#hl-out", /UK, but the country code[\s\S]*No x-default[\s\S]*2 of 3 alternate pages[\s\S]*fr-FR[\s\S]*Yes[\s\S]*de[\s\S]*No – add a tag/] },
   { name: "Website hosting checker", path: "/website-hosting-checker", fill: [["ho-d", "xkey.co.uk"]], click: "#ho-form button[type=submit]", expect: ["#ho-out", /Hosted by Cloudflare[\s\S]*192\.0\.2\.30[\s\S]*CLOUDFLARENET/] },
   { name: "Website hosting checker – opened from a link", path: "/website-hosting-checker?d=xkey.co.uk", expect: ["#ho-out", /192\.0\.2\.30/] },
+  { name: "Accessibility checker", path: "/accessibility-checker", fill: [["a11-url", "xkey.co.uk"]], click: "#a11-form button[type=submit]", expect: ["#a11-out", /out of 100[\s\S]*passed[\s\S]*Page language/] },
+  { name: "Google algorithm updates – live list", path: "/google-algorithm-updates", expect: ["main", /Rolling out now:[\s\S]*October 2026 core update[\s\S]*September 2026 spam update[\s\S]*14 days/] },
+  { name: "SEO course – ticks are saved", path: "/learn-seo", click: "main .ls-tasks input", expect: ["#ls-progress", /1 of \d+ tasks done/] },
   { name: "Website technology checker", path: "/website-technology-checker", fill: [["tc-url", "xkey.co.uk"]], click: "#tc-form button[type=submit]", expect: ["#tc-out", /technolog[\s\S]*Email provider[\s\S]*Google Workspace[\s\S]*DNS provider[\s\S]*Cloudflare[\s\S]*Google Search Console/] },
   { name: "Website technology checker – opened from a link", path: "/website-technology-checker?url=xkey.co.uk", expect: ["#tc-out", /Cloudflare/] },
   { name: "SSL checker", path: "/ssl-checker", fill: [["sl-d", "xkey.co.uk"]], click: "#sl-form button[type=submit]", expect: ["#sl-out", /Secure[\s\S]*loads over https[\s\S]*Google Trust Services[\s\S]*\*\.xkey\.co\.uk/] },
@@ -245,6 +290,7 @@ for (const s of RUN) {
       await el.fill(value);
     }
     for (const [id, value] of s.select || []) await page.selectOption("#" + id, value);
+    for (const [id, file] of s.files || []) await page.setInputFiles("#" + id, file);
     if (!problem && s.click) {
       const btn = page.locator(s.click.split(",").map((x) => x.trim().startsWith("#") || x.trim().startsWith("main") ? x : `main form:first-of-type ${x}`).join(", ")).first();
       if (!(await btn.count())) problem = `button ${s.click} not found`;

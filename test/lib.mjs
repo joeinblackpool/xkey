@@ -49,7 +49,7 @@ export async function serve(port = 8789, workerPath = "../src/index.js") {
   }) }) };
   // Backlink index stand-in: the files build.py publishes (format 2), from test/fixtures/backlinks.
   const BL_DATA = blData("backlinks");
-  const env = { STATE, AI, BL_DATA, ...whoisStandIns(), DNS_FETCH: dnsStandIn(), CT_FETCH: ctStandIn() };
+  const env = { STATE, AI, BL_DATA, ANALYTICS: await d1StandIn(), ...whoisStandIns(), DNS_FETCH: dnsStandIn(), CT_FETCH: ctStandIn(), GSD_FETCH: gsdStandIn() };
   const worker = (await import(new URL(workerPath, import.meta.url).href)).default;
   const server = http.createServer(async (req, res) => {
     const chunks = []; for await (const c of req) chunks.push(c);
@@ -165,3 +165,25 @@ export function ctStandIn() {
     const q = u.searchParams.get("q"); if (q === "down.co.uk" || q === "slowlogs.co.uk") return new Response("busy", { status: 502 }); return Response.json(certs[q] || []);
   };
 }
+
+/** Cloudflare D1 stand-in on Node's built-in SQLite (in memory): prepare/bind/first/all/run and batch. */
+export async function d1StandIn() {
+  const { DatabaseSync } = await import("node:sqlite");
+  const db = new DatabaseSync(":memory:");
+  const stmt = (sql, args = []) => ({
+    bind: (...a) => stmt(sql, a),
+    all: async () => ({ results: db.prepare(sql).all(...args), success: true }),
+    first: async () => db.prepare(sql).get(...args) ?? null,
+    run: async () => { const p = db.prepare(sql); if (/\breturning\b/i.test(sql)) return { results: p.all(...args), success: true }; p.run(...args); return { results: [], success: true }; },
+    _exec: () => (/^\s*(select|with)\b|\breturning\b/i.test(sql) ? { results: db.prepare(sql).all(...args) } : (db.prepare(sql).run(...args), { results: [] })),
+  });
+  return { prepare: (sql) => stmt(sql), batch: async (list) => { db.exec("BEGIN"); try { const r = list.map((s) => s._exec()); db.exec("COMMIT"); return r; } catch (e) { db.exec("ROLLBACK"); throw e; } } };
+}
+
+/** Google Search Status Dashboard stand-in (incidents.json): one update rolling out, one finished, one indexing problem. */
+export const GSD_FIXTURE = [
+  { id: "a", begin: "2026-10-09T16:00:00+00:00", end: null, external_desc: "October 2026 core update", service_name: "Ranking", uri: "incidents/a", updates: [{ text: "Released the October 2026 core update. The rollout may take up to two weeks to complete." }] },
+  { id: "b", begin: "2026-09-24T16:15:00+00:00", end: "2026-10-08T08:00:00+00:00", external_desc: "September 2026 spam update", service_name: "Ranking", uri: "incidents/b", updates: [{ text: "The rollout was complete as of October 8, 2026." }] },
+  { id: "c", begin: "2026-08-02T10:00:00+00:00", end: "2026-08-03T10:00:00+00:00", external_desc: "Delays indexing new content", service_name: "Indexing", uri: "incidents/c", updates: [] },
+];
+export function gsdStandIn() { return async () => new Response(JSON.stringify(GSD_FIXTURE), { headers: { "content-type": "application/json" } }); }

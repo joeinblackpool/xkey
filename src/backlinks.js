@@ -150,6 +150,14 @@ async function lookup(env, ctx, m, site) {
   return NOT_FOUND(site.domain);
 }
 
+/** One site's row from the current release (null manifest = data unavailable). Used by the /site/ reports. */
+export async function siteLinks(env, ctx, site) {
+  const m = await manifest(env, ctx);
+  if (!m) return { m: null, r: null };
+  if (m.scope !== "all" && !site.uk) return { m, r: NOT_FOUND(site.domain) };
+  return { m, r: await lookup(env, ctx, m, site) };
+}
+
 /** GET /api/backlinks?d=yoursite.com&vs=competitor.com */
 export async function backlinksApi(env, ctx, params) {
   let me, vs = null;
