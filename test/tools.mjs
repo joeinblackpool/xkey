@@ -15,6 +15,7 @@ import { techApi, detectTech } from "../src/tech.js";
 import { hostingApi, inCidr, parseIpRdap } from "../src/hosting.js";
 import { headTags, metaApi } from "../src/meta.js";
 import { sslApi, mixedContent, ctLookup } from "../src/ssl.js";
+import { emailApi, parseSpf, keyBits } from "../src/email.js";
 import { backlinksApi, authorityApi, crc32 } from "../src/backlinks.js";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
@@ -115,8 +116,18 @@ if (!only || only.test("backlink") || only.test("whois") || only.test("redirect"
     ["ssl: no https, no redirect; CT newest certificate and errors", async () => {
       const f = async (u) => { if (u.startsWith("https:")) throw new TypeError("TLS handshake failed"); return new Response("<html></html>", { headers: { "content-type": "text/html" } }); };
       const r = (await sslApi({ CT_FETCH: ctStandIn() }, new URLSearchParams({ d: "down.co.uk" }), f)).body; const t = r.checks.map((c) => c.level + ":" + c.text).join("|");
-      const x = await ctLookup({ CT_FETCH: ctStandIn() }, "xkey.co.uk"), w = await ctLookup({ CT_FETCH: ctStandIn() }, "www.xkey.co.uk"), none = await ctLookup({ CT_FETCH: ctStandIn() }, "nothing.co.uk");
-      return !r.secure && /fail:We couldn't make a secure/.test(t) && /warn:http:\/\/down\.co\.uk doesn't redirect/.test(t) && r.ctError && x.issuer === "Google Trust Services" && x.daysLeft >= 59 && w && w.id === 2 && none === null && mixedContent('<link rel="canonical" href="http://a/">').length === 0; }],
+      const x = await ctLookup({ CT_FETCH: ctStandIn() }, "xkey.co.uk"), w = await ctLookup({ CT_FETCH: ctStandIn() }, "www.xkey.co.uk"), none = await ctLookup({ CT_FETCH: ctStandIn() }, "nothing.co.uk"), sp = await ctLookup({ CT_FETCH: ctStandIn() }, "slowlogs.co.uk");
+      return !r.secure && /fail:We couldn't make a secure/.test(t) && /warn:http:\/\/down\.co\.uk doesn't redirect/.test(t) && r.ctError && x.issuer === "Google Trust Services" && x.daysLeft >= 59 && w && w.id === 2 && none === null && sp.issuer === "Let's Encrypt" && sp.id === "77" && sp.daysLeft >= 79 && mixedContent('<link rel="canonical" href="http://a/">').length === 0; }],
+    ["email: MX provider, SPF includes and lookups, DMARC on the parent, DKIM key sizes", async () => {
+      const eq = async (d, t, sel) => (await emailApi({ DNS_FETCH: dnsStandIn() }, new URLSearchParams({ d, ...(t ? { t } : {}), ...(sel ? { s: sel } : {}) }))).body;
+      const lv = (part, re) => part.checks.some((c) => re.test(c.level + ":" + c.text));
+      const [x, sp, bad, many, sub, nosel, err] = await Promise.all([eq("xkey.co.uk", "dkim", "selector1"), eq("smithplumbing.co.uk", "dkim"), eq("badmail.co.uk"), eq("toomany.co.uk"), eq("shop.xkey.co.uk"), eq("xkey.co.uk", "dkim"), eq("xkey.co.uk", "dkim", "bad selector!")]);
+      return x.mx.records[0].provider === "Google Workspace" && x.spf.lookups === 2 && x.spf.root.terms[0].sender === "Google Workspace" && x.spf.root.terms[0].child.terms[0].child.terms[0].type === "ip4" && lv(x.dmarc, /^ok:p=reject/) && x.dkim.found[0].bits === 1024 && lv(x.dkim, /^warn:selector1: a 1024-bit/)
+        && sp.dkim.found[0].selector === "google" && sp.dkim.found[0].bits === 2048 && lv(sp.dmarc, /^warn:p=none/) && sp.mx.records[0].ips[0] === "192.0.2.11"
+        && lv(bad.spf, /^fail:2 SPF records/) && lv(bad.mx, /^fail:mx\.badmail\.co\.uk doesn't resolve/) && lv(bad.dmarc, /^warn:No DMARC/) && !bad.dkim
+        && many.spf.lookups === 11 && lv(many.spf, /^fail:11 DNS lookups/) && lv(many.spf, /^fail:The record ends in \+all/) && many.mx.nullMx
+        && sub.dmarc.at === "xkey.co.uk" && lv(sub.dmarc, /^ok:sp=quarantine/) && lv(sub.spf, /^warn:No SPF/) && nosel.dkim.found[0].selector === "selector1" && err.error
+        && parseSpf("v=spf1 a/24 mx:m.example.com -all")[0].type === "a" && keyBits("rsa", "") === 0; }],
     ["tech: no WordPress plugins without WordPress", () => { const t = detectTech('<div class="wpcf7 wp-block-group"></div>'); return !t.length; }],
   );
   for (let [name, fn] of checks) {
@@ -190,6 +201,11 @@ const S = [
   { name: "Website technology checker", path: "/website-technology-checker", fill: [["tc-url", "xkey.co.uk"]], click: "#tc-form button[type=submit]", expect: ["#tc-out", /technolog[\s\S]*Email provider[\s\S]*Google Workspace[\s\S]*DNS provider[\s\S]*Cloudflare[\s\S]*Google Search Console/] },
   { name: "Website technology checker – opened from a link", path: "/website-technology-checker?url=xkey.co.uk", expect: ["#tc-out", /Cloudflare/] },
   { name: "SSL checker", path: "/ssl-checker", fill: [["sl-d", "xkey.co.uk"]], click: "#sl-form button[type=submit]", expect: ["#sl-out", /Secure[\s\S]*loads over https[\s\S]*Google Trust Services[\s\S]*\*\.xkey\.co\.uk/] },
+  { name: "MX lookup", path: "/mx-lookup", fill: [["em-d", "xkey.co.uk"]], click: "#em-form button[type=submit]", expect: ["#em-out", /1 mail server[\s\S]*smtp\.google\.com[\s\S]*Google Workspace[\s\S]*SPF:[\s\S]*SPF checker/] },
+  { name: "SPF checker", path: "/spf-checker?d=toomany.co.uk", expect: ["#em-out", /SPF has problems[\s\S]*11 DNS lookups[\s\S]*11 \/ 10[\s\S]*s11\.toomany\.co\.uk/] },
+  { name: "DMARC checker", path: "/dmarc-checker", fill: [["em-d", "https://shop.xkey.co.uk/basket"]], click: "#em-form button[type=submit]", expect: ["#em-out", /DMARC is set up[\s\S]*the one on xkey\.co\.uk applies[\s\S]*Policy for subdomains/] },
+  { name: "DKIM checker – common selectors", path: "/dkim-checker", fill: [["em-d", "smithplumbing.co.uk"]], click: "#em-form button[type=submit]", expect: ["#em-out", /1 DKIM key found[\s\S]*2048-bit RSA[\s\S]*Selectors tried/] },
+  { name: "DKIM checker – with a selector, from a link", path: "/dkim-checker?d=xkey.co.uk&s=selector1", expect: ["#em-out", /1024-bit RSA/] },
   { name: "SSL checker – opened from a link", path: "/ssl-checker?d=xkey.co.uk", expect: ["#sl-out", /Expires/] },
   { name: "UTM builder", path: "/utm-builder", fill: [["ut-campaign", "Spring Sale 2026"]], expect: ["#ut-out", /^https:\/\/smithplumbing\.co\.uk\/boiler-service\?utm_source=facebook&utm_medium=social&utm_campaign=spring-sale-2026$/] },
   { name: "URL slug generator", path: "/url-slug-generator", fill: [["us-in", "Café & Bistro – Blackpool's Finest!\nThe 10 Best Boiler Brands in the UK (2026 Guide) for Homes and Small Businesses"]], expect: ["#us-out", /^cafe-and-bistro-blackpools-finest\s+the-10-best-boiler-brands-in-the-uk-2026-guide-for-homes-and$/] },

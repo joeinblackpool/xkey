@@ -25,6 +25,10 @@ const TOOLS = [
   ["/case-converter", "Case converter", "Sentence case, Title Case, UPPER, lower, camelCase and more in one click."],
   ["/website-technology-checker", "Website technology checker", "What is a site built with? CMS, theme, plugins, analytics, hosting and email."],
   ["/dns-lookup", "DNS lookup", "A, MX, TXT, NS and other records, plus SPF and DMARC email checks."],
+  ["/mx-lookup", "MX lookup", "Which mail servers receive a domain's email, in priority order, and who provides them."],
+  ["/spf-checker", "SPF checker", "Check an SPF record, every include and the 10-DNS-lookup limit."],
+  ["/dmarc-checker", "DMARC checker", "Look up a DMARC policy tag by tag and see if it stops fake email."],
+  ["/dkim-checker", "DKIM checker", "Find DKIM keys under common selectors or yours, with key size and type."],
   ["/domain-age-checker", "Domain age checker", "How old is a website? Registration and expiry dates for up to 100 domains."],
   ["/whois-lookup", "WHOIS lookup", "Who a domain is registered with, when it expires and its name servers."],
   ["/seo-comparison", "Competitor comparison", "Your site against up to two competitors, side by side."],
@@ -433,10 +437,83 @@ export const PAGES = [
 <h2>Which DNS records matter for SEO?</h2>
 <ul><li><strong>A, AAAA and CNAME</strong> – if these are wrong or missing, nobody can reach the site, Google included. After a move to a new host, check they point at the new server.</li><li><strong>www and non-www</strong> – both should resolve, and one should 301-redirect to the other. Check that with the <a href="/redirect-checker">redirect checker</a>.</li><li><strong>TXT records</strong> – Google Search Console can verify your site with a TXT record, which covers every version of the domain at once.</li><li><strong>NS records</strong> – show which company runs your DNS. Fast, reliable DNS helps every page load a little quicker.</li></ul>
 <h2>SPF and DMARC</h2>
-<p>They don't affect rankings, but they decide whether your emails reach the inbox. <strong>SPF</strong> lists the servers allowed to send email for your domain, and there must be only one SPF record. <strong>DMARC</strong> tells receiving servers what to do with email that fails those checks. Since 2024, Gmail and Yahoo expect both from anyone sending email in bulk.</p>
+<p>They don't affect rankings, but they decide whether your emails reach the inbox. <strong>SPF</strong> lists the servers allowed to send email for your domain, and there must be only one SPF record. <strong>DMARC</strong> tells receiving servers what to do with email that fails those checks. Since 2024, Gmail and Yahoo expect both from anyone sending email in bulk. For more detail, use the <a href="/spf-checker">SPF checker</a>, which follows every include, and the <a href="/dmarc-checker">DMARC checker</a>.</p>
 <h2>What it can't tell you</h2>
-<ul><li><strong>Changes made in the last few minutes or hours.</strong> We ask public resolvers (Cloudflare's 1.1.1.1, with Google as a backup), which may hold the old answer until its TTL runs out.</li><li><strong>DKIM.</strong> DKIM keys live under a "selector" name only your email provider knows, so we can't look them up without it.</li><li><strong>Private or internal names</strong> that only resolve inside your network.</li></ul>`,
+<ul><li><strong>Changes made in the last few minutes or hours.</strong> We ask public resolvers (Cloudflare's 1.1.1.1, with Google as a backup), which may hold the old answer until its TTL runs out.</li><li><strong>DKIM.</strong> DKIM keys live under a "selector" name only your email provider knows. The <a href="/dkim-checker">DKIM checker</a> tries the common ones, or the one you enter.</li><li><strong>Private or internal names</strong> that only resolve inside your network.</li></ul>`,
     faqs: [["Is the DNS lookup free?", "Yes. No sign-up, no email and no subscription, with only a fair-use limit to stop bots."], ["How long do DNS changes take?", "Usually minutes, but resolvers can keep an old answer for as long as its TTL (time to live), shown next to every record. Lower the TTL a day before a planned move."], ["Why does my site work but show no A record?", "Check you typed the exact address people use. The site may run on www only, which is a CNAME to your host – the lookup shows www separately."], ["Do DNS settings affect SEO?", "Only indirectly: if DNS fails, Google can't reach your pages, and slow DNS adds a little to every first visit."]],
+  },
+  {
+    path: "/mx-lookup", crumb: "MX lookup", parent: ["/seo-tools", "SEO tools"], title: "MX Lookup | Check a Domain's Mail Servers Free",
+    desc: "Free MX lookup: see which mail servers receive email for any domain, in priority order, who provides them and whether each one resolves.",
+    h1: "Free MX record lookup", eyebrow: "Any domain · Free · No sign-up", app: "XKey MX lookup", form: "email", emailType: "mx",
+    lead: "Type a domain to see where its email goes: every MX record in priority order, the email provider behind it and whether each mail server actually resolves.",
+    sections: `<h2>What is an MX record?</h2>
+<p>MX (mail exchanger) records tell the rest of the internet which servers accept email for your domain. When someone emails you@yourbusiness.co.uk, their server looks up your MX records and delivers to the one with the lowest priority number, trying the next one if it doesn't answer. No MX records means no email.</p>
+<h2>What the lookup checks</h2>
+<div class="grid">
+<div class="card"><p class="ct">Every mail server</p><p>Each MX record with its priority, so you can see which server is tried first and which are backups.</p></div>
+<div class="card"><p class="ct">The provider</p><p>Google Workspace, Microsoft 365, Zoho, IONOS, 123 Reg and other common providers are named, so you know who handles the email.</p></div>
+<div class="card"><p class="ct">Does it resolve?</p><p>An MX record pointing at a name with no IP address, or at a bare IP address, makes email bounce. We test each one.</p></div>
+</div>
+<h2>Moving email to a new provider</h2>
+<ul><li><strong>Add the new provider's MX records</strong> exactly as they give them, and remove the old ones, or some email will keep going to the old mailbox.</li><li><strong>Update SPF</strong> to include the new provider, then check it with the <a href="/spf-checker">SPF checker</a>.</li><li><strong>Set up DKIM</strong> in the new provider's admin panel and test it with the <a href="/dkim-checker">DKIM checker</a>.</li><li><strong>Leave the website alone.</strong> MX records only affect email; your A and CNAME records (see the <a href="/dns-lookup">DNS lookup</a>) decide where the website loads.</li></ul>
+<h2>What it can't tell you</h2>
+<p>We read public DNS through Cloudflare's and Google's resolvers, which may keep an old answer for as long as the record's TTL after a change. We don't connect to the mail servers or send test email, so a server that resolves but refuses mail will still look fine here.</p>`,
+    faqs: [["Is the MX lookup free?", "Yes. No sign-up, no email and no subscription, with only a fair-use limit to stop bots."], ["What does MX priority mean?", "Lower numbers are tried first. Two records with the same number share the load; a higher number is a backup used only when the others don't answer."], ["Do MX records affect SEO?", "No. They only decide where email is delivered. Your website's DNS records are separate."], ["How long do MX changes take?", "Usually under an hour, but the old records can be remembered for as long as their TTL. Lower the TTL a day before you switch provider."]],
+  },
+  {
+    path: "/spf-checker", crumb: "SPF checker", parent: ["/seo-tools", "SEO tools"], title: "SPF Record Checker | Validate Includes & Lookups Free",
+    desc: "Free SPF checker: read any domain's SPF record, follow every include, count the 10 DNS lookups and spot +all, duplicate records and broken includes.",
+    h1: "SPF record checker", eyebrow: "Any domain · Free · No sign-up", app: "XKey SPF checker", form: "email", emailType: "spf",
+    lead: "Type a domain to read its SPF record, see every service allowed to send email as it, and check it stays within the 10 DNS lookups SPF allows.",
+    sections: `<h2>What is SPF?</h2>
+<p>SPF (Sender Policy Framework) is a TXT record, starting <code>v=spf1</code>, that lists the servers allowed to send email for your domain. Receiving servers check it on every email: mail from a server that isn't listed is marked as suspicious or rejected, which stops others faking your address and keeps your own email out of spam.</p>
+<h2>What the SPF checker tests</h2>
+<div class="grid">
+<div class="card"><p class="ct">One record only</p><p>Two SPF records is a common mistake after adding a new service. It breaks SPF completely, so we flag it first.</p></div>
+<div class="card"><p class="ct">The 10-lookup limit</p><p>We follow every include down the chain and count the lookups. Over 10 and SPF fails for every email.</p></div>
+<div class="card"><p class="ct">How it ends</p><p>~all and -all protect you; +all and ?all let anyone send as you. We explain which you have.</p></div>
+<div class="card"><p class="ct">Broken includes</p><p>An include for a service you've left, or a typo, points at a domain with no SPF record and breaks the whole check.</p></div>
+</div>
+<h2>How to read an SPF record</h2>
+<ul><li><strong>include:_spf.google.com</strong> allows a service's servers (here Google Workspace). Each include uses at least one lookup.</li><li><strong>ip4:</strong> and <strong>ip6:</strong> allow one address or a range, and cost nothing.</li><li><strong>a</strong> and <strong>mx</strong> allow your website's server and your mail servers.</li><li><strong>~all</strong> at the end means "anything else is probably fake"; <strong>-all</strong> means "reject anything else".</li></ul>
+<h2>Too many DNS lookups?</h2>
+<p>Remove includes for services you no longer use first. Then check whether a service needs an include at all: many marketing tools send from their own domain and only need DKIM. Replacing an include with the ip4: ranges it contains also works, but the ranges can change without warning, so only do it for your own servers.</p>
+<h2>What it can't tell you</h2>
+<p>We check the record your domain publishes, not a particular email. To see whether one email passed, open it and look at the Authentication-Results header. SPF alone isn't enough any more: add <a href="/dkim-checker">DKIM</a> and a <a href="/dmarc-checker">DMARC</a> policy too.</p>`,
+    faqs: [["Is the SPF checker free?", "Yes. No sign-up, no email and no subscription, with only a fair-use limit to stop bots."], ["Can I have two SPF records?", "No. A domain must have exactly one record starting v=spf1. Merge them by putting every include and ip4 into one record with one all at the end."], ["Should I use ~all or -all?", "~all is the safe choice while you check every service that sends email for you. Once DMARC reports show nothing legitimate failing, -all is stricter."], ["Does SPF affect SEO?", "No, it only affects email delivery. It matters for your business, though: without it, quotes and invoices are more likely to land in spam."]],
+  },
+  {
+    path: "/dmarc-checker", crumb: "DMARC checker", parent: ["/seo-tools", "SEO tools"], title: "DMARC Checker | Look Up Any Domain's Policy Free",
+    desc: "Free DMARC checker: look up any domain's DMARC record, see its policy tag by tag, check the reporting address and how to move from p=none to reject.",
+    h1: "DMARC record checker", eyebrow: "Any domain · Free · No sign-up", app: "XKey DMARC checker", form: "email", emailType: "dmarc",
+    lead: "Type a domain to look up its DMARC record, see what each tag means and whether it actually stops fake email being sent in your name.",
+    sections: `<h2>What is DMARC?</h2>
+<p>DMARC is a TXT record at <code>_dmarc.yourbusiness.co.uk</code> that tells receiving servers what to do with email claiming to be from you that fails SPF and DKIM: deliver it anyway (<code>p=none</code>), send it to spam (<code>p=quarantine</code>) or refuse it (<code>p=reject</code>). It also asks them to send you reports, so you can see every server sending email in your name.</p>
+<h2>Why it matters now</h2>
+<p>Since February 2024, Gmail and Yahoo require a DMARC record from anyone sending large amounts of email, and Microsoft followed in 2025. Without one, phishing email using your domain can reach your customers, and your own messages are more likely to be filtered.</p>
+<h2>From p=none to p=reject, safely</h2>
+<ul><li><strong>Start with p=none and a rua= address.</strong> Nothing is blocked; you just get daily reports.</li><li><strong>Read the reports for a few weeks.</strong> Make sure every service that sends for you (your mailbox, website forms, invoicing, newsletters) passes SPF or DKIM. Fix them with the <a href="/spf-checker">SPF checker</a> and <a href="/dkim-checker">DKIM checker</a>.</li><li><strong>Move to p=quarantine</strong>, optionally with pct=25 to start with a quarter of failing email.</li><li><strong>Finish at p=reject</strong> once nothing legitimate is failing.</li></ul>
+<h2>What the checker looks at</h2>
+<p>We find the record (on the parent domain too, for subdomains), check there is exactly one, that the policy is valid, what it means for subdomains and whether reports are sent anywhere. Every tag is explained in plain English. We read the published record only; we can't see the reports, which go to the address in rua=.</p>`,
+    faqs: [["Is the DMARC checker free?", "Yes. No sign-up, no email and no subscription, with only a fair-use limit to stop bots."], ["Is p=none bad?", "It's the right place to start, but it protects nothing: fake email is still delivered. Treat it as a step towards quarantine and reject."], ["Where do I add a DMARC record?", "In your DNS, as a TXT record with the name _dmarc and a value starting v=DMARC1; – at the company that runs your DNS, which may not be your email provider."], ["Does DMARC need SPF and DKIM?", "Yes. DMARC passes when SPF or DKIM passes for your own domain, so set both up first, then add DMARC."]],
+  },
+  {
+    path: "/dkim-checker", crumb: "DKIM checker", parent: ["/seo-tools", "SEO tools"], title: "DKIM Checker | Look Up Selectors & Key Size Free",
+    desc: "Free DKIM checker: find a domain's DKIM keys under common selectors or the one you enter, see the key type and size, and spot revoked or weak keys.",
+    h1: "DKIM record checker", eyebrow: "Any domain · Free · No sign-up", app: "XKey DKIM checker", form: "email", emailType: "dkim",
+    lead: "Type a domain, and its DKIM selector if you know it, to find the public key receiving servers use to check your email's signature.",
+    sections: `<h2>What is DKIM?</h2>
+<p>DKIM (DomainKeys Identified Mail) adds a digital signature to every email you send. Receiving servers check it against a public key published in your DNS, at <code>selector._domainkey.yourbusiness.co.uk</code>. If the signature matches, they know the email really came from you and wasn't changed on the way, which helps it reach the inbox and lets DMARC pass.</p>
+<h2>What is a DKIM selector?</h2>
+<p>The selector is the first part of the record's name, so a domain can have several keys at once – one per email service, or old and new keys during a change. Google Workspace uses <code>google</code>, Microsoft 365 uses <code>selector1</code> and <code>selector2</code>, and other services choose their own. If you leave the selector blank, we try the common ones. To find yours for certain, open an email you sent, view the original message and look for <code>s=</code> in the DKIM-Signature header.</p>
+<h2>What the checker tests</h2>
+<ul><li><strong>Whether the key exists</strong> under the selector, following any CNAME your provider asked you to add.</li><li><strong>Key type and size.</strong> 2048-bit RSA is the standard; 1024-bit still works but should be replaced, and anything smaller is rejected by many receivers.</li><li><strong>Revoked keys</strong> (an empty p=), which make every email signed with that selector fail.</li><li><strong>Testing mode</strong> (t=y), which asks receivers to go easy on failures.</li></ul>
+<h2>Setting up DKIM</h2>
+<p>Switch it on in your email provider's admin panel (Google Workspace: Apps, Gmail, Authenticate email; Microsoft 365: the Defender portal). It gives you one or two records to add to your DNS. Do the same for every other service that sends email as you, such as newsletters and invoicing, then add a <a href="/dmarc-checker">DMARC</a> policy.</p>
+<h2>What it can't tell you</h2>
+<p>We can't list every selector a domain has: DNS doesn't allow it, so a key under an unusual selector won't show until you enter it. We check the published key, not whether a particular email was signed correctly.</p>`,
+    faqs: [["Is the DKIM checker free?", "Yes. No sign-up, no email and no subscription, with only a fair-use limit to stop bots."], ["Why does it say no DKIM key found?", "Your provider probably uses a selector we didn't try. Find it in the s= part of the DKIM-Signature header of an email you've sent, enter it and check again."], ["Should I use a 2048-bit key?", "Yes. It's the current recommendation and every major provider supports it. Some DNS hosts need the long key split into two quoted strings, which is fine."], ["Do I need DKIM if I have SPF?", "Yes. SPF breaks when email is forwarded, but a DKIM signature survives, and Gmail and Yahoo now expect both from bulk senders."]],
   },
   {
     path: "/domain-age-checker", crumb: "Domain age checker", parent: ["/seo-tools", "SEO tools"], title: "Domain Age Checker | Bulk, Free, No Sign-Up",

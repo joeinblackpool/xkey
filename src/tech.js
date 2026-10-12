@@ -411,3 +411,7 @@ export async function techApi(env, params, fetchImpl) {
   const title = decode((page.html.match(/<title\b[^>]*>([\s\S]*?)<\/title>/i) || [, ""])[1]).replace(/\s+/g, " ").trim().slice(0, 120);
   return { status: 200, body: { start: u.href, url: page.url, status: page.status, title, tech, groups: CATEGORIES, notes, guide } };
 }
+
+/** Email provider for an MX host, and the sending service behind an SPF include (null if unknown). */
+export const emailProvider = (host) => match(EMAIL, host);
+export const spfSender = (domain) => match(SENDERS, domain);
