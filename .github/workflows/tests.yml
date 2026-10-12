@@ -1,0 +1,43 @@
+# Runs every XKey test (test/all.mjs, the same as before a push) plus the WordPress plugin tests
+# on each pull request. Auto-merge (auto-merge.yml) only merges a Claude PR once this has passed.
+# auto-merge.yml also starts it by hand on a PR branch that has fallen behind main: that run tests
+# the branch with the newest main merged in, the same as a pull request run does.
+name: Tests
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: tests-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: ${{ github.event_name == 'workflow_dispatch' && 0 || 1 }}
+      - name: Merge the newest main in (by-hand runs on a branch)
+        if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git merge --no-edit origin/main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install test tools (Playwright + Chromium, esbuild, crawler requirements)
+        run: |
+          npm i -g playwright esbuild
+          playwright install --with-deps chromium
+          pip install -r crawler/requirements.txt
+      - name: node test/all.mjs
+        run: node test/all.mjs
+      - name: WordPress plugin
+        run: php wordpress-plugin/test/run.php

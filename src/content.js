@@ -5,6 +5,7 @@ import { SECTOR_GUIDES } from "./sector-guides.js";
 import { BUILDER_GUIDES } from "./builder-guides.js";
 import { BEGINNER_GUIDES } from "./beginner-guides.js";
 import { TRADE_GUIDES } from "./trade-guides.js";
+import { PRO_PAGES, PRO_TOOLS } from "./pro-pages.js";
 
 const TOOLS = [
   ["/", "Free SEO check", "Full single-page audit: Google readiness, AI search, speed, security and local SEO."],
@@ -60,7 +61,10 @@ const TOOLS = [
   ["/local-search-checker", "Local search checker", "See Google results as they appear in any UK town."],
   ["/ai-meta-description-generator", "AI title & description writer", "AI reads your page and writes titles and descriptions that fit Google."],
   ["/bulk-seo-checker", "Bulk SEO checker", "Score up to 20 websites at once and download a CSV."],
+  ["/redirect-map-generator", "Redirect map generator", "301 rules for .htaccess, Nginx, Cloudflare and more."],
+  ["/seo-roi-calculator", "SEO ROI calculator", "What a better Google position could earn you."],
   ["/seo-badge", "SEO score badge", "Show your score on your site – it updates itself weekly."],
+  ...PRO_TOOLS,
 ];
 export const toolCards = (except) => `<div class="grid">${TOOLS.filter(([p]) => p !== except).map(([p, t, d]) => `<a class="card" href="${p}"><p class="ct">${t}</p><p>${d}</p></a>`).join("")}</div>`;
 
@@ -69,6 +73,8 @@ const toolPage = (path, crumb, title, desc, h1, lead, focus, app, sections, faqs
 import { MORE_GUIDES } from "./more-guides.js";
 import { GUIDES_8 } from "./guides-8.js";
 import { GUIDES_10 } from "./guides-10.js";
+import { DIRECTORIES_PAGE } from "./directories-page.js";
+import { MORE_PAGES } from "./more-pages.js";
 
 export const PAGES = [
   {
@@ -1300,10 +1306,16 @@ Sitemap: https://yourdomain.co.uk/sitemap.xml</code></pre>
     sections: `<h2>What we collect</h2><p>When you run a check we receive the web address you entered and your IP address. We use the IP address only for short-term rate limiting to stop abuse; it's held in a temporary cache for about an hour.</p>
 <h2>Reports</h2><p>Finished reports are cached for up to an hour so repeat views are fast. We don't store the content of the pages we check.</p>
 <h2>Monitoring</h2><p>If you start monitoring, we store the web address and a weekly summary of the check results so we can show your history. Anyone with the dashboard link can view it. To have a monitor deleted, email us with the link.</p>
+<h2>Uptime monitoring</h2><p>If you start an uptime monitor, we store the web address, where to send alerts (an ntfy topic or a Slack, Discord or Teams webhook address) and a summary of recent checks. Anyone with the dashboard link can view it. Pressing "Stop monitoring" deletes it within 15 minutes.</p>
+<h2>Website analytics</h2><p>If you add our analytics script to your website, we count visits to that site without cookies or any other storage on your visitors' devices. We keep totals only: pages, the website a visitor came from, country (from the connection, not stored), screen size group and clicks on phone, email, outbound and goal links. To count unique visitors we make a one-way code from the connection's IP address, browser and a secret that changes daily; the IP address itself isn't stored and the code can't be linked between days. Visitor codes are deleted after 31 days and totals after 400 days.</p>
+<h2>Tools that run in your browser</h2><p>The rank tracker, SEO content editor and brand monitoring tool work in your browser. Search Console exports and drafts you use with them are kept in your browser's storage on your device and never sent to us.</p>
 <h2>Cookies and your browser</h2><p>XKey doesn't set advertising or tracking cookies. To show "Your recent checks", your browser keeps a short list of the addresses you checked and their scores – it stays on your device, is never sent to us, and you can clear it with one click.</p>
 <h2>Your rights</h2><p>You can contact us about your data at <a href="mailto:iceworks@f1rst.co.uk">iceworks@f1rst.co.uk</a>, or complain to the Information Commissioner's Office at <a href="https://ico.org.uk/" rel="noopener">ico.org.uk</a>.</p>`,
   },
+  ...PRO_PAGES,
   ...MORE_GUIDES,
   ...GUIDES_8,
   ...GUIDES_10,
+  DIRECTORIES_PAGE,
+  ...MORE_PAGES,
 ];
