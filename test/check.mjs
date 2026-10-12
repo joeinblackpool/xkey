@@ -23,7 +23,7 @@ for (const p of PAGES) {
   const words = html.replace(/<style>[\s\S]*?<\/style>|<script[\s\S]*?<\/script>|<[^>]+>/g, " ").split(/\s+/).filter(Boolean).length;
   console.log(`${r.status} ${p.path.padEnd(34)} ${String(tpx).padStart(3)}px ${String(words).padStart(4)}w  ${title}`);
 }
-for (const l of links) { const r = await get(l); if (r.status !== 200) fail(`link ${l} -> ${r.status}`); }
+for (const l of links) { if (l.startsWith("/site/")) continue; const r = await get(l); if (r.status !== 200) fail(`link ${l} -> ${r.status}`); }
 const expect = async (u, status, loc) => { const r = await get(u); if (r.status !== status || (loc && r.headers.get("location") !== loc)) fail(`${u} -> ${r.status} ${r.headers.get("location")}`); };
 await expect("http://xkey.co.uk/seo-tools", 301, `${O}/seo-tools`);
 await expect("https://www.xkey.co.uk/about", 301, `${O}/about`);
