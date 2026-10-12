@@ -8,6 +8,8 @@ import { createMonitor, runMonitor, getMonitor, validId, dashboard, runDueMonito
 import { robotsAllows, pixelWidth, normaliseUrl, fetchRobots, crawlStart, crawlBatch, fetchHtml, runCheck } from "../engine/checker.js";
 import { summarisePage } from "./page-parse.js";
 import { backlinksApi, authorityApi } from "./backlinks.js";
+import { whoisApi } from "./whois.js";
+import { redirectsApi } from "./redirects.js";
 
 const BY_PATH = Object.fromEntries(PAGES.map((p) => [p.path, p]));
 const GUIDES = PAGES.filter((p) => p.path.startsWith("/guides/"));
@@ -104,6 +106,12 @@ Contact | /contact | Phone, email and opening hours</textarea>
 <p style="margin:16px 0 0"><button class="btn" type="submit">Check backlinks</button></p><div id="bl-out" aria-live="polite"></div></form><script src="/assets/tools.js" defer></script>`,
   authority: () => `<form class="tool" id="da-form"><label for="da-urls">Websites – one per line, up to 100</label><textarea id="da-urls" spellcheck="false" placeholder="yourbusiness.co.uk&#10;competitor.co.uk&#10;bbc.co.uk"></textarea>
 <p style="margin:16px 0 0"><button class="btn" type="submit">Check authority</button></p><div id="da-out" aria-live="polite"></div></form><script src="/assets/tools.js" defer></script>`,
+  redirects: () => `<form class="tool" id="rd-form"><label for="rd-urls">Web addresses – one per line, up to 100</label><textarea id="rd-urls" spellcheck="false" placeholder="http://yourbusiness.co.uk&#10;https://www.yourbusiness.co.uk/old-page"></textarea>
+<div class="row" style="margin-top:12px"><div style="flex:1 1 200px"><label for="rd-agent">Visit as</label><select id="rd-agent"><option value="desktop">Desktop browser</option><option value="mobile">Mobile browser</option></select></div></div>
+<div class="row" style="margin-top:16px"><button class="btn" type="submit">Check redirects</button><button class="btn ghost" type="button" id="rd-four">Test http, https, www versions</button></div><div id="rd-out" aria-live="polite"></div></form><script src="/assets/tools.js" defer></script>`,
+  domainage: () => `<form class="tool" id="dg-form"><label for="dg-urls">Domains – one per line, up to 100</label><textarea id="dg-urls" spellcheck="false" placeholder="yourbusiness.co.uk&#10;competitor.com&#10;bbc.co.uk"></textarea>
+<p style="margin:16px 0 0"><button class="btn" type="submit">Check domain age</button></p><div id="dg-out" aria-live="polite"></div></form><script src="/assets/tools.js" defer></script>`,
+  whois: () => `<form class="ck-form" id="wh-form"><label for="wh-d" class="sr">Domain name</label><input id="wh-d" type="text" inputmode="url" autocomplete="url" placeholder="yourbusiness.co.uk" required><button class="btn" type="submit">Look up</button></form><div id="wh-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
   difficulty: () => `<form class="tool" id="kd-form"><label for="kd-kw">Keyword</label><input id="kd-kw" type="text" placeholder="boiler repair blackpool" required>
 <p style="margin:12px 0 0"><strong>Step 1:</strong> <a class="btn ghost" id="kd-google" href="https://www.google.co.uk/search" target="_blank" rel="noopener">Search Google</a></p>
 <label for="kd-urls"><strong>Step 2:</strong> paste the addresses of the page-one results (up to 10, one per line – skip ads and maps)</label><textarea id="kd-urls" spellcheck="false" placeholder="https://example.co.uk/page"></textarea>
@@ -325,6 +333,17 @@ const worker = {
         // 60 batches of up to 10 sites = 600 sites an hour per connection
         if (await rateLimited(request, "authority", 60)) return Response.json({ error: "You've checked a lot of sites this hour – please try again later." }, { status: 429 });
         const r = await authorityApi(env, c, url.searchParams);
+        return Response.json(r.body, { status: r.status, headers: { "cache-control": r.status === 200 ? "public, max-age=3600" : "no-store" } });
+      }
+      case "/api/redirects": {
+        if (await rateLimited(request, "redirects", 120)) return Response.json({ error: "You've checked a lot of addresses this hour – please try again later." }, { status: 429 });
+        const r = await redirectsApi(url.searchParams, selfFetch(env, c));
+        return Response.json(r.body, { status: r.status, headers: { "cache-control": "no-store" } });
+      }
+      case "/api/whois": {
+        // 60 batches of up to 10 domains = 600 domains an hour per connection; registries rate-limit us too
+        if (await rateLimited(request, "whois", 60)) return Response.json({ error: "You've looked up a lot of domains this hour – please try again later." }, { status: 429 });
+        const r = await whoisApi(env, c, url.searchParams);
         return Response.json(r.body, { status: r.status, headers: { "cache-control": r.status === 200 ? "public, max-age=3600" : "no-store" } });
       }
       case "/api/robots": {

@@ -9,6 +9,9 @@ const TOOLS = [
   ["/website-audit", "Website audit", "Crawl up to 250 pages for broken links, duplicate titles and orphan pages."],
   ["/backlink-checker", "Backlink checker", "See which websites link to any site – .co.uk, .com or anything else – and which link to your competitor but not you."],
   ["/domain-authority-checker", "Domain authority checker", "Authority scores for up to 100 websites at once, with links and global rank."],
+  ["/redirect-checker", "Redirect checker", "Follow any address hop by hop: 301s, 302s, chains, loops and meta refreshes."],
+  ["/domain-age-checker", "Domain age checker", "How old is a website? Registration and expiry dates for up to 100 domains."],
+  ["/whois-lookup", "WHOIS lookup", "Who a domain is registered with, when it expires and its name servers."],
   ["/seo-comparison", "Competitor comparison", "Your site against up to two competitors, side by side."],
   ["/seo-monitoring", "SEO monitoring", "A free weekly re-check with a score history graph."],
   ["/title-tag-checker", "Title tag checker", "See your title and description in pixels, exactly as Google cuts them."],
@@ -206,6 +209,64 @@ export const PAGES = [
 <h2>What it can't tell you</h2>
 <ul><li><strong>Brand-new links.</strong> The data is refreshed quarterly, so links from the last few months won't count yet.</li><li><strong>Every link on the web.</strong> Common Crawl visits billions of pages but not all of them, so small sites may score a little lower than they should.</li><li><strong>Individual pages.</strong> Scores are for whole websites. Subdomains count as their main site, so blog.example.com is scored as example.com.</li><li><strong>Rankings or traffic.</strong> A high score helps, but it doesn't guarantee a page ranks or gets visitors.</li></ul>`,
     faqs: [["Is the domain authority checker free?", "Yes. No sign-up, no email and no subscription. You can check up to 100 websites at a time, with only a fair-use limit to stop bots."], ["What is a good domain authority score?", "It depends on who you compete with. Compare your score with the sites that rank above you for your main searches: if you're within about ten points, better pages and local signals can close the gap. For most local businesses, 20–40 is normal."], ["How can I increase my domain authority?", "Earn links from websites that are themselves well linked: suppliers and manufacturers listing stockists, trade bodies, local news, clubs and charities you support, and genuinely useful guides people want to share. Links from low-quality directories barely move the score."], ["Why does a website score 0?", "No links to it were found in the data. That's common for new or very small sites, because Common Crawl doesn't visit every page on the web."], ["How often is it updated?", "Every three months, when Common Crawl publishes its next web graph. The months the data covers are shown under every result."]],
+  },
+  {
+    path: "/redirect-checker", crumb: "Redirect checker", parent: ["/seo-tools", "SEO tools"], title: "Redirect Checker | 301, 302 & Redirect Chains (Free)",
+    desc: "Free redirect checker: follow up to 100 addresses hop by hop and see every 301, 302 and meta refresh, redirect chains, loops and where each one ends.",
+    h1: "Free redirect checker", eyebrow: "Bulk · Free · No sign-up", app: "XKey redirect checker", form: "redirects",
+    lead: "See exactly what happens when someone – or Google – visits an address: every redirect, its status code, and where it finally lands. Check one address or up to 100 at once.",
+    sections: `<h2>What the redirect checker shows</h2>
+<div class="grid">
+<div class="card"><p class="ct">Every hop</p><p>Each address in the chain with its HTTP status code (301, 302, 307, 308, 404…) and response time.</p></div>
+<div class="card"><p class="ct">Where it ends</p><p>The final address and whether it loads, errors or never responds.</p></div>
+<div class="card"><p class="ct">What to fix</p><p>Chains, loops, temporary redirects, meta refreshes and redirects back to insecure http.</p></div>
+</div>
+<p>Press <strong>Test http, https, www versions</strong> to check all four ways people can type your address. They should all end up on one version of your site, ideally in a single hop.</p>
+<h2>301, 302, 307 or 308?</h2>
+<ul><li><strong>301 Moved Permanently</strong> – the page has moved for good. Use it for changed addresses, a move to https or a new domain.</li><li><strong>308 Permanent Redirect</strong> – the same as a 301 for search engines. Fine to use.</li><li><strong>302 Found and 307 Temporary Redirect</strong> – the move is temporary, for example during maintenance. Google may keep the old address in its results.</li><li><strong>Meta refresh</strong> – a redirect inside the page instead of from the server. It's slower and less clear to search engines, so replace it with a 301 when you can.</li></ul>
+<h2>Do redirects hurt SEO?</h2>
+<p>A single 301 passes a page's ranking signals on to the new address, so moving pages is safe if you redirect them. Problems start with <strong>chains</strong> (A to B to C), which slow visitors down and waste Google's crawling, and <strong>loops</strong>, which stop the page loading at all. Fix a chain by pointing the first address straight at the final one, and update your own links to skip the redirect. Our guide to <a href="/guides/broken-links-and-redirects">broken links and redirects</a> covers the fixes, and the <a href="/website-audit">website audit</a> finds redirecting links across your whole site.</p>
+<h2>What it can't tell you</h2>
+<ul><li><strong>JavaScript redirects.</strong> We read the server's response and meta refresh tags; we don't run the page's scripts.</li><li><strong>Redirects by country or login.</strong> We visit from Cloudflare's network, usually in a nearby country. Sites that redirect by location, cookie or login may send you somewhere else.</li><li><strong>Sites that block checkers.</strong> Some firewalls refuse automated visits, which shows as a 403 or no response even when the site works in your browser.</li></ul>`,
+    faqs: [["Is the redirect checker free?", "Yes. No sign-up, no email and no subscription. Check up to 100 addresses at a time, with only a fair-use limit to stop bots."], ["How many redirects is too many?", "Aim for one. Google follows up to ten hops, but each one slows the page down, so point old addresses straight at the final page."], ["Should http and www versions redirect?", "Yes. Pick one version of your site – usually https without www, or with it – and 301 every other version to it, so visitors and Google see a single address."], ["Why does the checker show a 403 when my site works?", "Your site's firewall is probably blocking automated visitors. That's not a problem for Google if it allows Googlebot, but it's worth checking in Search Console."]],
+  },
+  {
+    path: "/domain-age-checker", crumb: "Domain age checker", parent: ["/seo-tools", "SEO tools"], title: "Domain Age Checker | Bulk, Free, No Sign-Up",
+    desc: "Free bulk domain age checker: see when up to 100 domains were first registered, how old they are, when they expire and who they're registered with.",
+    h1: "Free domain age checker", eyebrow: "Bulk · Free · No sign-up", app: "XKey domain age checker", form: "domainage",
+    lead: "Paste up to 100 domains and see how old each one is, straight from the registries' own records. Works for .co.uk, .com and most other endings. No account, no email.",
+    sections: `<h2>What the domain age checker shows</h2>
+<div class="grid">
+<div class="card"><p class="ct">Domain age</p><p>Years and months since the domain was first registered.</p></div>
+<div class="card"><p class="ct">Registered and expiry dates</p><p>The exact dates from the registry, and how long is left before renewal.</p></div>
+<div class="card"><p class="ct">Registrar</p><p>The company the domain is registered through. Open any domain for its full WHOIS record.</p></div>
+</div>
+<p>Sort by age, download the results as a CSV, and spot domains that are about to expire or aren't registered at all.</p>
+<h2>Where does the data come from?</h2>
+<p>Straight from the registry that runs each ending – Nominet for .uk, Verisign for .com and .net, and so on – using <strong>RDAP</strong>, the official replacement for WHOIS. For the few endings whose registry hasn't moved to RDAP yet (such as .de, .eu and .it) we ask the registry's WHOIS server instead. Nothing is estimated and nothing comes from a third-party database, so the dates are the same ones the registry holds.</p>
+<h2>Does domain age matter for SEO?</h2>
+<p>Not directly. Google has said for years that a domain's age on its own isn't a ranking factor. What older domains usually have is a history: more links built up over time, more content and more trust from visitors. A brand-new domain can rank well with good pages and genuine links; an old one with nothing on it won't. Check the links themselves with the <a href="/domain-authority-checker">domain authority checker</a>.</p>
+<h2>Good uses for a domain age check</h2>
+<ul><li><strong>Vet a link or a partner.</strong> A site claiming twenty years in business on a domain registered last month is worth a second look.</li><li><strong>Size up competitors.</strong> See how long the sites ranking above you have been around, alongside their <a href="/backlink-checker">backlinks</a>.</li><li><strong>Buying an expired or second-hand domain.</strong> Check its age and registrar first – then check it isn't carrying spam links.</li><li><strong>Don't lose your own.</strong> An expired domain takes your website and email down with it. Check your expiry date and turn on auto-renew.</li></ul>
+<h2>What it can't tell you</h2>
+<ul><li><strong>Gaps in ownership.</strong> The registered date is when the current registration began. If a domain expired and was registered again, the age starts from the new date, and earlier owners aren't shown.</li><li><strong>Some endings don't publish dates.</strong> A few registries, such as DENIC for .de and EURid for .eu, don't make registration dates public. We say so rather than guess.</li><li><strong>Owners' names and addresses.</strong> Since GDPR, registries hide personal details. You'll see the registrar, not the person.</li></ul>`,
+    faqs: [["Is the domain age checker free?", "Yes. No sign-up, no email and no subscription. You can check up to 100 domains at a time, with only a fair-use limit to stop bots."], ["How do I find out how old a website is?", "Type its domain into the checker. The age is counted from the date the registry says the domain was first registered, which is usually close to when the website started."], ["Why does it say a domain isn't registered?", "The registry has no record of it, so it's probably free to buy. Double-check the spelling – a missing letter is the usual reason."], ["Why is a date missing?", "Some registries, such as those for .de and .eu, don't publish registration dates. Everything else about the domain is still shown where the registry provides it."], ["Can I see who owns a domain?", "Usually not. Personal details are hidden for privacy. The WHOIS lookup shows the registrar, who you can contact about a domain."]],
+  },
+  {
+    path: "/whois-lookup", crumb: "WHOIS lookup", parent: ["/seo-tools", "SEO tools"], title: "WHOIS Lookup | Free Domain Registration Check",
+    desc: "Free WHOIS lookup for any domain: registrar, registration and expiry dates, name servers, status codes and DNSSEC, straight from the registry.",
+    h1: "Free WHOIS lookup", eyebrow: "Any domain · Free · No sign-up", app: "XKey WHOIS lookup", form: "whois",
+    lead: "Look up any domain – .co.uk, .com or almost any other ending – and see who it's registered with, when it was registered, when it expires and where its name servers point.",
+    sections: `<h2>What a WHOIS lookup shows</h2>
+<ul><li><strong>Registrar</strong> – the company the domain is registered through, and the people to contact about it.</li><li><strong>Registered, updated and expiry dates</strong> – how old the domain is and when it must be renewed.</li><li><strong>Name servers</strong> – which DNS service runs the domain, which often tells you the web host.</li><li><strong>Status codes</strong> – whether the domain is locked against transfer, on hold or about to be deleted.</li><li><strong>DNSSEC</strong> – whether the domain's DNS is signed against tampering.</li></ul>
+<p>Checking lots of domains? The <a href="/domain-age-checker">domain age checker</a> takes up to 100 at once.</p>
+<h2>WHOIS and RDAP</h2>
+<p>WHOIS is the old text service registries have used since the 1980s. RDAP is its replacement: the same records in a standard format, and since 2025 the official source for .com and every other generic ending. XKey asks each registry over RDAP where it has it, and falls back to WHOIS for endings that don't (we show the registry's raw WHOIS text when that happens).</p>
+<h2>What the status codes mean</h2>
+<ul><li><strong>client transfer prohibited</strong> – locked so it can't be moved to another registrar without unlocking first. Normal and good.</li><li><strong>client hold or server hold</strong> – the domain isn't working, often because of an unpaid renewal or a dispute.</li><li><strong>redemption period or pending delete</strong> – the domain has expired. The owner can still get it back for a short time before it's released.</li><li><strong>active or ok</strong> – registered with no restrictions.</li></ul>
+<h2>Why can't I see the owner's name?</h2>
+<p>Since GDPR in 2018, registries and registrars hide the personal details of domain owners. To reach the owner, contact the registrar shown, or use any contact details on the website itself.</p>`,
+    faqs: [["Is this WHOIS lookup free?", "Yes. No sign-up, no email and no subscription, with only a fair-use limit to stop bots."], ["How do I check if a domain is available?", "Look it up. If the registry has no record of it, we'll tell you it isn't registered, so you can buy it from any registrar."], ["Why is some information missing?", "Registries publish different amounts. Some don't show registration dates, and personal details are hidden everywhere for privacy."], ["How do I change my domain's WHOIS details?", "Through the registrar you bought it from – they pass changes on to the registry. For .uk domains you can also contact Nominet."]],
   },
   {
     path: "/seo-comparison", crumb: "Competitor comparison", parent: ["/seo-tools", "SEO tools"], title: "Compare Website SEO With Competitors | Free Tool",

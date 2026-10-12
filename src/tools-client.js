@@ -454,6 +454,138 @@ export function toolsApp() {
     draw(); work(); work();
   });
 
+  // ---- redirect checker (/api/redirects, up to 100 addresses in batches of 10)
+  var rd = $("rd-form");
+  if (rd) {
+    var rdRun = function () {
+      var seen = {}, list = $("rd-urls").value.split(/\s+/).filter(function (x) { if (!/\./.test(x) || seen[x]) return false; seen[x] = 1; return true; }).slice(0, 100);
+      var out = $("rd-out"); if (!list.length) { out.innerHTML = '<p class="s-warn">Add at least one web address.</p>'; return; }
+      var agent = $("rd-agent").value, res = list.map(function () { return null; }), batches = [], failed = "";
+      for (var b = 0; b < list.length; b += 10) batches.push(b);
+      var stCol = function (s) { return col(s >= 200 && s < 300, s >= 300 && s < 400); };
+      var draw = function () {
+        var done = res.filter(Boolean).length;
+        out.innerHTML = (done < list.length ? '<p class="small">' + done + " of " + list.length + " checked…</p>" : "") + (failed ? '<p class="s-fail">' + esc(failed) + "</p>" : "") + list.map(function (u, i) {
+          var r = res[i];
+          if (!r) return '<div class="card" style="margin:12px 0"><p>' + esc(u) + ' <span class="small">Waiting…</span></p></div>';
+          if (r.error) return '<div class="card" style="margin:12px 0"><p style="overflow-wrap:anywhere"><b>' + esc(r.input) + '</b></p><p class="s-fail">' + esc(r.error) + "</p></div>";
+          var verdict = r.problems.length ? '<span style="color:' + col(false, r.ok) + '">' + (r.ok ? "Works, with " + r.problems.length + " thing" + (r.problems.length === 1 ? "" : "s") + " to fix" : "Problem") + "</span>" : '<span style="color:#1a7f37">' + (r.redirects ? "Good redirect" : "No redirect") + "</span>";
+          return '<details class="card" style="margin:12px 0"' + (list.length <= 4 ? " open" : "") + '><summary style="cursor:pointer;overflow-wrap:anywhere"><b>' + esc(r.start) + "</b> – " + r.redirects + " redirect" + (r.redirects === 1 ? "" : "s") + ', ends <b style="color:' + stCol(r.status) + '">' + (r.status || "no response") + "</b> · " + verdict + "</summary>" +
+            '<ol style="margin:12px 0 0;padding-left:22px">' + r.hops.map(function (h) {
+              return '<li style="margin:6px 0;overflow-wrap:anywhere"><b style="color:' + stCol(h.status) + '">' + (h.status || "–") + "</b> " + esc(h.text) + (h.type === "meta" ? " (meta refresh" + (h.delay ? ", " + h.delay + "s" : "") + ")" : "") + ' <span class="small">' + h.ms + " ms</span><br>" + esc(h.url) + "</li>";
+            }).join("") + "</ol>" +
+            (r.redirects ? '<p style="overflow-wrap:anywhere">Final address: <b>' + esc(r.final) + "</b></p>" : "") +
+            (r.problems.length ? '<ul style="margin:8px 0 0">' + r.problems.map(function (p) { return "<li>" + esc(p) + "</li>"; }).join("") + "</ul>" : "") + "</details>";
+        }).join("") +
+        (done === list.length ? '<div class="row"><button type="button" class="btn ghost" id="rd-csv">Download CSV</button></div><p class="small">Checked as a ' + (agent === "mobile" ? "mobile" : "desktop") + " browser from Cloudflare's network. Sites that block automated visits or redirect by country or with JavaScript may behave differently for you.</p>" : "");
+        var c = $("rd-csv"); if (c) c.onclick = function () {
+          var cell = function (v) { v = String(v == null ? "" : v); if (/^[=+\-@\t\r]/.test(v)) v = "'" + v; return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+          var rows = [["address", "redirects", "final_status", "final_address", "chain", "problems"]].concat(res.map(function (r, i) { return !r ? [list[i], "error"] : r.error ? [r.input, "error", "", "", "", r.error] : [r.start, r.redirects, r.status, r.final, r.hops.map(function (h) { return h.status + " " + h.url; }).join(" > "), r.problems.join(" ")]; }));
+          var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["﻿" + rows.map(function (r) { return r.map(cell).join(","); }).join("\r\n")], { type: "text/csv" })); a.download = "xkey-redirects.csv"; document.body.appendChild(a); a.click(); a.remove();
+        };
+      };
+      var next = 0;
+      var work = function () {
+        if (next >= batches.length) return; var start = batches[next++], part = list.slice(start, start + 10);
+        fetch("/api/redirects?agent=" + agent + part.map(function (x) { return "&u=" + encodeURIComponent(x); }).join("")).then(function (r) { return r.json(); }).then(function (j) {
+          if (j.error) throw new Error(j.error);
+          j.results.forEach(function (r, k) { res[start + k] = r; });
+        }).catch(function (e) {
+          failed = (e && e.message) || "Couldn't check those – please try again.";
+          part.forEach(function (s, k) { res[start + k] = { input: s, error: "Not checked" }; });
+        }).then(function () { draw(); work(); });
+      };
+      draw(); work(); work();
+    };
+    rd.addEventListener("submit", function (ev) { ev.preventDefault(); rdRun(); });
+    $("rd-four").addEventListener("click", function () {
+      var first = ($("rd-urls").value.split(/\s+/).filter(Boolean)[0] || "").replace(/^[a-z]+:\/\//i, "").split(/[\/?#]/)[0].replace(/^www\./i, "").toLowerCase();
+      if (!/\./.test(first)) { $("rd-urls").focus(); $("rd-out").innerHTML = '<p class="s-warn">Type your website address first.</p>'; return; }
+      $("rd-urls").value = ["http://" + first, "http://www." + first, "https://" + first, "https://www." + first].join("\n");
+      rdRun();
+    });
+  }
+
+  // ---- domain age checker + WHOIS lookup (registry data via /api/whois)
+  var ageText = function (iso) {
+    if (!iso) return "";
+    var a = new Date(iso + "T00:00:00Z"), n = new Date(), m = (n.getUTCFullYear() - a.getUTCFullYear()) * 12 + n.getUTCMonth() - a.getUTCMonth() - (n.getUTCDate() < a.getUTCDate() ? 1 : 0);
+    if (m < 0) return ""; var y = Math.floor(m / 12); m = m % 12;
+    return y ? y + " year" + (y === 1 ? "" : "s") + (m ? ", " + m + " month" + (m === 1 ? "" : "s") : "") : m ? m + " month" + (m === 1 ? "" : "s") : "under a month";
+  };
+  var ukDate = function (iso) { if (!iso) return ""; var d = new Date(iso + "T00:00:00Z"); return isNaN(d) ? iso : d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }); };
+  var daysLeft = function (iso) { return iso ? Math.round((new Date(iso + "T00:00:00Z") - Date.now()) / 86400000) : null; };
+  var expiryHtml = function (iso) {
+    if (!iso) return '<span class="small">Not published</span>';
+    var d = daysLeft(iso);
+    return '<span style="color:' + col(d > 60, d > 0) + '">' + esc(ukDate(iso)) + "</span>" + (d <= 60 ? ' <span class="small">(' + (d < 0 ? "expired" : d + " days left") + ")</span>" : "");
+  };
+  var dg = $("dg-form");
+  if (dg) dg.addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var seen = {}, sites = $("dg-urls").value.split(/[\s,]+/).filter(function (x) { x = x.toLowerCase(); if (!/\./.test(x) || seen[x]) return false; seen[x] = 1; return true; }).slice(0, 100);
+    var out = $("dg-out"); if (!sites.length) { out.innerHTML = '<p class="s-warn">Add at least one domain.</p>'; return; }
+    var res = sites.map(function () { return null; }), batches = [], failed = "", sorted = false;
+    for (var b = 0; b < sites.length; b += 10) batches.push(b);
+    var draw = function () {
+      var done = res.filter(Boolean).length, order = sites.map(function (s, i) { return i; });
+      var key = function (i) { return res[i] && res[i].created ? res[i].created : "9999"; };
+      if (sorted) order.sort(function (a, b) { return key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0; });
+      out.innerHTML = (done < sites.length ? '<p class="small">' + done + " of " + sites.length + " checked…</p>" : "") + (failed ? '<p class="s-fail">' + esc(failed) + "</p>" : "") +
+        '<div class="tablewrap"><table><thead><tr><th>Domain</th><th>Age</th><th>Registered</th><th>Expires</th><th>Registrar</th></tr></thead><tbody>' + order.map(function (i) {
+          var r = res[i]; if (!r) return "<tr><td>" + esc(sites[i]) + '</td><td colspan="4" class="small">Waiting…</td></tr>';
+          if (r.error) return '<tr><td style="overflow-wrap:anywhere">' + esc(r.domain || r.input) + '</td><td colspan="4" class="s-fail">' + esc(r.error) + "</td></tr>";
+          if (!r.registered) return '<tr><td style="overflow-wrap:anywhere">' + esc(r.domain) + '</td><td colspan="4"><b style="color:#1a7f37">Not registered</b> <span class="small">– it may be free to buy</span></td></tr>';
+          return '<tr><td style="overflow-wrap:anywhere"><a href="/whois-lookup?d=' + encodeURIComponent(r.domain) + '">' + esc(r.domain) + "</a></td><td><b>" + (r.created ? esc(ageText(r.created)) : '<span class="small">Not published</span>') + "</b></td><td>" + esc(ukDate(r.created)) + "</td><td>" + expiryHtml(r.expires) + '</td><td style="overflow-wrap:anywhere">' + esc(r.registrar) + "</td></tr>";
+        }).join("") + "</tbody></table></div>" +
+        (done === sites.length ? '<div class="row"><button type="button" class="btn ghost" id="dg-csv">Download CSV</button>' + (sites.length > 1 ? '<button type="button" class="btn ghost" id="dg-sort">' + (sorted ? "Original order" : "Oldest first") + "</button>" : "") + "</div>" : "") +
+        '<p class="small">Dates come from each domain\'s registry. Age counts from the start of the current registration. Click a domain for its full WHOIS record.</p>';
+      var c = $("dg-csv"); if (c) c.onclick = function () {
+        var cell = function (v) { v = String(v == null ? "" : v); if (/^[=+\-@\t\r]/.test(v)) v = "'" + v; return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+        var rows = [["domain", "registered", "age", "registered_on", "expires_on", "registrar", "name_servers"]].concat(res.map(function (r, i) { return !r ? [sites[i], "error"] : r.error ? [r.domain || r.input, "error", r.error] : !r.registered ? [r.domain, "no"] : [r.domain, "yes", ageText(r.created), r.created || "", r.expires || "", r.registrar || "", (r.nameservers || []).join(" ")]; }));
+        var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["﻿" + rows.map(function (r) { return r.map(cell).join(","); }).join("\r\n")], { type: "text/csv" })); a.download = "xkey-domain-age.csv"; document.body.appendChild(a); a.click(); a.remove();
+      };
+      var so = $("dg-sort"); if (so) so.onclick = function () { sorted = !sorted; draw(); };
+    };
+    var next = 0;
+    var work = function () {
+      if (next >= batches.length) return; var start = batches[next++], part = sites.slice(start, start + 10);
+      fetch("/api/whois?d=" + encodeURIComponent(part.join(","))).then(function (r) { return r.json(); }).then(function (j) {
+        if (j.error) throw new Error(j.error);
+        j.results.forEach(function (r, k) { res[start + k] = r; });
+      }).catch(function (e) {
+        failed = (e && e.message) || "Couldn't look those up – please try again.";
+        part.forEach(function (s, k) { res[start + k] = { input: s, error: "Not checked" }; });
+      }).then(function () { draw(); work(); });
+    };
+    draw(); work(); work();
+  });
+
+  var wh = $("wh-form");
+  if (wh) {
+    var whq = (location.search.match(/[?&]d=([^&]+)/) || [])[1];
+    if (whq && !$("wh-d").value.trim()) { try { $("wh-d").value = decodeURIComponent(whq.replace(/\+/g, " ")); } catch (e) {} setTimeout(function () { wh.requestSubmit ? wh.requestSubmit() : wh.dispatchEvent(new Event("submit", { cancelable: true })); }, 0); }
+    wh.addEventListener("submit", function (ev) {
+      ev.preventDefault();
+      var d = $("wh-d").value.trim(), out = $("wh-out");
+      if (!d) { $("wh-d").focus(); return; }
+      out.innerHTML = "<p>Asking the registry…</p>";
+      fetch("/api/whois?d=" + encodeURIComponent(d)).then(function (r) { return r.json(); }).then(function (j) {
+        var r = j.results ? j.results[0] : j;
+        if (j.error || r.error) { out.innerHTML = '<p class="s-fail">' + esc(j.error || r.error) + "</p>"; return; }
+        if (!r.registered) { out.innerHTML = '<div class="card" style="margin:16px 0"><p class="ct">' + esc(r.domain) + ' isn\'t registered</p><p>The registry has no record of it, so it\'s probably free to buy from any registrar. Check the spelling first.</p></div>'; return; }
+        var row = function (k, v) { return v ? "<tr><th scope=\"row\" style=\"text-align:left;white-space:nowrap\">" + k + '</th><td style="overflow-wrap:anywhere">' + v + "</td></tr>" : ""; };
+        var h = '<div class="card" style="margin:16px 0"><p class="ct">' + esc(r.domain) + '</p><div class="row" style="gap:28px"><div><b style="font-size:30px">' + (r.created ? esc(ageText(r.created)) : "–") + '</b><br><span class="small">' + (r.created ? "old (registered " + esc(ukDate(r.created)) + ")" : "registration date not published by this registry") + "</span></div>" +
+          (r.expires ? '<div><b style="font-size:30px">' + expiryHtml(r.expires) + '</b><br><span class="small">expiry date</span></div>' : "") + "</div></div>" +
+          '<div class="tablewrap"><table><tbody>' + row("Registrar", esc(r.registrar)) + row("Registered", esc(ukDate(r.created))) + row("Last updated", esc(ukDate(r.updated))) + row("Expires", r.expires ? expiryHtml(r.expires) : "") +
+          row("Name servers", (r.nameservers || []).map(esc).join("<br>")) + row("Status", (r.status || []).map(esc).join("<br>")) + row("DNSSEC", r.dnssec == null ? "" : r.dnssec ? "Signed" : "Not signed") + "</tbody></table></div>" +
+          (r.raw ? '<h3>Registry WHOIS record</h3><pre class="out">' + esc(r.raw.trim()) + "</pre>" : "") +
+          '<p class="small">Source: ' + (r.source === "rdap" ? 'the registry\'s RDAP service' + (r.rdap ? ' (<a href="' + esc(r.rdap) + '" rel="nofollow noopener" target="_blank">raw record</a>)' : "") : "the registry's WHOIS server " + esc(r.server || "")) + ". Personal details are hidden by registries for privacy. Check more domains at once with the <a href=\"/domain-age-checker\">domain age checker</a>.</p>";
+        out.innerHTML = h;
+      }).catch(function () { out.innerHTML = '<p class="s-fail">Couldn\'t look that up – please try again.</p>'; });
+    });
+  }
+
   // ---- your recent checks (stored only in this browser)
   var rc = $("recent");
   if (rc) {
