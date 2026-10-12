@@ -49,6 +49,8 @@ export const toolCards = (except) => `<div class="grid">${TOOLS.filter(([p]) => 
 
 const toolPage = (path, crumb, title, desc, h1, lead, focus, app, sections, faqs) => ({ path, crumb, title, desc, h1, lead, form: "check", focus, app, parent: ["/seo-tools", "SEO tools"], sections, faqs });
 
+import { MORE_GUIDES } from "./more-guides.js";
+
 export const PAGES = [
   {
     path: "/", crumb: "Home", title: "Free SEO Check | No Sign-Up, No Email, Instant Report",
@@ -1013,4 +1015,5 @@ Sitemap: https://yourdomain.co.uk/sitemap.xml</code></pre>
 <h2>Cookies and your browser</h2><p>XKey doesn't set advertising or tracking cookies. To show "Your recent checks", your browser keeps a short list of the addresses you checked and their scores – it stays on your device, is never sent to us, and you can clear it with one click.</p>
 <h2>Your rights</h2><p>You can contact us about your data at <a href="mailto:iceworks@f1rst.co.uk">iceworks@f1rst.co.uk</a>, or complain to the Information Commissioner's Office at <a href="https://ico.org.uk/" rel="noopener">ico.org.uk</a>.</p>`,
   },
+  ...MORE_GUIDES,
 ];
