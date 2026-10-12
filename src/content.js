@@ -18,7 +18,6 @@ const TOOLS = [
   ["/website-down-checker", "Website down checker", "Is a website down for everyone or just you? Live status and response time."],
   ["/open-graph-checker", "Open Graph checker", "See how any page looks when shared on Facebook, LinkedIn, WhatsApp and X."],
   ["/hreflang-checker", "Hreflang checker", "Check language and country tags, return links and x-default on any page."],
-  ["/schema-markup-validator", "Schema markup validator", "Check the structured data on any page or paste code, with Google's rich result rules."],
   ["/heading-checker", "Heading checker", "See any page's H1 to H6 outline and fix missing, double or skipped headings."],
   ["/alt-text-checker", "Alt text checker", "Find images with missing, empty or weak alt text, and linked images with no words."],
   ["/canonical-checker", "Canonical checker", "Find a page's canonical URL, test it loads, and spot noindex tags and headers."],
@@ -42,7 +41,7 @@ const TOOLS = [
   ["/llms-txt-generator", "llms.txt generator", "Create an llms.txt file that gives AI assistants a map of your site."],
   ["/mobile-friendly-test", "Mobile-friendly test", "Check your page works on phones – Google's own test closed in 2023."],
   ["/broken-link-checker", "Broken link checker", "Crawl your whole site and find every dead link and broken image."],
-  ["/schema-checker", "Schema checker", "Validate your structured data and see Google's required properties."],
+  ["/schema-checker", "Schema checker", "Validate the structured data on any page or pasted code against Google's rich result rules."],
   ["/page-speed-checker", "Page speed checker", "Core Web Vitals from real Chrome users plus a Lighthouse test."],
   ["/sitemap-checker", "Sitemap checker", "Check your XML sitemap is found, valid and listed in robots.txt."],
   ["/security-headers-checker", "Security headers checker", "HTTPS, HSTS and the headers browsers use to protect visitors."],
@@ -396,11 +395,11 @@ export const PAGES = [
     faqs: [["Is the slug generator free?", "Yes, and unlimited. It runs in your browser with no sign-up."], ["How long should a URL slug be?", "As short as it can be while still describing the page. Most good slugs are under 60 characters, and many are under 30."], ["Should I remove stop words from slugs?", "It's optional. Removing them makes slugs shorter, but keep them if the slug reads oddly without them."], ["Does WordPress make slugs automatically?", "Yes, from the title, but it keeps every word. Edit the slug in the page settings before you publish – changing it later needs a redirect."]],
   },
   {
-    path: "/schema-markup-validator", crumb: "Schema markup validator", parent: ["/seo-tools", "SEO tools"], title: "Schema Markup Validator | Test Structured Data Free",
-    desc: "Free schema markup validator: check the JSON-LD structured data on any page or paste your code, and see which properties Google needs for rich results.",
-    h1: "Schema markup validator", eyebrow: "Any page or pasted code · Free · No sign-up", app: "XKey schema markup validator", form: "schemacheck",
+    path: "/schema-checker", crumb: "Schema checker", parent: ["/seo-tools", "SEO tools"], title: "Schema Markup Checker | Validate Structured Data Free",
+    desc: "Free schema markup checker and validator: test the JSON-LD on any page or paste your code, and see which properties Google needs for rich results.",
+    h1: "Schema markup checker", eyebrow: "Any page or pasted code · Free · No sign-up", app: "XKey schema checker", form: "schemacheck",
     lead: "Enter a page address, or paste your JSON-LD, to list every schema type, catch broken code, and check the properties Google needs before it will show stars, prices, dates or other rich results.",
-    sections: `<h2>What the schema validator checks</h2>
+    sections: `<h2>What the schema checker tests</h2>
 <div class="grid">
 <div class="card"><p class="ct">The code itself</p><p>Every JSON-LD block is parsed the way Google parses it. A missing comma or stray quote breaks the whole block, and we show you where.</p></div>
 <div class="card"><p class="ct">Each schema type</p><p>LocalBusiness, Organization, Product, Article, FAQPage, BreadcrumbList, Event, Recipe, Review, JobPosting, VideoObject and more, including items inside @graph.</p></div>
@@ -414,7 +413,7 @@ export const PAGES = [
 <p>Build a clean block for your business with our <a href="/schema-generator">local business schema generator</a>, then paste it here to check it before it goes live. On WordPress, Yoast SEO and Rank Math add most schema for you; fix the details in their settings rather than adding a second copy by hand. After a fix, run the page through this validator again, then ask Google to re-crawl it from Search Console.</p>
 <h2>What it can't check</h2>
 <p>We read the page's HTML as it arrives. Schema added later by JavaScript (some site builders and tag managers do this) isn't seen here, though Google can often still see it. Microdata and RDFa types are listed but not checked property by property. Passing these checks makes a page eligible for rich results; Google still decides whether to show them.</p>`,
-    faqs: [["Is the schema markup validator free?", "Yes. No sign-up, no email and no subscription. Pasted code is checked in your browser, and page checks have only a fair-use limit to stop bots."], ["Is this the same as Google's Rich Results Test?", "It checks the same required and recommended properties for the common rich result types, and also flags broken JSON and duplicate blocks. Google's test also renders JavaScript and is the final word on what Google itself sees."], ["What happened to Google's Structured Data Testing Tool?", "Google retired it in 2021. Its replacements are the Rich Results Test and the Schema Markup Validator at schema.org, which checks against the full vocabulary but not Google's rich result rules."], ["Does schema markup improve rankings?", "Not directly. It makes your listing eligible for rich results, which usually get more clicks, and it helps search engines and AI tools understand your business."], ["Which schema should a local business use?", "LocalBusiness, or a more specific type such as Plumber, Dentist or Restaurant, with your name, address, phone, opening hours and website. Add BreadcrumbList on inner pages and FAQPage only where the questions are on the page."]],
+    faqs: [["Is the schema checker free?", "Yes. No sign-up, no email and no subscription. Pasted code is checked in your browser, and page checks have only a fair-use limit to stop bots."], ["Is this the same as Google's Rich Results Test?", "It checks the same required and recommended properties for the common rich result types, and also flags broken JSON and duplicate blocks. Google's test also renders JavaScript and is the final word on what Google itself sees."], ["What happened to Google's Structured Data Testing Tool?", "Google retired it in 2021. Its replacements are the Rich Results Test and the Schema Markup Validator at schema.org, which checks against the full vocabulary but not Google's rich result rules."], ["Does schema markup improve rankings?", "Not directly. It makes your listing eligible for rich results, which usually get more clicks, and it helps search engines and AI tools understand your business."], ["Which schema should a local business use?", "LocalBusiness, or a more specific type such as Plumber, Dentist or Restaurant, with your name, address, phone, opening hours and website. Add BreadcrumbList on inner pages and FAQPage only where the questions are on the page."]],
   },
   {
     path: "/heading-checker", crumb: "Heading checker", parent: ["/seo-tools", "SEO tools"], title: "Heading Checker | Free H1 to H6 Tag Checker",
@@ -738,15 +737,6 @@ export const PAGES = [
 <ul><li><strong>Links added by JavaScript.</strong> We read the HTML your server sends; menus and links built by scripts after the page loads aren't seen.</li><li><strong>Sites that block checkers.</strong> Some sites (LinkedIn, for example) refuse automated visits. We list these separately rather than call them broken – check them in your browser.</li><li><strong>Very large sites.</strong> We stop at 300 pages and 2,500 links. For bigger sites, use the <a href="/website-crawler">website crawler</a>.</li></ul>`,
     faqs: [["Is the broken link checker free?", "Yes. No sign-up, no email and no subscription, with only a fair-use limit to stop bots."], ["Do broken links hurt SEO?", "A few won't sink a site, but they waste visitors' time and Google's crawling, and broken internal links can leave pages hard for Google to find. They're quick to fix."], ["Why does a link work for me but show as broken?", "The site may have been down when we checked, or it blocks automated visitors. If it works in your browser, it's probably fine."], ["Does it check links to other websites?", "Yes. Every link and image on your pages is tested, wherever it points."]],
   },
-  toolPage("/schema-checker", "Schema checker", "Schema Markup Checker | Validate Structured Data Free",
-    "Free schema markup checker: validate your JSON-LD structured data, see which types you use and which properties Google requires for rich results.",
-    "Schema markup checker", "Structured data helps Google and AI assistants understand your business and can earn rich results. Check yours against Google's documented requirements.",
-    "structured-data", "XKey schema checker",
-    `<h2>What does the schema checker test?</h2>
-<ul><li>Every JSON-LD block parses correctly and declares <code>@context</code>.</li><li>The types you use, such as Organization, LocalBusiness, Product, Article, Event or BreadcrumbList.</li><li>Google's <strong>required</strong> properties for each type, with recommended properties listed separately.</li></ul>
-<h2>Things to know</h2>
-<ul><li>FAQ rich results are now limited to government and health websites, so FAQ markup rarely shows stars or drop-downs for businesses.</li><li>Reviews of your own business written on your own site don't get review stars.</li><li>Markup must match what's visible on the page.</li></ul>`,
-    [["Which schema type should a small business use?", "LocalBusiness, or a more specific type such as Plumber or Restaurant, if you serve customers in an area; Organization otherwise. Add BreadcrumbList on inner pages."], ["Does schema markup improve rankings?", "Not directly. It helps search engines and AI understand the page and can make it eligible for rich results, which can lift clicks."]]),
   toolPage("/page-speed-checker", "Page speed checker", "Page Speed Checker | Core Web Vitals Test (Free)",
     "Free page speed checker: Core Web Vitals (LCP, INP, CLS) from real Chrome users plus a Lighthouse test, server response time and speed fixes.",
     "Page speed checker", "See how fast your page is for real visitors, not just in a lab test, and what's slowing it down.",
