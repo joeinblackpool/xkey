@@ -29,7 +29,7 @@ Free SEO & AI search checker for UK businesses, made by IceWork (icework.co.uk).
 - check.mjs skips `/site/` links (they need the link index); tools.mjs covers them with the fixtures.
 
 ## Email deliverability guides
-- `src/email-guides.js`: spam causes hub, Gmail/Yahoo/Microsoft sender rules, Microsoft 365 and Google Workspace SPF/DKIM/DMARC setup, DMARC rollout. They link to the MX/SPF/DKIM/DMARC checkers.
+- `src/email-guides.js`: Gmail/Yahoo/Microsoft sender rules and DMARC rollout (p=none → reject). The spam-causes and SPF/DKIM/DMARC setup guides live in guides-11.js – don't duplicate them.
 
 ## Domain age checker (/domain-age-checker) and WHOIS lookup (/whois-lookup)
 - `src/whois.js`, `GET /api/whois?d=a.com,b.co.uk` (≤10; the age page sends up to 100 in batches; raw WHOIS text only for single lookups). Registry data via RDAP, base URL per ending from IANA's bootstrap (data.iana.org/rdap/dns.json, cached a day). Endings without RDAP (.de, .eu, .it, .ie …) fall back to WHOIS on port 43 (`cloudflare:sockets`, server from whois.iana.org). Results cached 12 h (not registered: 1 h).
