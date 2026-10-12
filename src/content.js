@@ -58,6 +58,8 @@ const TOOLS = [
   ["/local-search-checker", "Local search checker", "See Google results as they appear in any UK town."],
   ["/ai-meta-description-generator", "AI title & description writer", "AI reads your page and writes titles and descriptions that fit Google."],
   ["/bulk-seo-checker", "Bulk SEO checker", "Score up to 20 websites at once and download a CSV."],
+  ["/redirect-map-generator", "Redirect map generator", "301 rules for .htaccess, Nginx, Cloudflare and more."],
+  ["/seo-roi-calculator", "SEO ROI calculator", "What a better Google position could earn you."],
   ["/seo-badge", "SEO score badge", "Show your score on your site – it updates itself weekly."],
   ...PRO_TOOLS,
 ];
@@ -68,6 +70,8 @@ const toolPage = (path, crumb, title, desc, h1, lead, focus, app, sections, faqs
 import { MORE_GUIDES } from "./more-guides.js";
 import { GUIDES_8 } from "./guides-8.js";
 import { GUIDES_10 } from "./guides-10.js";
+import { DIRECTORIES_PAGE } from "./directories-page.js";
+import { MORE_PAGES } from "./more-pages.js";
 
 export const PAGES = [
   {
@@ -1252,4 +1256,6 @@ Sitemap: https://yourdomain.co.uk/sitemap.xml</code></pre>
   ...MORE_GUIDES,
   ...GUIDES_8,
   ...GUIDES_10,
+  DIRECTORIES_PAGE,
+  ...MORE_PAGES,
 ];

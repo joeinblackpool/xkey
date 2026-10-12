@@ -18,6 +18,8 @@ import { hostingApi } from "./hosting.js";
 import { metaApi } from "./meta.js";
 import { sslApi } from "./ssl.js";
 import { emailApi } from "./email.js";
+import { MORE_FORMS, MORE_INSTANT } from "./more-pages.js";
+import { moreApp, redirectPairs, redirectRules } from "./tools-more.js";
 import { PRO_FORMS, PRO_INSTANT } from "./pro-pages.js";
 import { proApp } from "./pro-client.js";
 import { createUptime, getUptime, stopUptime, runUptime, uptimeDashboard, validUptimeId } from "./uptime.js";
@@ -35,6 +37,7 @@ for (const c of "–—£€’‘“”…·•é") W[c] = pixelWidth(c, 2048);
 // isn't shipped – the script then dies with "__name is not defined". wrangler.jsonc turns keep_names
 // off; this shim keeps the scripts working even if that setting is ever lost.
 const NAME_SHIM = "var __name=function(f){return f};";
+const MORE_JS = `var redirectPairs=${redirectPairs.toString()};var redirectRules=${redirectRules.toString()};(${moreApp.toString()})();`;
 const TOOLS_JS = `var W=${JSON.stringify(W)};(${toolsApp.toString()})();`;
 const PRO_JS = `(${proApp.toString()})();`;
 
@@ -198,7 +201,8 @@ const CTA = `<div class="cta"><p class="ct" style="font-size:26px">Run a free SE
 const MAKER = `<div class="maker"><p><strong>Want the fixes done for you?</strong> XKey is made by <a href="https://icework.co.uk/" rel="noopener">IceWork</a>, a web studio in ${BRAND.town}. IceWork builds fast, search-ready websites – a 3-page site including domain and a year's hosting is £${BRAND.price} all in.</p></div>`;
 
 Object.assign(FORMS, PRO_FORMS);
-const INSTANT = new Set([...PRO_INSTANT, "title", "robots", "llms", "meta", "og", "sitemap", "words", "keywords", "titles", "robotsgen", "schemagen", "localserp"]);
+Object.assign(FORMS, MORE_FORMS);
+const INSTANT = new Set([...PRO_INSTANT, ...MORE_INSTANT, "title", "robots", "llms", "meta", "og", "sitemap", "words", "keywords", "titles", "robotsgen", "schemagen", "localserp"]);
 const freeStrip = (f) => `<ul class="free" aria-label="What free means here"><li>No cost</li><li>No sign-up</li><li>No email</li><li>No Google sign-in</li><li>No subscription</li><li>${INSTANT.has(f) ? "Unlimited – runs in your browser" : "No limits for normal use"}</li></ul>`;
 function render(p) {
   const form = p.form ? FORMS[p.form](p) : "";
@@ -357,6 +361,7 @@ const worker = {
       case "/assets/compare.js": return send(NAME_SHIM + COMPARE_JS, JS, 200, "public, max-age=3600");
       case "/assets/report.js": return send(NAME_SHIM + REPORT_JS, JS, 200, "public, max-age=3600");
       case "/assets/tools.js": return send(NAME_SHIM + TOOLS_JS, JS, 200, "public, max-age=3600");
+      case "/assets/more.js": return send(NAME_SHIM + MORE_JS, JS, 200, "public, max-age=3600");
       case "/assets/pro.js": return send(NAME_SHIM + PRO_JS, JS, 200, "public, max-age=3600");
       case "/a.js": return new Response(TRACKER_JS, { headers: { "content-type": JS, "cache-control": "public, max-age=86400", "access-control-allow-origin": "*" } });
       case "/downloads/xkey-seo-fixer.zip": return new Response(pluginZip(), { headers: { "content-type": "application/zip", "content-disposition": 'attachment; filename="xkey-seo-fixer.zip"', "cache-control": "public, max-age=3600", "x-robots-tag": "noindex" } });

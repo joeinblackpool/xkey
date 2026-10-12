@@ -74,6 +74,10 @@ Free SEO & AI search checker for UK businesses, made by IceWork (icework.co.uk).
 - PHP plugin (Tools → XKey SEO Fixer): alt text, meta descriptions (Yoast/Rank Math/SEOPress fields, else its own tag), H1→H2 in content, broken internal links. Pure transforms in `includes/transforms.php`, tested by `php wordpress-plugin/test/run.php`.
 - Served as /downloads/xkey-seo-fixer.zip, zipped by the Worker from `src/wp-plugin-files.js`. After changing the plugin run `node wordpress-plugin/bundle.mjs` (test/pro.mjs fails if the bundle is stale).
 
+## UK business directories, redirect map generator, SEO ROI calculator
+- `src/directories-page.js`: /uk-business-directories – `GROUPS` list (name, domain, link, best for); the page fills each authority from /api/authority after load.
+- `src/tools-more.js` (served as /assets/more.js: `redirectPairs`, `redirectRules` and `moreApp` via toString) with pages in `src/more-pages.js`. Element id prefixes rm-, roi-. Browser-only.
+
 ## Layout
 - `src/` – XKey pages (`content.js`), shell/styles (`site.js`), routing + APIs (`index.js`), browser tools (`tools-client.js`, served as /assets/tools.js), page parser (`page-parse.js`), OG image (`og.js`).
 - `engine/` – SEO checker engine **shared with icework.co.uk** (repo joeinblackpool/ICEWORK, folder `src/`). `src/page-parse.js` is also copied to ICEWORK `src/` (it powers the competitor topic gap there). Keep the two copies identical: change it here, then copy the same files into ICEWORK `src/` and run its tests (`node test/check.mjs`, `node test/checker-unit.mjs`).
