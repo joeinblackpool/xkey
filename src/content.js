@@ -60,6 +60,10 @@ const TOOLS = [
   ["/bulk-seo-checker", "Bulk SEO checker", "Score up to 20 websites at once and download a CSV."],
   ["/redirect-map-generator", "Redirect map generator", "301 rules for .htaccess, Nginx, Cloudflare and more."],
   ["/seo-roi-calculator", "SEO ROI calculator", "What a better Google position could earn you."],
+  ["/image-compressor", "Image compressor", "Shrink photos and convert to WebP in your browser – no upload."],
+  ["/qr-code-generator", "QR code generator", "QR codes that never expire, as PNG or SVG."],
+  ["/google-review-link-generator", "Google review link generator", "A one-tap review link, QR code and printable card."],
+  ["/privacy-policy-generator", "Privacy policy generator", "A UK GDPR privacy policy and cookie wording for your site."],
   ["/seo-badge", "SEO score badge", "Show your score on your site – it updates itself weekly."],
   ...PRO_TOOLS,
 ];
@@ -72,6 +76,7 @@ import { GUIDES_8 } from "./guides-8.js";
 import { GUIDES_10 } from "./guides-10.js";
 import { DIRECTORIES_PAGE } from "./directories-page.js";
 import { MORE_PAGES } from "./more-pages.js";
+import { EXTRA_PAGES } from "./extra-pages.js";
 
 export const PAGES = [
   {
@@ -1258,4 +1263,5 @@ Sitemap: https://yourdomain.co.uk/sitemap.xml</code></pre>
   ...GUIDES_10,
   DIRECTORIES_PAGE,
   ...MORE_PAGES,
+  ...EXTRA_PAGES,
 ];

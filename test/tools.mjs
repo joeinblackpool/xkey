@@ -18,6 +18,8 @@ import { sslApi, mixedContent, ctLookup } from "../src/ssl.js";
 import { emailApi, parseSpf, keyBits } from "../src/email.js";
 import { backlinksApi, authorityApi, crc32 } from "../src/backlinks.js";
 import { redirectPairs, redirectRules } from "../src/tools-more.js";
+import { qrMatrix } from "../src/tools-extra.js";
+import { OG_PNG } from "../src/og.js";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import fs from "node:fs";
@@ -107,6 +109,8 @@ if (!only || only.test("backlink") || only.test("whois") || only.test("redirect"
       return r.provider === null && /behind Cloudflare/.test(r.how) && r.ips[0].org === "Cloudflare, Inc." && n.exists === false && bad.status === 400; }],
     ["redirect map: parsing and rules", () => { const p = redirectPairs("old,new\n/a.html\t/a\nhttps://x.co.uk/b?id=2 -> /b\n/a.html /dup\n\n# note"); const h = redirectRules(p, "htaccess"), n = redirectRules(p, "nginx"), c = redirectRules(p, "cloudflare", "https://x.co.uk");
       return p.length === 2 && p[1].fromPath === "/b?id=2" && /RewriteRule \^a\\\.html\$ \/a \[R=301,L\]/.test(h) && /RewriteCond %\{QUERY_STRING\} \^id=2\$\nRewriteRule \^b\$ \/b \[R=301,L,QSD\]/.test(h) && /location = \/a\.html \{ return 301 \/a; \}/.test(n) && /https:\/\/x\.co\.uk\/a\.html,https:\/\/x\.co\.uk\/a,301/.test(c); }],
+    ["qr: versions, finder patterns, too-long text", () => { const a = qrMatrix("https://xkey.co.uk", "M"), b = qrMatrix("x".repeat(150), "Q"), f = (m, x, y) => [0, 1, 2, 3, 4, 5, 6].every((i) => m[y][x + i] && m[y + 6][x + i] && m[y + i][x] && m[y + i][x + 6]) && m[y + 3][x + 3] && !m[y + 1][x + 1];
+      return a.length === 25 && b.length === 57 && f(a, 0, 0) && f(a, 18, 0) && f(a, 0, 18) && f(b, 50, 0) && qrMatrix("y".repeat(3000), "H") === null && qrMatrix("£ café", "L").length === 21; }],
     ["hosting: CIDR matching and RDAP parsing", () => inCidr("192.0.2.10", "192.0.0.0/8") && !inCidr("193.0.2.10", "192.0.0.0/8") && inCidr("2001:db8::10", "2001:db8::/32") && !inCidr("2001:db9::1", "2001:db8::/32") && !inCidr("192.0.2.1", "2001:db8::/32") && parseIpRdap({ name: "N", entities: [{ roles: ["technical"], vcardArray: ["vcard", [["fn", {}, "text", "T Ltd"]]] }] }).org === "T Ltd"],
     ["meta: head tags, hreflang in <head> and Link header, after a redirect", async () => { const t = headTags(`<html lang="en-GB"><head><title>T &amp; Co</title><meta property="og:title" content="OG"><meta name="description" content='D'><link rel="alternate" hreflang="en-GB" href="/en-gb/"><link rel="canonical" href="https://a.co.uk/"><!-- <meta property="og:image" content="x"> --></head><body><meta property="og:image" content="late"></body></html>`, "https://a.co.uk/");
       const r = (await metaApi(new URLSearchParams({ url: "smithplumbing.co.uk" }), async (u) => u === "https://smithplumbing.co.uk/" ? new Response(null, { status: 301, headers: { location: "https://www.smithplumbing.co.uk/" } }) : new Response("<html><head><title>W</title></head></html>", { headers: { "content-type": "text/html", link: '<https://www.smithplumbing.ie/>; rel="alternate"; hreflang="en-IE"' } }))).body;
@@ -191,6 +195,11 @@ const S = [
   { name: "Redirect map generator", path: "/redirect-map-generator", fill: [["rm-in", "/old-page.html\t/new-page\n/new-page\t/final"]], expect: ["#rm-out", /RewriteRule \^old-page\\\.html\$ \/new-page \[R=301,L\]/] },
   { name: "Redirect map – chain warning", path: "/redirect-map-generator", fill: [["rm-in", "/a\t/b\n/b\t/c"]], expect: ["#rm-notes", /chain/] },
   { name: "SEO ROI calculator", path: "/seo-roi-calculator", fill: [["roi-vol", "1000"], ["roi-now", "0"], ["roi-pos", "1"], ["roi-conv", "5"], ["roi-close", "50"], ["roi-val", "100"], ["roi-cost", "100"]], expect: ["#roi-out", /280[\s\S]*extra visits[\s\S]*14\.0[\s\S]*£700[\s\S]*600%/] },
+  { name: "QR code generator", path: "/qr-code-generator", fill: [["qr-text", "https://smithplumbing.co.uk/contact"]], expect: ["#qr-out", /Download PNG[\s\S]*Download SVG/], attr: ["#qr-out svg path", "d", /^M\d+ \d+h1v1h-1z(M\d+ \d+h1v1h-1z){200,}$/] },
+  { name: "Google review link generator", path: "/google-review-link-generator", fill: [["rv-id", "ChIJN1t_tDeuEmsRUsoyG83frY4"], ["rv-name", "Smith Plumbing"]], expect: ["#rv-out", /Smith Plumbing[\s\S]*Please leave us a Google review[\s\S]*Download QR code/], attr: ["#rv-link", "value", /^https:\/\/search\.google\.com\/local\/writereview\?placeid=ChIJN1t_tDeuEmsRUsoyG83frY4$/] },
+  { name: "Google review link – bad input", path: "/google-review-link-generator", fill: [["rv-id", "my shop"]], expect: ["#rv-out", /doesn't look like a Place ID/] },
+  { name: "Image compressor – PNG to WebP", path: "/image-compressor", files: [["ic-file", { name: "banner.png", mimeType: "image/png", buffer: Buffer.from(OG_PNG, "base64") }]], expect: ["#ic-out", /banner\.png[\s\S]*1200×630[\s\S]*Download/], attr: ["#ic-out a[download]", "download", /^banner(-min\.webp|\.png)$/] },
+  { name: "Privacy policy generator", path: "/privacy-policy-generator", fill: [["pp-name", "Smith Plumbing Ltd"], ["pp-email", "hello@smithplumbing.co.uk"]], expect: ["#pp-preview", /Smith Plumbing Ltd is the controller[\s\S]*hello@smithplumbing\.co\.uk[\s\S]*Information Commissioner/] },
   { name: "Backlink checker", path: "/backlink-checker", fill: [["bl-d", "https://www.smithplumbing.co.uk/contact"]], click: "#bl-form button[type=submit]", expect: ["#bl-out", /3[\s\S]*websites link to it[\s\S]*bbc\.co\.uk/] },
   { name: "Backlink checker – link gap", path: "/backlink-checker", fill: [["bl-d", "smithplumbing.co.uk"], ["bl-vs", "rival.co.uk"]], click: "#bl-form button[type=submit]", expect: ["#bl-out", /2 websites link to rival\.co\.uk but not to you[\s\S]*wikipedia\.org[\s\S]*localpaper\.co\.uk/] },
   { name: "Backlink checker – .com", path: "/backlink-checker", fill: [["bl-d", "https://www.example.com/about"]], click: "#bl-form button[type=submit]", expect: ["#bl-out", /example\.com[\s\S]*3[\s\S]*websites link to it[\s\S]*wikipedia\.org/] },
@@ -261,6 +270,7 @@ for (const s of RUN) {
       await el.fill(value);
     }
     for (const [id, value] of s.select || []) await page.selectOption("#" + id, value);
+    for (const [id, file] of s.files || []) await page.setInputFiles("#" + id, file);
     if (!problem && s.click) {
       const btn = page.locator(s.click.split(",").map((x) => x.trim().startsWith("#") || x.trim().startsWith("main") ? x : `main form:first-of-type ${x}`).join(", ")).first();
       if (!(await btn.count())) problem = `button ${s.click} not found`;
