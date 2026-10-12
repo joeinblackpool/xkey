@@ -1,6 +1,7 @@
 // XKey pages. Each page targets its own search phrase with original copy.
 // form: "check" | "audit" | "compare" | "monitor" | "title" | "robots" | "llms" | null
 // focus: report section to jump to after a check (matches the report's section ids).
+import { SECTOR_GUIDES } from "./sector-guides.js";
 import { BUILDER_GUIDES } from "./builder-guides.js";
 import { BEGINNER_GUIDES } from "./beginner-guides.js";
 
@@ -978,6 +979,7 @@ Sitemap: https://yourdomain.co.uk/sitemap.xml</code></pre>
 <p>Before changing a page's address, set up the redirect at the same time. After a redesign, crawl the old sitemap against the new site to make sure every old URL lands somewhere sensible. And turn on <a href="/seo-monitoring">weekly monitoring</a> so a broken key page doesn't go unnoticed for months.</p>`,
     faqs: [["How many redirects is too many?", "Ideally one hop from the old address to the new one. Two is fine; long chains slow pages down and risk Google giving up before the end."], ["Should I use a 404 or a 410 for deleted pages?", "Either works. A 410 tells Google the removal is deliberate and can get the page dropped a little faster."], ["Do redirects lose SEO value?", "A 301 to a closely matching page keeps nearly all of it. Redirecting to an unrelated page, such as the home page, loses most of it."]],
   },
+  ...SECTOR_GUIDES,
   ...BEGINNER_GUIDES,
   ...BUILDER_GUIDES,
   {
