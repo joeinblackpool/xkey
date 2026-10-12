@@ -107,6 +107,7 @@ export function dnsStandIn() {
     "smithplumbing.co.uk": { A: ["192.0.2.10"], MX: ["10 mail.smithplumbing.co.uk."], TXT: ['"v=spf1 include:_spf.google.com ~all"', '"google-site-verification=abc123"'], NS: ["ns1.host.co.uk."], SOA: ["ns1.host.co.uk. admin.host.co.uk. 2026101201 3600 600 604800 300"] },
     "www.smithplumbing.co.uk": { A: ["192.0.2.10"] },
     "_dmarc.smithplumbing.co.uk": { TXT: ['"v=DMARC1; p=none; rua=mailto:d@smithplumbing.co.uk"'] },
+    "xkey.co.uk": { A: ["192.0.2.30"], MX: ["1 smtp.google.com."], NS: ["ada.ns.cloudflare.com.", "bob.ns.cloudflare.com."], TXT: ['"v=spf1 include:_spf.google.com ~all"', '"google-site-verification=xyz789"'] },
     "badmail.co.uk": { A: ["192.0.2.20"], MX: ["10 mx.badmail.co.uk."], TXT: ['"v=spf1 a mx ~all"', '"v=spf1 include:sendgrid.net -all"'] },
   };
   return async (url) => {

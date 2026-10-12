@@ -564,6 +564,37 @@ export function toolsApp() {
     });
   }
 
+  // ---- website technology checker (/api/tech)
+  var tc = $("tc-form");
+  if (tc) {
+    var tcq = (location.search.match(/[?&]url=([^&]+)/) || [])[1];
+    if (tcq && !$("tc-url").value.trim()) { try { $("tc-url").value = decodeURIComponent(tcq.replace(/\+/g, " ")); } catch (e) {} setTimeout(function () { tc.requestSubmit ? tc.requestSubmit() : tc.dispatchEvent(new Event("submit", { cancelable: true })); }, 0); }
+    tc.addEventListener("submit", function (ev) {
+      ev.preventDefault();
+      var u = $("tc-url").value.trim(), out = $("tc-out");
+      if (!u) { $("tc-url").focus(); return; }
+      out.innerHTML = "<p>Looking at the site…</p>";
+      fetch("/api/tech?url=" + encodeURIComponent(u)).then(function (r) { return r.json(); }).then(function (j) {
+        if (!j.tech) { out.innerHTML = '<p class="s-fail">' + esc(j.error || "Couldn't check that site.") + "</p>"; return; }
+        var lc = { fail: "#cf222e", warn: "#9a6700", ok: "#1a7f37", info: "inherit" }, icon = { fail: "✗", warn: "!", ok: "✓", info: "•" };
+        var host = j.url.replace(/^https?:\/\//, "").split(/[\/?#]/)[0];
+        var h = '<div class="card" style="margin:16px 0"><p class="ct" style="overflow-wrap:anywhere">' + esc(j.title || host) + '</p><p class="small" style="overflow-wrap:anywhere">' + esc(j.url) + (j.status ? " · HTTP " + j.status : "") + " · " + j.tech.length + (j.tech.length === 1 ? " technology" : " technologies") + " found</p>";
+        if (j.error) h += '<p class="s-fail">' + esc(j.error) + "</p>";
+        if (j.notes && j.notes.length) h += '<ul style="list-style:none;padding:0;margin:8px 0">' + j.notes.map(function (n) { return '<li style="margin:6px 0;color:' + lc[n.level] + '"><b>' + icon[n.level] + "</b> " + esc(n.text) + "</li>"; }).join("") + "</ul>";
+        if (j.guide) h += '<p>Built with ' + esc(j.guide.name) + '? Our <a href="' + esc(j.guide.path) + '">' + esc(j.guide.name) + " SEO guide</a> shows where every SEO setting is.</p>";
+        h += "</div>";
+        var rows = [];
+        j.groups.forEach(function (g) {
+          var items = j.tech.filter(function (t) { return t.cat === g[0]; });
+          if (items.length) rows.push("<tr><th scope=\"row\" style=\"text-align:left;vertical-align:top\">" + esc(g[1]) + "</th><td>" + items.map(function (t) { return "<b>" + esc(t.name) + "</b>" + (t.version ? " " + esc(t.version) : "") + ' <span class="small">(' + esc(t.how) + ")</span>"; }).join("<br>") + "</td></tr>");
+        });
+        h += rows.length ? '<div class="tablewrap"><table><tbody>' + rows.join("") + "</tbody></table></div>" : "<p>We couldn't spot any known technology on this page. It may be hand-built, or hide its fingerprints.</p>";
+        h += '<p class="small">Found from the page\'s code, headers and cookies, and the domain\'s public DNS. Tools that load only after cookie consent or on other pages may not show. Next: run a <a href="/seo-checker?url=' + encodeURIComponent(j.url) + '">free SEO check</a> on this page, or see its <a href="/dns-lookup?d=' + encodeURIComponent(host) + '">DNS records</a> and <a href="/http-header-checker?url=' + encodeURIComponent(j.url) + '">HTTP headers</a>.</p>';
+        out.innerHTML = h;
+      }).catch(function () { out.innerHTML = '<p class="s-fail">Couldn\'t check that site – please try again.</p>'; });
+    });
+  }
+
   // ---- HTTP header checker (/api/headers)
   var hd = $("hd-form");
   if (hd) {

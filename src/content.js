@@ -13,6 +13,7 @@ const TOOLS = [
   ["/domain-authority-checker", "Domain authority checker", "Authority scores for up to 100 websites at once, with links and global rank."],
   ["/redirect-checker", "Redirect checker", "Follow any address hop by hop: 301s, 302s, chains, loops and meta refreshes."],
   ["/http-header-checker", "HTTP header checker", "Every response header for any address, with what each one means for SEO."],
+  ["/website-technology-checker", "Website technology checker", "What is a site built with? CMS, theme, plugins, analytics, hosting and email."],
   ["/dns-lookup", "DNS lookup", "A, MX, TXT, NS and other records, plus SPF and DMARC email checks."],
   ["/domain-age-checker", "Domain age checker", "How old is a website? Registration and expiry dates for up to 100 domains."],
   ["/whois-lookup", "WHOIS lookup", "Who a domain is registered with, when it expires and its name servers."],
@@ -247,6 +248,27 @@ export const PAGES = [
 <h2>What it can't tell you</h2>
 <ul><li><strong>What visitors in other countries get.</strong> We visit from Cloudflare's network; sites can send different headers by location, cookie or login.</li><li><strong>Request headers.</strong> This shows what the server sends back, not what your browser sends.</li><li><strong>Sites that block checkers.</strong> A firewall may answer us with a 403 even when the site works in your browser.</li></ul>`,
     faqs: [["Is the HTTP header checker free?", "Yes. No sign-up, no email and no subscription, with only a fair-use limit to stop bots."], ["How do I see HTTP headers in my browser?", "Open developer tools (F12), go to the Network tab, reload the page and click the first request. This tool shows the same thing without the setup, and follows redirects for you."], ["Why is my page not indexed when the HTML has no noindex?", "Check the X-Robots-Tag header here. Some servers, plugins and CDNs add noindex in the header, where it's invisible in the page source."]],
+  },
+  {
+    path: "/website-technology-checker", crumb: "Website technology checker", parent: ["/seo-tools", "SEO tools"], title: "Website Technology Checker | What's This Site Built With?",
+    desc: "Free website technology checker: see the CMS or website builder, theme, plugins, analytics, hosting, email provider and more behind any website. No sign-up.",
+    h1: "What is this website built with?", eyebrow: "Any website · Free · No sign-up", app: "XKey website technology checker", form: "tech",
+    lead: "Type any web address to see the technology behind it: the website builder or CMS, the theme, plugins, analytics and tracking, cookie banner, hosting and who handles its email.",
+    sections: `<h2>What the technology checker finds</h2>
+<div class="grid">
+<div class="card"><p class="ct">Platform and theme</p><p>WordPress, Shopify, Wix, Squarespace, Webflow and dozens more, with the WordPress or Shopify theme name and the page builder.</p></div>
+<div class="card"><p class="ct">Plugins and tools</p><p>SEO plugins such as Yoast and Rank Math, forms, caching, live chat, reviews, booking and payment providers.</p></div>
+<div class="card"><p class="ct">Tracking and marketing</p><p>Google Analytics 4, Tag Manager, Meta Pixel, Google Ads, Hotjar, email marketing tools and the cookie banner.</p></div>
+<div class="card"><p class="ct">Hosting, email and DNS</p><p>The CDN or host (Cloudflare, WP Engine, Vercel…), the web server, the email provider and who runs the DNS.</p></div>
+</div>
+<h2>Why check what a website is built with?</h2>
+<ul><li><strong>Researching competitors.</strong> See which platform, booking system and review widget a successful rival uses, and whether they advertise on Google, Facebook or TikTok.</li><li><strong>Choosing a platform.</strong> Find a site you like and check whether it's WordPress, Shopify or a builder such as Wix before you commit to the same.</li><li><strong>Taking over a website.</strong> New to a business, or a web designer picking up a client? Find out what the site runs on before you get the logins.</li><li><strong>Checking your own site.</strong> Spot leftovers such as old Universal Analytics code that no longer records anything, or tracking tags with no cookie banner.</li></ul>
+<h2>Does the platform affect SEO?</h2>
+<p>Any of the big platforms can rank well. What matters more is how the site is set up: unique titles and descriptions, fast pages, clean addresses and helpful content. Each platform keeps those settings in a different place, so if your site is on WordPress, Wix, Squarespace or Shopify, the checker links to our step-by-step SEO guide for it. Then run the <a href="/">free SEO check</a> for a report with fix steps for your builder.</p>
+<h2>How it works, and what it can't see</h2>
+<p>We load the page once, as a normal browser would, and look for the fingerprints each technology leaves: file paths, script addresses, generator tags, response headers and cookies. We also read the domain's public DNS records for its email provider, DNS host and the services it has verified. We don't guess. If something leaves no trace, it isn't listed, so:</p>
+<ul><li>Server-side software that hides itself (most databases, and the language behind many sites) can't be seen.</li><li>Tools loaded only after you accept cookies, or only on other pages such as checkout, may not show. Check those pages too.</li><li>Sites behind bot protection may only reveal their hosting and DNS.</li></ul>`,
+    faqs: [["Is the website technology checker free?", "Yes. No sign-up, no email and no subscription, with only a fair-use limit to stop bots."], ["Can it tell which WordPress theme a site uses?", "Usually. It reads the theme folder name from the page's code, and shows the parent and child theme if there are both. Some security plugins rename or hide it."], ["How do I tell if a site is Shopify, Wix or Squarespace?", "Enter its address above. Each builder loads files from its own servers (cdn.shopify.com, static.wixstatic.com, static1.squarespace.com), so the checker can tell them apart even on a custom domain."], ["Why is a tool I know a site uses not listed?", "It may load only after cookie consent, only on some pages, or be one we don't recognise yet. We only list what we can actually see on the page you entered."]],
   },
   {
     path: "/dns-lookup", crumb: "DNS lookup", parent: ["/seo-tools", "SEO tools"], title: "DNS Lookup | Check A, MX, TXT & NS Records Free",

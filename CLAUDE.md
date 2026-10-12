@@ -37,6 +37,9 @@ Free SEO & AI search checker for UK businesses, made by IceWork (icework.co.uk).
 ## DNS lookup (/dns-lookup)
 - `src/dns.js`, `GET /api/dns?d=` – A/AAAA/CNAME/MX/NS/TXT/CAA/SOA via DNS-over-HTTPS JSON (cloudflare-dns.com, dns.google as fallback), plus www and `_dmarc` lookups and checks (site resolves, www resolves, MX, one SPF and no +all, DMARC policy). DKIM isn't checked (needs a selector). Tests: `env.DNS_FETCH` stand-in (`dnsStandIn()` in test/lib.mjs).
 
+## Website technology checker (/website-technology-checker)
+- `src/tech.js`, `GET /api/tech?url=` – fetches one page (≤5 redirects, browser user agent) and matches its HTML, headers and cookies against the `SIGNS` list (CMS/builder, shop, theme, page builder, SEO and WordPress plugins, JS frameworks, analytics, ads pixels, cookie banner, chat, reviews, booking, payments, fonts, CDN/host, server, language); MX/NS/TXT from DNS (`query` in dns.js) give email provider, DNS host, SPF senders and verified accounts. Lists only what leaves a trace. Add a technology by adding one line to `SIGNS` (and a test in test/tools.mjs if it's tricky).
+
 ## Layout
 - `src/` – XKey pages (`content.js`), shell/styles (`site.js`), routing + APIs (`index.js`), browser tools (`tools-client.js`, served as /assets/tools.js), page parser (`page-parse.js`), OG image (`og.js`).
 - `engine/` – SEO checker engine **shared with icework.co.uk** (repo joeinblackpool/ICEWORK, folder `src/`). `src/page-parse.js` is also copied to ICEWORK `src/` (it powers the competitor topic gap there). Keep the two copies identical: change it here, then copy the same files into ICEWORK `src/` and run its tests (`node test/check.mjs`, `node test/checker-unit.mjs`).
