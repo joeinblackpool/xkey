@@ -1,10 +1,12 @@
 // XKey site shell: brand, styles, layout and helpers. Content lives in content.js.
 import { CHECKER_CSS } from "../engine/checker-ui.js";
 import { MONITOR_CSS } from "../engine/monitor.js";
+import { GUIDE_FOR } from "./builder-guides.js";
 
 export const BRAND = { name: "XKey", fullName: "XKey", domain: "xkey.co.uk", tagline: "Free SEO & AI search check", maker: "IceWork", makerUrl: "https://icework.co.uk", email: "iceworks@f1rst.co.uk", price: 350, town: "Blackpool",
   // SEO report extras (engine/checker-ui.js): the authority & backlinks section, and our free tool for each fix
   offsite: true,
+  guides: GUIDE_FOR,
   tools: {
     "Title tag": ["/title-tag-checker", "Preview and measure your title with the free title tag checker"],
     "Meta description": ["/ai-meta-description-generator", "Write one free with the AI title & description writer"],

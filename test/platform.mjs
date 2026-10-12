@@ -27,6 +27,7 @@ const html = checkerReport(esc, BRAND, r);
 eq("report shows Built with WordPress", /Built with WordPress/.test(html), true);
 eq("report shows WordPress steps for the description", html.includes("On WordPress:</strong> " + esc(HOW_TO.WordPress["Meta description"])), true);
 eq("report links to the description writer", html.includes('href="/ai-meta-description-generator"'), true);
+eq("report links to the WordPress guide", html.includes('href="/guides/wordpress-seo"'), true);
 eq("report has the authority section", html.includes('id="offsite"'), true);
 eq("report without BUSINESS extras has no authority section", checkerReport(esc, { name: "X", fullName: "X", domain: "x.co.uk" }, r).includes('id="offsite"'), false);
 
