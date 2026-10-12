@@ -1,6 +1,7 @@
 // XKey (xkey.co.uk): free SEO & AI search check. Uses the same engine as IceWork's checker.
 import { PAGES, toolCards } from "./content.js";
-import { BRAND, SITE, UPDATED, esc, layout, send, FAVICON } from "./site.js";
+import { BRAND, SITE, UPDATED, esc, layout, send, FAVICON, pageDates, pageHash } from "./site.js";
+import { relatedGuides } from "./related.js";
 import { toolsApp } from "./tools-client.js";
 import { OG_PNG } from "./og.js";
 import { handleChecker, rateLimited, AUDIT_JS, REPORT_JS, COMPARE_JS, overOnce, cmpForm, over } from "../engine/checker-ui.js";
@@ -187,6 +188,8 @@ function robotsTest(body) {
 
 // ---------- pages
 const faqs = (list) => list && list.length ? `<h2>Frequently asked questions</h2>${list.map(([q, a]) => `<details><summary><h3>${esc(q)}</h3></summary><p>${esc(a)}</p></details>`).join("")}` : "";
+const RELATED = relatedGuides(PAGES);
+const related = (p) => (RELATED[p.path] || []).length ? `<div class="wrap"><h2>Related guides</h2><div class="grid">${RELATED[p.path].map((g) => `<a class="card" href="${g.path}"><p class="ct">${esc(g.crumb)}</p><p>${esc(g.desc)}</p></a>`).join("")}</div></div>` : "";
 const guideCards = () => `<div class="grid">${GUIDES.map((g) => `<a class="card" href="${g.path}"><p class="ct">${esc(g.crumb)}</p><p>${esc(g.desc)}</p></a>`).join("")}</div>`;
 const CTA = `<div class="cta"><p class="ct" style="font-size:26px">Run a free SEO check now</p><p>About 50 checks covering Google, AI search, speed, security and local SEO. No sign-up.</p><form class="ck-form" action="/seo-checker" method="get" role="search"><label for="cta-url" class="sr">Website address</label><input id="cta-url" name="url" type="text" inputmode="url" placeholder="yourwebsite.co.uk" required><button class="btn" type="submit">Check my site</button></form></div>`;
 const MAKER = `<div class="maker"><p><strong>Want the fixes done for you?</strong> XKey is made by <a href="https://icework.co.uk/" rel="noopener">IceWork</a>, a web studio in ${BRAND.town}. IceWork builds fast, search-ready websites – a 3-page site including domain and a year's hosting is £${BRAND.price} all in.</p></div>`;
@@ -194,14 +197,15 @@ const MAKER = `<div class="maker"><p><strong>Want the fixes done for you?</stron
 const INSTANT = new Set(["title", "robots", "llms", "meta", "og", "sitemap", "words", "keywords", "titles", "robotsgen", "schemagen", "localserp"]);
 const freeStrip = (f) => `<ul class="free" aria-label="What free means here"><li>No cost</li><li>No sign-up</li><li>No email</li><li>No Google sign-in</li><li>No subscription</li><li>${INSTANT.has(f) ? "Unlimited – runs in your browser" : "No limits for normal use"}</li></ul>`;
 function render(p) {
+  const dates = pageDates(p);
   const form = p.form ? FORMS[p.form](p) : "";
   const isTool = !p.article && p.path !== "/about" && p.path !== "/contact" && p.path !== "/privacy";
   const body = `<div class="wrap hero"${p.form ? "" : ' style="padding-bottom:24px"'}>${p.eyebrow ? `<span class="eyebrow">${esc(p.eyebrow)}</span>` : ""}<h1>${esc(p.h1)}</h1><p class="lead">${esc(p.lead)}</p>${form}${p.form ? freeStrip(p.form) : ""}</div>
-<section style="padding-top:0"><div class="wrap prose">${p.article ? `<p class="small">Last updated <time datetime="${UPDATED}">${new Date(UPDATED).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" })}</time> · By the XKey team</p>` : ""}${p.sections || ""}${faqs(p.faqs)}</div>
-${p.tools ? `<div class="wrap">${toolCards()}</div>` : ""}${p.guides ? `<div class="wrap">${guideCards()}</div>` : ""}
+<section style="padding-top:0"><div class="wrap prose">${p.article ? `<p class="small">Last updated <time datetime="${dates.modified}">${new Date(dates.modified).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" })}</time> · By the XKey team</p>` : ""}${p.sections || ""}${faqs(p.faqs)}</div>
+${related(p)}${p.tools ? `<div class="wrap">${toolCards()}</div>` : ""}${p.guides ? `<div class="wrap">${guideCards()}</div>` : ""}
 ${isTool && !p.tools && !p.guides ? `<div class="wrap"><h2>More free SEO tools</h2>${toolCards(p.path)}</div>` : ""}
 <div class="wrap">${p.form === "check" ? "" : CTA}${p.path === "/contact" || p.path === "/privacy" ? "" : MAKER}</div></section>`;
-  return layout({ ...p, body });
+  return layout({ ...p, ...dates, body });
 }
 const HTML = Object.fromEntries(PAGES.map((p) => [p.path, render(p)]));
 const NOT_FOUND = layout({ path: "/404", crumb: "Not found", title: "Page not found | XKey", desc: "That page doesn't exist.", noindex: true, body: `<div class="wrap hero"><h1>Page not found</h1><p class="lead">That page doesn't exist or has moved.</p><a class="btn" href="/">Run a free SEO check</a></div>` });
@@ -213,20 +217,27 @@ const enginePage = (k) => BY_PATH[ENGINE_PAGE[k] || "/"];
 // ---------- static files
 const OG_BYTES = Uint8Array.from(atob(OG_PNG), (c) => c.charCodeAt(0));
 const INDEXED = PAGES.filter((p) => !p.noindex);
-const SITEMAP = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${INDEXED.map((p) => `<url><loc>${SITE}${p.path}</loc><lastmod>${UPDATED}</lastmod></url>`).join("\n")}\n</urlset>\n`;
+const SITEMAP = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${INDEXED.map((p) => `<url><loc>${SITE}${p.path}</loc><lastmod>${pageDates(p).modified}</lastmod></url>`).join("\n")}\n</urlset>\n`;
 const ROBOTS = `User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /monitor/\n\nSitemap: ${SITE}/sitemap.xml\n`;
 const LLMS = `# ${BRAND.name}\n\n> Free SEO and AI search checker for UK websites, made by ${BRAND.maker} (${BRAND.makerUrl}), a web studio in ${BRAND.town}. No sign-up.\n\nXKey checks a page for Google readiness, AI search visibility (ChatGPT, Claude, Perplexity, Google AI Overviews), Core Web Vitals, structured data, security and local SEO, and gives a ranked list of fixes. It also crawls whole sites, compares competitors and monitors sites weekly.\n\n## Tools\n\n${INDEXED.filter((p) => !p.article && !["/about", "/contact", "/privacy"].includes(p.path)).map((p) => `- [${p.crumb === "Home" ? "Free SEO check" : p.crumb}](${SITE}${p.path}): ${p.desc}`).join("\n")}\n\n## Guides\n\n${GUIDES.map((p) => `- [${p.crumb}](${SITE}${p.path}): ${p.desc}`).join("\n")}\n\n## About\n\n- [About XKey](${SITE}/about)\n- [Contact](${SITE}/contact)\n- [Privacy](${SITE}/privacy)\n`;
 const MANIFEST = JSON.stringify({ name: BRAND.name, short_name: BRAND.name, start_url: "/", display: "browser", background_color: "#f6f8fb", theme_color: "#0e1726", icons: [{ src: "/favicon.svg", sizes: "any", type: "image/svg+xml" }] });
 
-// IndexNow: submit every page once per site version.
+// IndexNow (Bing, Yandex, Seznam, Naver …): the cron after each deploy submits the pages that are new or
+// whose content changed since the last submission (all pages the first time).
 const INDEXNOW_KEY = "7b3e9c41d2a84f06b5e1c8a9f0d36e72";
 const SITE_VERSION = (() => { let h = 2166136261; const t = JSON.stringify(PAGES); for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(16); })();
 async function submitIndexNow(env) {
   if (!env || !env.STATE) return "no KV binding";
   if ((await env.STATE.get("indexnow")) === SITE_VERSION) return "already submitted";
-  const res = await fetch("https://api.indexnow.org/indexnow", { method: "POST", headers: { "content-type": "application/json; charset=utf-8" }, body: JSON.stringify({ host: BRAND.domain, key: INDEXNOW_KEY, keyLocation: `${SITE}/${INDEXNOW_KEY}.txt`, urlList: INDEXED.map((p) => SITE + p.path) }) });
-  if (res.status === 200 || res.status === 202) { await env.STATE.put("indexnow", SITE_VERSION); return "submitted " + res.status; }
-  return "failed " + res.status;
+  const sent = (await env.STATE.get("indexnow-pages", "json")) || {}, now = Object.fromEntries(INDEXED.map((p) => [p.path, pageHash(p)]));
+  const changed = INDEXED.filter((p) => sent[p.path] !== now[p.path]).map((p) => SITE + p.path);
+  if (changed.length) {
+    const res = await (env.INDEXNOW_FETCH || fetch)("https://api.indexnow.org/indexnow", { method: "POST", headers: { "content-type": "application/json; charset=utf-8" }, body: JSON.stringify({ host: BRAND.domain, key: INDEXNOW_KEY, keyLocation: `${SITE}/${INDEXNOW_KEY}.txt`, urlList: changed }) });
+    if (res.status !== 200 && res.status !== 202) return "failed " + res.status;
+  }
+  await env.STATE.put("indexnow-pages", JSON.stringify(now));
+  await env.STATE.put("indexnow", SITE_VERSION);
+  return `submitted ${changed.length} changed page(s)`;
 }
 
 // A Worker can't fetch its own custom domain (HTTP 522), so checks of xkey.co.uk run in-process.
@@ -462,4 +473,4 @@ const worker = {
   },
 };
 export default worker;
-export { PAGES, HTML, robotsTest, INDEXNOW_KEY, SITEMAP, LLMS };
+export { PAGES, HTML, robotsTest, INDEXNOW_KEY, SITEMAP, LLMS, submitIndexNow };

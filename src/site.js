@@ -2,6 +2,7 @@
 import { CHECKER_CSS } from "../engine/checker-ui.js";
 import { MONITOR_CSS } from "../engine/monitor.js";
 import { GUIDE_FOR } from "./builder-guides.js";
+import { DATES } from "./page-dates.js";
 
 export const BRAND = { name: "XKey", fullName: "XKey", domain: "xkey.co.uk", tagline: "Free SEO & AI search check", maker: "IceWork", makerUrl: "https://icework.co.uk", email: "iceworks@f1rst.co.uk", price: 350, town: "Blackpool",
   // SEO report extras (engine/checker-ui.js): the authority & backlinks section, and our free tool for each fix
@@ -58,6 +59,15 @@ export const BRAND = { name: "XKey", fullName: "XKey", domain: "xkey.co.uk", tag
 export const SITE = `https://${BRAND.domain}`;
 export const UPDATED = "2026-10-12";
 
+// Each page's first-published and last-changed dates (src/page-dates.js, kept up to date by
+// `node test/dates.mjs`, which test/all.mjs runs first). A page whose content no longer matches its
+// stored hash, or a new page, counts as changed on UPDATED.
+export const pageHash = (p) => { let h = 2166136261; const t = JSON.stringify(p); for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(16); };
+export function pageDates(p) {
+  const d = DATES[p.path];
+  return d && d[2] === pageHash(p) ? { published: d[0], modified: d[1] } : { published: d ? d[0] : UPDATED, modified: UPDATED };
+}
+
 export const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
 const CSS = `:root{--bg:#f6f8fb;--fg:#0e1726;--mute:#526077;--line:#dde3ec;--card:#fff;--brand:#0a6f6a;--brand-ink:#fff;--soft:#dcf1ef;--hero:#0e1726;--hero-fg:#eef3fa}
@@ -107,15 +117,17 @@ export const NAV = [["/", "SEO check"], ["/website-crawler", "Site crawler"], ["
 export const FAVICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#0e1726"/><path d="M14 16l12 16-12 16h9l7.5-10L38 48h9L35 32l12-16h-9l-7.5 10L23 16z" fill="#3fd0c9"/></svg>`;
 
 function jsonld(p) {
-  const url = SITE + p.path;
+  const url = SITE + p.path, modified = p.modified || UPDATED, published = p.published || modified;
   const g = [
     { "@type": "Organization", "@id": `${SITE}/#org`, name: BRAND.name, description: "Free SEO and AI search tools for UK businesses. Every tool is free, with no account, no email, no Google sign-in and no paid version.", url: `${SITE}/`, logo: `${SITE}/favicon.svg`, email: BRAND.email, parentOrganization: { "@type": "Organization", "@id": "https://icework.co.uk/#business", name: BRAND.maker, url: BRAND.makerUrl + "/" } },
     { "@type": "WebSite", "@id": `${SITE}/#site`, url: `${SITE}/`, name: BRAND.name, publisher: { "@id": `${SITE}/#org` }, inLanguage: "en-GB" },
-    p.app ? { "@type": "WebApplication", "@id": `${url}#app`, name: p.app, url, applicationCategory: "BusinessApplication", operatingSystem: "Any (web browser)", isAccessibleForFree: true, dateModified: UPDATED, offers: { "@type": "Offer", price: "0", priceCurrency: "GBP" }, publisher: { "@id": `${SITE}/#org` } }
-      : p.article ? { "@type": "Article", "@id": `${url}#page`, headline: p.h1, description: p.desc, url, dateModified: UPDATED, datePublished: UPDATED, author: { "@id": `${SITE}/#org` }, publisher: { "@id": `${SITE}/#org` }, inLanguage: "en-GB" }
-      : { "@type": "WebPage", "@id": `${url}#page`, url, name: p.title, description: p.desc, isPartOf: { "@id": `${SITE}/#site` }, dateModified: UPDATED },
+    p.app ? { "@type": "WebApplication", "@id": `${url}#app`, name: p.app, url, applicationCategory: "BusinessApplication", operatingSystem: "Any (web browser)", isAccessibleForFree: true, dateModified: modified, offers: { "@type": "Offer", price: "0", priceCurrency: "GBP" }, publisher: { "@id": `${SITE}/#org` } }
+      : p.article ? { "@type": "Article", "@id": `${url}#page`, headline: p.h1, description: p.desc, url, dateModified: modified, datePublished: published, author: { "@id": `${SITE}/#org` }, publisher: { "@id": `${SITE}/#org` }, inLanguage: "en-GB" }
+      : { "@type": "WebPage", "@id": `${url}#page`, url, name: p.title, description: p.desc, isPartOf: { "@id": `${SITE}/#site` }, dateModified: modified },
   ];
   if (p.itemList) g.push({ "@type": "ItemList", name: "Free SEO tools", itemListElement: p.itemList.map(([path, name], i) => ({ "@type": "ListItem", position: i + 1, name, url: SITE + path })) });
+  // FAQPage mirrors the questions and answers shown on the page (faqs() in index.js).
+  if (p.faqs && p.faqs.length) g.push({ "@type": "FAQPage", "@id": `${url}#faq`, mainEntity: p.faqs.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })) });
   if (p.path !== "/") g.push({ "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: `${SITE}/` }, ...(p.parent ? [{ "@type": "ListItem", position: 2, name: p.parent[1], item: SITE + p.parent[0] }] : []), { "@type": "ListItem", position: p.parent ? 3 : 2, name: p.crumb, item: url }] });
   return JSON.stringify({ "@context": "https://schema.org", "@graph": g }).replace(/</g, "\\u003c");
 }
@@ -128,7 +140,7 @@ export function layout(p) {
   return `<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(p.title)}</title><meta name="description" content="${esc(p.desc)}"><link rel="canonical" href="${url}">
 <meta name="robots" content="${p.noindex ? "noindex,follow" : "index,follow,max-image-preview:large"}">
-<meta property="og:type" content="website"><meta property="og:site_name" content="${BRAND.name}"><meta property="og:title" content="${esc(p.title)}"><meta property="og:description" content="${esc(p.desc)}"><meta property="og:url" content="${url}"><meta property="og:image" content="${SITE}/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:locale" content="en_GB">
+<meta property="og:type" content="${p.article ? "article" : "website"}">${p.article && p.modified ? `<meta property="article:published_time" content="${p.published}"><meta property="article:modified_time" content="${p.modified}">` : ""}<meta property="og:site_name" content="${BRAND.name}"><meta property="og:title" content="${esc(p.title)}"><meta property="og:description" content="${esc(p.desc)}"><meta property="og:url" content="${url}"><meta property="og:image" content="${SITE}/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:locale" content="en_GB">
 <meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="${SITE}/og.png">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml"><meta name="theme-color" content="#0e1726">
 <style>${CSS}</style><script type="application/ld+json">${jsonld(p)}</script></head><body>

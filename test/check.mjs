@@ -1,8 +1,11 @@
 // Pre-deploy checks for XKey: every page 200, unique titles within Google's width, valid JSON-LD,
 // no broken internal links, redirects, tools API, and the XKey engine's own score for every page.
 // Run: node xkey/test/check.mjs
-import worker, { PAGES, robotsTest } from "../src/index.js";
+import worker, { PAGES, HTML, robotsTest, submitIndexNow } from "../src/index.js";
+import { pageDates } from "../src/site.js";
 import { pixelWidth, runCheck } from "../engine/checker.js";
+import { DATES } from "../src/page-dates.js";
+import { pageHash } from "../src/site.js";
 const O = "https://xkey.co.uk";
 const get = (u, init = {}) => worker.fetch(new Request(u.startsWith("http") ? u : O + u, { redirect: "manual", ...init }), {}, { waitUntil() {} });
 let bad = 0; const fail = (m) => { bad++; console.log("FAIL", m); };
@@ -37,6 +40,24 @@ for (const f of ["/og.png", "/favicon.svg", "/robots.txt", "/llms.txt", "/sitema
 new Function((await (await get("/assets/tools.js")).text())); // parses
 const sm = await (await get("/sitemap.xml")).text(), locs = [...sm.matchAll(/<loc>(.*?)<\/loc>/g)].map((m) => m[1]);
 if (new Set(locs).size !== locs.length || locs.length !== PAGES.length) fail("sitemap URLs");
+// sitemap lastmod = each page's own last-changed date; FAQ markup matches the questions on the page
+for (const p of PAGES) {
+  if (!sm.includes(`<loc>${O}${p.path}</loc><lastmod>${pageDates(p).modified}</lastmod>`)) fail(`${p.path} sitemap lastmod`);
+  const ld = JSON.parse(HTML[p.path].match(/<script type="application\/ld\+json">(.*?)<\/script>/)[1])["@graph"];
+  const faq = ld.find((x) => x["@type"] === "FAQPage");
+  if ((p.faqs || []).length !== (faq ? faq.mainEntity.length : 0)) fail(`${p.path} FAQPage markup`);
+}
+// every guide is linked from the main content of at least 2 other pages (Related guides does most of this)
+const inbound = {};
+for (const p of PAGES) { const h = HTML[p.path]; for (const m of h.slice(h.indexOf("<main>"), h.indexOf("</main>")).matchAll(/href="(\/guides\/[^"#?]*)"/g)) if (m[1] !== p.path) (inbound[m[1]] ||= new Set()).add(p.path); }
+for (const p of PAGES) if (p.path.startsWith("/guides/") && (inbound[p.path] || new Set()).size < 2) fail(`${p.path} linked from only ${(inbound[p.path] || new Set()).size} page(s)`);
+// IndexNow: first run sends every page, the next run nothing, a changed page only that page
+const kv = new Map(), sentLists = [];
+const env = { STATE: { get: async (k, t) => kv.has(k) ? (t === "json" ? JSON.parse(kv.get(k)) : kv.get(k)) : null, put: async (k, v) => kv.set(k, v) }, INDEXNOW_FETCH: async (u, init) => { sentLists.push(JSON.parse(init.body).urlList); return new Response("", { status: 202 }); } };
+await submitIndexNow(env); if (sentLists.length !== 1 || sentLists[0].length !== PAGES.filter((p) => !p.noindex).length) fail("IndexNow first submission");
+if ((await submitIndexNow(env)) !== "already submitted") fail("IndexNow repeat");
+kv.set("indexnow", "old"); const pages = JSON.parse(kv.get("indexnow-pages")); pages["/about"] = "x"; kv.set("indexnow-pages", JSON.stringify(pages));
+await submitIndexNow(env); if (sentLists.length !== 2 || sentLists[1].join() !== `${O}/about`) fail("IndexNow changed pages " + JSON.stringify(sentLists[1]));
 // robots tester
 const rt = robotsTest({ robots: "User-agent: *\nDisallow: /admin/\n\nUser-agent: GPTBot\nDisallow: /\n", url: "https://a.co.uk/admin/x", agent: "googlebot" });
 if (rt.allowed || rt.all.find((a) => a.name === "GPTBot").allowed || !robotsTest({ robots: "User-agent: GPTBot\nDisallow: /", url: "/", agent: "oai-searchbot" }).allowed) fail("robots tester " + JSON.stringify(rt));
@@ -45,6 +66,8 @@ if ((await api.json()).allowed !== false) fail("robots API");
 // XKey checks itself (in-process; other hosts answer 404 so the run is offline)
 const fetchImpl = async (inp, init = {}) => { const u = new URL(typeof inp === "string" ? inp : inp.url); if (u.hostname !== "xkey.co.uk") return new Response("", { status: 404 }); const { signal, ...rest } = init; const r = await worker.fetch(new Request(u.href, { ...rest, redirect: "manual" }), {}, { waitUntil() {} }); const h = new Headers(r.headers); h.set("x-checker-internal", "1"); return new Response(r.body, { status: r.status, headers: h }); };
 const low = [];
+const undated = PAGES.filter((p) => !DATES[p.path] || DATES[p.path][2] !== pageHash(p)).length;
+if (undated) console.log(`note: ${undated} page(s) new or changed since src/page-dates.js was written – run node test/dates.mjs and commit it`);
 for (const p of PAGES) {
   const r = await runCheck(O + p.path, fetchImpl);
   const issues = r.categories.flatMap((c) => c.checks.filter((k) => k.status === "fail" || k.status === "warn").map((k) => `${k.status} ${c.name} › ${k.name}`));
