@@ -454,6 +454,111 @@ export function toolsApp() {
     draw(); work(); work();
   });
 
+  // ---- whole-site broken link checker (/api/links/page crawls, /api/links/check tests links)
+  var lk = $("lk-form");
+  if (lk) lk.addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var raw = $("lk-url").value.trim(), out = $("lk-out");
+    if (!raw) { $("lk-url").focus(); return; }
+    if (!/^https?:\/\//i.test(raw)) raw = "https://" + raw;
+    var maxPages = +$("lk-max").value, withExt = $("lk-ext").value === "1", MAXL = 2500;
+    var host; try { raw = new URL(raw).href; host = new URL(raw).hostname.replace(/^www\./, ""); } catch (e) { out.innerHTML = '<p class="s-fail">That doesn\'t look like a web address.</p>'; return; }
+    var pageLike = function (u) { return !/\.(jpe?g|png|gif|webp|avif|svg|ico|pdf|zip|docx?|xlsx?|pptx?|mp4|mp3|css|js|xml|txt|json|rss)(\?|$)/i.test(u); };
+    var queue = [raw], queued = {}, pages = [], links = {}, order = [], toCheck = [], activeP = 0, activeC = 0, stopped = false, fatal = "", capped = false;
+    queued[raw] = 1;
+    var stop = $("lk-stop"); stop.style.display = ""; stop.onclick = function () { stopped = true; stop.style.display = "none"; draw(); };
+    var addLink = function (l, page) {
+      var x = links[l.url];
+      if (!x) {
+        if (order.length >= MAXL) { capped = true; return; }
+        x = links[l.url] = { url: l.url, kind: l.kind, internal: l.internal, from: [], r: null }; order.push(l.url);
+        if (l.internal || withExt) toCheck.push(l.url);
+      }
+      if (x.from.length < 50 && !x.from.some(function (f) { return f.page === page; })) x.from.push({ page: page, text: l.text });
+    };
+    var num = function (n) { return Number(n).toLocaleString("en-GB"); };
+    var cell = function (v) { v = String(v == null ? "" : v); if (/^[=+\-@\t\r]/.test(v)) v = "'" + v; return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+    var by = function (v) { return order.map(function (u) { return links[u]; }).filter(function (x) { return x.r && x.r.verdict === v; }); };
+    var rows = function (list, showFinal) {
+      return '<div class="tablewrap"><table><thead><tr><th>' + (showFinal ? "Link → goes to" : "Link") + "</th><th>Status</th><th>Found on</th></tr></thead><tbody>" + list.map(function (x) {
+        var f = x.from[0] || {};
+        return '<tr><td style="overflow-wrap:anywhere"><a href="' + esc(x.url) + '" rel="nofollow noopener" target="_blank">' + esc(x.url) + "</a>" + (showFinal && x.r.final ? '<br><span class="small">→ ' + esc(x.r.final) + "</span>" : "") + '<br><span class="small">' + (x.kind === "image" ? "Image" : x.internal ? "Link to your site" : "Link to another site") + (f.text ? " · “" + esc(f.text) + "”" : "") + "</span></td>" +
+          '<td><b style="color:' + col(x.r.verdict === "redirect", x.r.verdict === "blocked") + '">' + (x.r.status || "–") + "</b>" + (x.r.note ? '<br><span class="small">' + esc(x.r.note) + "</span>" : "") + "</td>" +
+          '<td style="overflow-wrap:anywhere"><a href="' + esc(f.page) + '" rel="nofollow noopener" target="_blank">' + esc((f.page || "").replace(/^https?:\/\/[^\/]+/, "") || "/") + "</a>" + (x.from.length > 1 ? '<br><span class="small">and ' + (x.from.length - 1) + " more page" + (x.from.length > 2 ? "s" : "") + "</span>" : "") + "</td></tr>";
+      }).join("") + "</tbody></table></div>";
+    };
+    var finished = function () { return stopped || ((!queue.length || pages.length >= maxPages) && !activeP && !toCheck.length && !activeC); };
+    var draw = function () {
+      var checked = order.filter(function (u) { return links[u].r; }).length, todo = order.filter(function (u) { var x = links[u]; return x.internal || withExt; }).length;
+      var broken = by("broken"), blocked = by("blocked"), redir = by("redirect"), done = finished();
+      var h = '<p class="small">' + (done ? (stopped ? "Stopped. " : "Finished. ") : "Checking… ") + "Crawled " + num(pages.length) + " page" + (pages.length === 1 ? "" : "s") + " · tested " + num(checked) + " of " + num(todo) + " links and images</p>" + (fatal ? '<p class="s-fail">' + esc(fatal) + "</p>" : "");
+      h += '<div class="card" style="margin:16px 0"><div class="row" style="gap:28px"><div><b style="font-size:30px;color:' + col(!broken.length, false) + '">' + num(broken.length) + '</b><br><span class="small">broken</span></div><div><b style="font-size:30px">' + num(redir.length) + '</b><br><span class="small">redirecting</span></div><div><b style="font-size:30px">' + num(blocked.length) + '</b><br><span class="small">blocked our checker</span></div><div><b style="font-size:30px">' + num(pages.length) + '</b><br><span class="small">pages crawled</span></div></div></div>';
+      if (broken.length) h += "<h3>Broken links and images</h3>" + rows(broken);
+      else if (done && checked) h += '<p><strong style="color:#1a7f37">No broken links found.</strong></p>';
+      if (blocked.length) h += "<details><summary style=\"cursor:pointer\"><strong>" + blocked.length + " link" + (blocked.length === 1 ? "" : "s") + " refused our checker</strong> – check these in your browser</summary>" + rows(blocked) + "</details>";
+      if (redir.length) h += "<details><summary style=\"cursor:pointer\"><strong>" + redir.length + " link" + (redir.length === 1 ? "" : "s") + " redirect</strong> – point them straight at the final address</summary>" + rows(redir, true) + "</details>";
+      if (done && (broken.length || blocked.length || redir.length)) h += '<div class="row"><button type="button" class="btn ghost" id="lk-csv">Download CSV</button></div>';
+      if (done && (capped || pages.length >= maxPages)) h += '<p class="small">Stopped at ' + (capped ? num(MAXL) + " links" : num(maxPages) + " pages") + ". For bigger sites, use the <a href=\"/website-crawler\">website crawler</a>.</p>";
+      out.innerHTML = h;
+      var c = $("lk-csv"); if (c) c.onclick = function () {
+        var all = [["link", "status", "result", "goes_to", "type", "link_text", "found_on"]];
+        broken.concat(blocked, redir).forEach(function (x) { x.from.forEach(function (f) { all.push([x.url, x.r.status, x.r.verdict + (x.r.note ? ": " + x.r.note : ""), x.r.final || "", x.kind === "image" ? "image" : x.internal ? "internal" : "external", f.text, f.page]); }); });
+        var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["﻿" + all.map(function (r) { return r.map(cell).join(","); }).join("\r\n")], { type: "text/csv" })); a.download = "xkey-broken-links-" + host + ".csv"; document.body.appendChild(a); a.click(); a.remove();
+      };
+      if (done) stop.style.display = "none";
+    };
+    var crawl = function () {
+      if (stopped || !queue.length || pages.length + activeP >= maxPages) { if (finished()) draw(); return; }
+      var u = queue.shift(); activeP++;
+      fetch("/api/links/page?url=" + encodeURIComponent(u)).then(function (r) { return r.json(); }).then(function (j) {
+        if (j.error && !j.links) { if (!pages.length) fatal = j.error; return; }
+        pages.push(j);
+        if (j.url !== j.start && links[j.start] && !links[j.start].r && j.status === 200) links[j.start].r = { status: 200, verdict: "redirect", final: j.url };
+        if (j.status === 200 && links[j.url] && !links[j.url].r) { links[j.url].r = { status: 200, verdict: "ok" }; toCheck = toCheck.filter(function (x) { return x !== j.url; }); }
+        (j.links || []).forEach(function (l) {
+          addLink(l, j.url);
+          if (l.internal && l.kind === "link" && pageLike(l.url) && !queued[l.url] && pages.length + queue.length + activeP < maxPages * 2) { queued[l.url] = 1; queue.push(l.url); }
+        });
+      }).catch(function () {}).then(function () { activeP--; draw(); setTimeout(crawl, 500); check(); });
+    };
+    var check = function () {
+      if (stopped || activeC >= 2 || !toCheck.length) { if (finished()) draw(); return; }
+      var part = toCheck.splice(0, 10); activeC++;
+      fetch("/api/links/check?" + part.map(function (x) { return "u=" + encodeURIComponent(x); }).join("&")).then(function (r) { return r.json(); }).then(function (j) {
+        if (j.error) { fatal = j.error; stopped = true; return; }
+        j.results.forEach(function (r) { if (r.verdict === "later") toCheck.push(r.url); else if (links[r.url] && !links[r.url].r) links[r.url].r = r; });
+      }).catch(function () { part.forEach(function (x) { if (links[x] && !links[x].r) links[x].r = { status: 0, verdict: "broken", note: "Couldn't test" }; }); }).then(function () { activeC--; draw(); check(); });
+      check();
+    };
+    out.innerHTML = '<p class="small">Starting…</p>';
+    crawl(); setTimeout(crawl, 250);
+  });
+
+  // ---- HTTP header checker (/api/headers)
+  var hd = $("hd-form");
+  if (hd) {
+    var hdq = (location.search.match(/[?&]url=([^&]+)/) || [])[1];
+    if (hdq && !$("hd-url").value.trim()) { try { $("hd-url").value = decodeURIComponent(hdq.replace(/\+/g, " ")); } catch (e) {} setTimeout(function () { hd.requestSubmit ? hd.requestSubmit() : hd.dispatchEvent(new Event("submit", { cancelable: true })); }, 0); }
+    hd.addEventListener("submit", function (ev) {
+      ev.preventDefault();
+      var u = $("hd-url").value.trim(), out = $("hd-out");
+      if (!u) { $("hd-url").focus(); return; }
+      out.innerHTML = "<p>Fetching headers…</p>";
+      fetch("/api/headers?url=" + encodeURIComponent(u) + ($("hd-mobile").checked ? "&agent=mobile" : "")).then(function (r) { return r.json(); }).then(function (j) {
+        if (j.error) { out.innerHTML = '<p class="s-fail">' + esc(j.error) + "</p>"; return; }
+        var lc = { fail: "#cf222e", warn: "#9a6700", ok: "#1a7f37", info: "inherit" }, icon = { fail: "✗", warn: "!", ok: "✓", info: "•" };
+        out.innerHTML = j.hops.map(function (h, i) {
+          var s = h.status;
+          return '<div class="card" style="margin:16px 0"><p class="ct" style="overflow-wrap:anywhere">' + (j.hops.length > 1 ? "Step " + (i + 1) + ": " : "") + esc(h.url) + "</p>" +
+            '<p><b style="font-size:24px;color:' + col(s >= 200 && s < 300, s >= 300 && s < 400) + '">' + (s || "No response") + "</b> " + esc(h.text) + ' <span class="small">' + h.ms + " ms</span>" + (h.location ? '<br><span style="overflow-wrap:anywhere">→ ' + esc(h.location) + (h.type === "meta" ? " (meta refresh)" : "") + "</span>" : "") + "</p>" +
+            (h.notes && h.notes.length ? '<ul style="list-style:none;padding:0;margin:8px 0">' + h.notes.map(function (n) { return '<li style="margin:4px 0;overflow-wrap:anywhere;color:' + lc[n.level] + '"><b>' + icon[n.level] + "</b> " + esc(n.text) + "</li>"; }).join("") + "</ul>" : "") +
+            (h.headers && h.headers.length ? '<div class="tablewrap"><table><tbody>' + h.headers.map(function (kv) { return '<tr><th scope="row" style="text-align:left;white-space:nowrap;vertical-align:top">' + esc(kv[0]) + '</th><td style="overflow-wrap:anywhere;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px">' + esc(kv[1]) + "</td></tr>"; }).join("") + "</tbody></table></div>" : "") + "</div>";
+        }).join("") + (j.problems.length ? "<h3>Redirect notes</h3><ul>" + j.problems.map(function (p) { return "<li>" + esc(p) + "</li>"; }).join("") + "</ul>" : "") +
+          '<p class="small">Fetched from Cloudflare\'s network as a ' + ($("hd-mobile").checked ? "mobile" : "desktop") + " browser. Header names are shown in lower case, as HTTP/2 sends them.</p>";
+      }).catch(function () { out.innerHTML = '<p class="s-fail">Couldn\'t fetch that address – please try again.</p>'; });
+    });
+  }
+
   // ---- redirect checker (/api/redirects, up to 100 addresses in batches of 10)
   var rd = $("rd-form");
   if (rd) {
