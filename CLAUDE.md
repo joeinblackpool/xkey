@@ -73,6 +73,8 @@ Free SEO & AI search checker for UK businesses, made by IceWork (icework.co.uk).
 ## WordPress plugin (wordpress-plugin/xkey-seo-fixer, /wordpress-seo-plugin)
 - PHP plugin (Tools → XKey SEO Fixer): alt text, meta descriptions (Yoast/Rank Math/SEOPress fields, else its own tag), H1→H2 in content, broken internal links. Pure transforms in `includes/transforms.php`, tested by `php wordpress-plugin/test/run.php`.
 - Served as /downloads/xkey-seo-fixer.zip, zipped by the Worker from `src/wp-plugin-files.js`. After changing the plugin run `node wordpress-plugin/bundle.mjs` (test/pro.mjs fails if the bundle is stale).
+## Comparison and reference pages
+- `src/compare-pages.js`: /seo-glossary (A–Z from the `TERMS` list – add a term as one line, with an optional tool or guide link), free Ahrefs and Semrush alternatives, DA vs DR vs other scores, best website builder for SEO, Webflow and GoDaddy builder guides. Keep claims about other companies' products to what they publish themselves.
 
 ## UK business directories, redirect map generator, SEO ROI calculator
 - `src/directories-page.js`: /uk-business-directories – `GROUPS` list (name, domain, link, best for); the page fills each authority from /api/authority after load.

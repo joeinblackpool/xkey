@@ -72,6 +72,7 @@ import { GUIDES_8 } from "./guides-8.js";
 import { GUIDES_10 } from "./guides-10.js";
 import { DIRECTORIES_PAGE } from "./directories-page.js";
 import { MORE_PAGES } from "./more-pages.js";
+import { COMPARE_PAGES } from "./compare-pages.js";
 
 export const PAGES = [
   {
@@ -1258,4 +1259,5 @@ Sitemap: https://yourdomain.co.uk/sitemap.xml</code></pre>
   ...GUIDES_10,
   DIRECTORIES_PAGE,
   ...MORE_PAGES,
+  ...COMPARE_PAGES,
 ];
