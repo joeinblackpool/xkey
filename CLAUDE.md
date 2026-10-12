@@ -23,6 +23,10 @@ Free SEO & AI search checker for UK businesses, made by IceWork (icework.co.uk).
 ## Domain authority checker (/domain-authority-checker)
 - Same index as the backlink checker. `GET /api/authority?d=a.com,b.co.uk` (≤10 sites; the page sends up to 100 in batches). Authority = 100 × (1 − ln(hc_rank) / ln(ranked)), min 1; falls back to link strength when a release has no ranks. Ranks are optional in the build: if the ranks file is missing, the build still runs with every rank 0.
 
+## Domain age checker (/domain-age-checker) and WHOIS lookup (/whois-lookup)
+- `src/whois.js`, `GET /api/whois?d=a.com,b.co.uk` (≤10; the age page sends up to 100 in batches; raw WHOIS text only for single lookups). Registry data via RDAP, base URL per ending from IANA's bootstrap (data.iana.org/rdap/dns.json, cached a day). Endings without RDAP (.de, .eu, .it, .ie …) fall back to WHOIS on port 43 (`cloudflare:sockets`, server from whois.iana.org). Results cached 12 h (not registered: 1 h).
+- Tests use stand-ins `env.WHOIS_FETCH` / `env.WHOIS_TCP` (`whoisStandIns()` in test/lib.mjs). Real-world check: `node test/live.mjs registries` (real registries) and `node test/live.mjs site` (live xkey.co.uk APIs), run by `.github/workflows/live-check.yml` on pushes, after deploys to main and weekly.
+
 ## Layout
 - `src/` – XKey pages (`content.js`), shell/styles (`site.js`), routing + APIs (`index.js`), browser tools (`tools-client.js`, served as /assets/tools.js), page parser (`page-parse.js`), OG image (`og.js`).
 - `engine/` – SEO checker engine **shared with icework.co.uk** (repo joeinblackpool/ICEWORK, folder `src/`). `src/page-parse.js` is also copied to ICEWORK `src/` (it powers the competitor topic gap there). Keep the two copies identical: change it here, then copy the same files into ICEWORK `src/` and run its tests (`node test/check.mjs`, `node test/checker-unit.mjs`).

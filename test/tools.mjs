@@ -5,7 +5,8 @@
 // fails on: a browser error (e.g. a script crashing on load), a missing/empty result, or a result
 // without the expected text. Checks run on xkey.co.uk itself, which the Worker handles
 // in-process, so no internet is needed.
-import { need, serve, blData } from "./lib.mjs";
+import { need, serve, blData, whoisStandIns } from "./lib.mjs";
+import { whoisApi, whoisDate, parseWhois } from "../src/whois.js";
 import { backlinksApi, authorityApi, crc32 } from "../src/backlinks.js";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
@@ -18,7 +19,7 @@ const only = process.argv[2] ? new RegExp(process.argv[2], "i") : null;
 // 0) Backlink lookups straight against the index files: format 2 (all domains) and the older
 //    format 1 (.uk only), which the site must keep reading until a format-2 release is published.
 let apiFailed = 0;
-if (!only || only.test("backlink")) {
+if (!only || only.test("backlink") || only.test("whois")) {
   const bl = async (dir, d, vs) => (await backlinksApi({ BL_DATA: blData(dir) }, { waitUntil() {} }, new URLSearchParams(vs ? { d, vs } : { d }))).body;
   const da = async (dir, d) => (await authorityApi({ BL_DATA: blData(dir) }, { waitUntil() {} }, new URLSearchParams({ d }))).body;
   const checks = [
@@ -33,6 +34,15 @@ if (!only || only.test("backlink")) {
     ["authority: more than 10 refused", async () => /Up to 10/.test((await da("backlinks", Array.from({ length: 11 }, (_, i) => `s${i}.com`).join(","))).error)],
     ["authority: falls back to link strength without ranks", async () => { const r = await da("backlinks-v1", "smithplumbing.co.uk example.com"); return !r.ranks && r.results[0].authority === r.results[0].strength && r.results[0].authority > 0 && /\.uk/.test(r.results[1].error); }],
   ];
+  const wh = async (d) => (await whoisApi(whoisStandIns(), { waitUntil() {} }, new URLSearchParams({ d }))).body;
+  checks.push(
+    ["whois: RDAP .com and .co.uk, nested registrar, not registered", async () => { const [e, s, n] = (await wh("https://www.example.com/x,smithplumbing.co.uk,nothing-here.co.uk")).results; return e.registered && e.created === "1995-08-14" && e.expires === "2027-08-13" && e.dnssec === true && /Assigned Numbers/.test(e.registrar) && e.nameservers[0] === "a.iana-servers.net" && s.registrar === "Tucows Inc" && s.created === "2009-03-02" && n.registered === false && !e.raw; }],
+    ["whois: WHOIS fallback (.ie dates, .de without dates, free .ie)", async () => { const [i, d, f] = (await wh("smith.ie,beispiel.de,free.ie")).results; return i.source === "whois" && i.created === "2001-03-12" && i.expires === "2027-03-12" && i.registrar === "Blacknight Solutions" && d.registered && !d.created && d.nameservers[0] === "ns1.beispiel.de" && f.registered === false; }],
+    ["whois: raw WHOIS text only for single lookups", async () => /Blacknight/.test((await wh("smith.ie")).results[0].raw)],
+    ["whois: ending without a registry server", async () => /isn't published/.test((await wh("thing.zz")).results[0].error)],
+    ["whois: more than 10 refused", async () => /Up to 10/.test((await wh(Array.from({ length: 11 }, (_, i) => `s${i}.com`).join(","))).error)],
+    ["whois: date formats", () => whoisDate("12-Mar-2001") === "2001-03-12" && whoisDate("2001.03.12 10:00:00") === "2001-03-12" && whoisDate("12/03/2001") === "2001-03-12" && whoisDate("20010312") === "2001-03-12" && whoisDate("before Aug-1996") === null && parseWhois("Registered on: 05-Jun-1996\n").created === "1996-06-05"],
+  );
   for (let [name, fn] of checks) {
     let ok = false; try { ok = await fn(); } catch (e) { name += " – " + e.message; }
     console.log(`${ok ? " ok " : "FAIL"}  ${name}`);
@@ -45,7 +55,7 @@ const esbuild = await need("esbuild");
 const outfile = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "xkey-build-")), "worker.mjs");
 await (esbuild.build || esbuild.default.build)({
   entryPoints: [path.join(here, "../src/index.js")], bundle: true, format: "esm", platform: "neutral",
-  target: "es2022", keepNames: true, outfile, logLevel: "error", mainFields: ["module", "main"],
+  target: "es2022", keepNames: true, outfile, external: ["cloudflare:*"], logLevel: "error", mainFields: ["module", "main"],
 });
 const site = await serve(8790, outfile);
 const { chromium } = await need("playwright");
@@ -82,6 +92,11 @@ const S = [
   { name: "Backlink checker – opened from a link", path: "/backlink-checker?d=rival.co.uk", expect: ["#bl-out", /rival\.co\.uk[\s\S]*4[\s\S]*websites link to it/] },
   { name: "Domain authority checker", path: "/domain-authority-checker", fill: [["da-urls", "smithplumbing.co.uk\nhttps://www.wikipedia.org/\nnothing.co.uk"]], click: "#da-form button[type=submit]", expect: ["#da-out", /smithplumbing\.co\.uk[\s\S]*33[\s\S]*#5[\s\S]*wikipedia\.org[\s\S]*100[\s\S]*#1[\s\S]*No links found[\s\S]*Download CSV/] },
   { name: "Domain authority checker – 25 sites in batches", path: "/domain-authority-checker", fill: [["da-urls", Array.from({ length: 24 }, (_, i) => `site${i}.co.uk`).concat("bbc.co.uk").join("\n")]], click: "#da-form button[type=submit]", expect: ["#da-out", /bbc\.co\.uk[\s\S]*#2[\s\S]*Sort by authority/] },
+  { name: "Domain age checker", path: "/domain-age-checker", fill: [["dg-urls", "example.com\nsmithplumbing.co.uk\nnothing-here.co.uk\nsoon.co.uk\nbeispiel.de"]], click: "#dg-form button[type=submit]", expect: ["#dg-out", /example\.com[\s\S]*\d+ years[\s\S]*14 Aug 1995[\s\S]*smithplumbing\.co\.uk[\s\S]*Tucows[\s\S]*Not registered[\s\S]*\d+ days left[\s\S]*beispiel\.de[\s\S]*Not published[\s\S]*Download CSV/] },
+  { name: "Domain age checker – 25 in batches", path: "/domain-age-checker", fill: [["dg-urls", Array.from({ length: 24 }, (_, i) => `free${i}.co.uk`).concat("example.com").join("\n")]], click: "#dg-form button[type=submit]", expect: ["#dg-out", /example\.com[\s\S]*Oldest first/] },
+  { name: "WHOIS lookup", path: "/whois-lookup", fill: [["wh-d", "https://www.example.com/page"]], click: "#wh-form button[type=submit]", expect: ["#wh-out", /example\.com[\s\S]*\d+ years[\s\S]*Assigned Numbers[\s\S]*a\.iana-servers\.net[\s\S]*client transfer prohibited[\s\S]*Signed/] },
+  { name: "WHOIS lookup – WHOIS fallback, opened from a link", path: "/whois-lookup?d=smith.ie", expect: ["#wh-out", /smith\.ie[\s\S]*Blacknight[\s\S]*Registry WHOIS record[\s\S]*whois\.weare\.ie/] },
+  { name: "WHOIS lookup – not registered", path: "/whois-lookup", fill: [["wh-d", "nothing-here.co.uk"]], click: "#wh-form button[type=submit]", expect: ["#wh-out", /isn't registered/] },
   { name: "SEO score badge", path: "/seo-badge", fill: [["bd-site", "xkey.co.uk"]], expect: ["#bd-code", /badge\.svg\?site=xkey\.co\.uk/] },
 ];
 

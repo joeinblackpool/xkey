@@ -49,7 +49,7 @@ export async function serve(port = 8789, workerPath = "../src/index.js") {
   }) }) };
   // Backlink index stand-in: the files build.py publishes (format 2), from test/fixtures/backlinks.
   const BL_DATA = blData("backlinks");
-  const env = { STATE, AI, BL_DATA };
+  const env = { STATE, AI, BL_DATA, ...whoisStandIns() };
   const worker = (await import(new URL(workerPath, import.meta.url).href)).default;
   const server = http.createServer(async (req, res) => {
     const chunks = []; for await (const c of req) chunks.push(c);
@@ -70,4 +70,31 @@ export function blData(dir) {
   const base = new URL(`./fixtures/${dir}/`, import.meta.url);
   const m = JSON.parse(fs.readFileSync(new URL("manifest.json", base), "utf8"));
   return { manifest: () => m, file: (name, r) => { const b = fs.readFileSync(new URL(name, base)); return new Uint8Array(r ? b.subarray(r[0], r[1] + 1) : b); } };
+}
+
+/** Stand-ins for the domain registries (see src/whois.js): RDAP over HTTPS for .com and .uk,
+ *  WHOIS on port 43 for .de and .ie. `soon.co.uk` always expires in 20 days. */
+export function whoisStandIns() {
+  const day = (n) => new Date(Date.now() + n * 86_400_000).toISOString();
+  const rdap = {
+    "example.com": { ldhName: "EXAMPLE.COM", status: ["client delete prohibited", "client transfer prohibited"], events: [{ eventAction: "registration", eventDate: "1995-08-14T04:00:00Z" }, { eventAction: "expiration", eventDate: "2027-08-13T04:00:00Z" }, { eventAction: "last changed", eventDate: "2026-08-14T07:01:39Z" }],
+      entities: [{ roles: ["registrar"], publicIds: [{ type: "IANA Registrar ID", identifier: "376" }], vcardArray: ["vcard", [["version", {}, "text", "4.0"], ["fn", {}, "text", "RESERVED-Internet Assigned Numbers Authority"]]] }],
+      nameservers: [{ ldhName: "A.IANA-SERVERS.NET" }, { ldhName: "B.IANA-SERVERS.NET" }], secureDNS: { delegationSigned: true } },
+    "smithplumbing.co.uk": { events: [{ eventAction: "registration", eventDate: "2009-03-02T00:00:00Z" }, { eventAction: "expiration", eventDate: "2027-03-02T00:00:00Z" }],
+      entities: [{ roles: ["registrant"], entities: [{ roles: ["registrar"], vcardArray: ["vcard", [["fn", {}, "text", "Tucows Inc"]]] }] }], nameservers: [{ ldhName: "ns1.example-host.co.uk" }], status: ["active"] },
+    "soon.co.uk": { events: [{ eventAction: "registration", eventDate: "2024-01-10T00:00:00Z" }, { eventAction: "expiration", eventDate: day(20) }], entities: [{ roles: ["registrar"], vcardArray: ["vcard", [["fn", {}, "text", "123 Reg"]]] }] },
+  };
+  const WHOIS_FETCH = async (url) => {
+    if (url === "https://data.iana.org/rdap/dns.json") return Response.json({ services: [[["com", "net"], ["https://rdap.verisign.com/com/v1/"]], [["uk"], ["https://rdap.nominet.uk/uk/"]]] });
+    const d = url.split("/domain/")[1];
+    return rdap[d] ? new Response(JSON.stringify(rdap[d]), { headers: { "content-type": "application/rdap+json" } }) : new Response("{}", { status: 404 });
+  };
+  const servers = { de: "whois.denic.de", ie: "whois.weare.ie" };
+  const WHOIS_TCP = async (host, q) => {
+    if (host === "whois.iana.org") return servers[q] ? `domain: ${q.toUpperCase()}\nwhois: ${servers[q]}\n` : `domain: ${q.toUpperCase()}\n`;
+    if (host === "whois.denic.de") return q.endsWith("beispiel.de") ? "Domain: beispiel.de\nNserver: ns1.beispiel.de\nStatus: connect\nChanged: 2020-01-01T10:00:00+01:00\n" : "Domain: x.de\nStatus: free\n";
+    if (host === "whois.weare.ie") return q === "smith.ie" ? "Domain Name: smith.ie\nRegistrar: Blacknight Solutions\nCreation Date: 12-March-2001\nRegistry Expiry Date: 2027-03-12T00:00:00Z\nName Server: ns1.blacknight.com\n" : "% No entries found for the selected source(s).\n";
+    throw new Error("unexpected whois server " + host);
+  };
+  return { WHOIS_FETCH, WHOIS_TCP };
 }
