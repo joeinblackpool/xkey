@@ -5,7 +5,7 @@
 // Run by .github/workflows/live-check.yml. Exits 1 if anything looks wrong.
 import net from "node:net";
 import { whoisApi } from "../src/whois.js";
-import { propagationApi } from "../src/propagation.js";
+import { propagationApi, viaDoh } from "../src/propagation.js";
 import { ptrApi } from "../src/ptr.js";
 
 const fails = [];
@@ -51,6 +51,9 @@ if (process.argv.includes("dns")) {
     const ok = r.resolvers.filter((x) => x.ok);
     check(`propagation: ${d} ${t} – most services answer and agree`, ok.length >= 7 && ok.filter((x) => x.match).length >= ok.length - 2, `${ok.length} answered, ${ok.filter((x) => x.match).length} same`);
     if (t !== "CNAME") check(`propagation: ${d} – own name server answers`, !!(r.authority && r.authority.ok), r.authority ? r.authority.label + " " + (r.authority.error || "") : "none");
+  }
+  if (process.argv.includes("probe")) for (const u of ["https://dns.quad9.net/dns-query", "https://dns11.quad9.net/dns-query", "https://dns.mullvad.net/dns-query", "https://private.canadianshield.cira.ca/dns-query", "https://dns.nextdns.io/dns-query", "https://dns.switch.ch/dns-query", "https://doh.ffmuc.net/dns-query", "https://dns.digitale-gesellschaft.ch/dns-query", "https://doh.libredns.gr/dns-query", "https://dns.twnic.tw/dns-query", "https://public.dns.iij.jp/dns-query", "https://doh.pub/dns-query", "https://dns.cira.ca/dns-query", "https://doh.cleanbrowsing.org/doh/security-filter/", "https://dns.bebasid.com/dns-query", "https://dns.njal.la/dns-query", "https://dns.aa.net.uk/dns-query", "https://anycast.dns.nextdns.io/dns-query", "https://dns.decloudus.com/dns-query", "https://doh.opendns.com/dns-query"]) {
+    const t0 = Date.now(); try { const r = await viaDoh({}, u, "bbc.co.uk", "A"); console.log("PROBE ok  ", u, r.answers.length, Date.now() - t0 + "ms"); } catch (e) { console.log("PROBE fail", u, e.message); }
   }
   const p = (await ptrApi({}, new URLSearchParams({ q: "8.8.8.8 2001:4860:4860::8888 1.1.1.1" }))).body.results;
   console.log(JSON.stringify(p));

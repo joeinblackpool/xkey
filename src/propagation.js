@@ -59,7 +59,7 @@ export function decodeAnswers(buf) {
 }
 
 const b64url = (u8) => btoa(String.fromCharCode(...u8)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-async function viaDoh(env, url, name, type) {
+export async function viaDoh(env, url, name, type) {
   const f = env.DOH_FETCH || fetch, ac = new AbortController(), t = setTimeout(() => ac.abort(), 4000);
   try {
     const r = await f(`${url}?dns=${b64url(encodeQuery(name, type))}`, { headers: { accept: "application/dns-message" }, signal: ac.signal });

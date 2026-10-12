@@ -20,7 +20,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: node test/live.mjs registries dns
+      - run: node test/live.mjs registries dns probe
   site:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
