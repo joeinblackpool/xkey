@@ -13,6 +13,7 @@ const TOOLS = [
   ["/domain-authority-checker", "Domain authority checker", "Authority scores for up to 100 websites at once, with links and global rank."],
   ["/redirect-checker", "Redirect checker", "Follow any address hop by hop: 301s, 302s, chains, loops and meta refreshes."],
   ["/http-header-checker", "HTTP header checker", "Every response header for any address, with what each one means for SEO."],
+  ["/website-hosting-checker", "Website hosting checker", "Who hosts a website? The hosting company, IP address, CDN and server location."],
   ["/website-technology-checker", "Website technology checker", "What is a site built with? CMS, theme, plugins, analytics, hosting and email."],
   ["/dns-lookup", "DNS lookup", "A, MX, TXT, NS and other records, plus SPF and DMARC email checks."],
   ["/domain-age-checker", "Domain age checker", "How old is a website? Registration and expiry dates for up to 100 domains."],
@@ -248,6 +249,25 @@ export const PAGES = [
 <h2>What it can't tell you</h2>
 <ul><li><strong>What visitors in other countries get.</strong> We visit from Cloudflare's network; sites can send different headers by location, cookie or login.</li><li><strong>Request headers.</strong> This shows what the server sends back, not what your browser sends.</li><li><strong>Sites that block checkers.</strong> A firewall may answer us with a 403 even when the site works in your browser.</li></ul>`,
     faqs: [["Is the HTTP header checker free?", "Yes. No sign-up, no email and no subscription, with only a fair-use limit to stop bots."], ["How do I see HTTP headers in my browser?", "Open developer tools (F12), go to the Network tab, reload the page and click the first request. This tool shows the same thing without the setup, and follows redirects for you."], ["Why is my page not indexed when the HTML has no noindex?", "Check the X-Robots-Tag header here. Some servers, plugins and CDNs add noindex in the header, where it's invisible in the page source."]],
+  },
+  {
+    path: "/website-hosting-checker", crumb: "Website hosting checker", parent: ["/seo-tools", "SEO tools"], title: "Website Hosting Checker | Who Is Hosting This Site?",
+    desc: "Free website hosting checker: find out who hosts any website, its IP address and network owner, the country and whether a CDN like Cloudflare sits in front.",
+    h1: "Who is hosting this website?", eyebrow: "Any website · Free · No sign-up", app: "XKey website hosting checker", form: "hosting",
+    lead: "Type a web address to find the company that hosts it, the server's IP address and where that address is registered, and whether a CDN hides the real host.",
+    sections: `<h2>What the hosting checker shows</h2>
+<div class="grid">
+<div class="card"><p class="ct">Hosting company</p><p>The platform or host behind the site: Shopify, Wix, WP Engine, Amazon, OVH, IONOS, a UK host and so on.</p></div>
+<div class="card"><p class="ct">IP addresses</p><p>Every IPv4 and IPv6 address, who owns each network, its address range and the country it's registered in.</p></div>
+<div class="card"><p class="ct">CDN and reverse DNS</p><p>Whether Cloudflare or another CDN sits in front, and the server's own name from reverse DNS, which often names the host.</p></div>
+</div>
+<h2>Why find out who hosts a website?</h2>
+<ul><li><strong>Moving a site.</strong> Lost track of where your own site lives? Find the host before your renewal or before you change anything.</li><li><strong>Reporting abuse.</strong> A copy of your content, a scam page or spam: the host is who to contact, through their abuse address.</li><li><strong>Checking a supplier.</strong> See whether a web designer hosts sites themselves or on a big platform, and whether the server is in the UK.</li><li><strong>Speed.</strong> A server on the other side of the world, with no CDN, makes every first visit slower for UK customers.</li></ul>
+<h2>Does hosting affect SEO?</h2>
+<p>Indirectly. Google doesn't rank sites higher for a particular host, but a slow or unreliable server hurts: pages load slower, Google crawls less when the server struggles, and downtime can drop pages from results. Server location matters far less than it used to, especially with a CDN. Test real speed with the <a href="/page-speed-checker">page speed checker</a>, and see the whole set-up with the <a href="/website-technology-checker">website technology checker</a>.</p>
+<h2>What it can't tell you</h2>
+<ul><li><strong>The host behind a CDN.</strong> Cloudflare, Fastly and similar services answer for the site, so the IP addresses belong to them. That's what they're designed to do, and we don't try to get around it.</li><li><strong>The exact data centre.</strong> The country is where the IP address is registered, which is usually, but not always, where the server is.</li><li><strong>Resellers.</strong> Many small hosts rent servers from bigger companies, so the network owner may be the company behind your host.</li></ul>`,
+    faqs: [["Is the hosting checker free?", "Yes. No sign-up, no email and no subscription, with only a fair-use limit to stop bots."], ["Why does it say Cloudflare?", "The site uses Cloudflare as a CDN and security layer, so visitors (and we) only ever see Cloudflare's addresses. The real host is hidden on purpose; the site owner can see it in their Cloudflare account."], ["How do I find who hosts my email?", "Email can be hosted somewhere else. The DNS lookup shows the MX records, and the website technology checker names the email provider."], ["Can I find other sites on the same server?", "Not with this tool. Many hosts put thousands of sites on one address, and a reliable list needs a full scan of the internet."]],
   },
   {
     path: "/website-technology-checker", crumb: "Website technology checker", parent: ["/seo-tools", "SEO tools"], title: "Website Technology Checker | What's This Site Built With?",

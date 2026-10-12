@@ -12,6 +12,7 @@ import { extractLinks, linkStatus, linksCheckApi } from "../src/linkcheck.js";
 import { headerNotes } from "../src/headers.js";
 import { dnsApi, dnsName } from "../src/dns.js";
 import { techApi, detectTech } from "../src/tech.js";
+import { hostingApi, inCidr, parseIpRdap } from "../src/hosting.js";
 import { backlinksApi, authorityApi, crc32 } from "../src/backlinks.js";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
@@ -83,6 +84,7 @@ if (!only || only.test("backlink") || only.test("whois") || only.test("redirect"
     "https://smithplumbing.co.uk/": [301, "https://www.smithplumbing.co.uk/"],
     "https://www.smithplumbing.co.uk/": [200, wpPage, { server: "nginx/1.24.0", "x-powered-by": "PHP/8.2.10", "set-cookie": "woocommerce_items_in_cart=0" }],
     "https://shop.example.com/": [200, `<html><head><script>Shopify.theme = {"name":"Dawn","id":1};</script><script src="//cdn.shopify.com/s/files/x.js"></script><script src="https://consent.cookiebot.com/uc.js"></script><script async src="https://www.googletagmanager.com/gtag/js?id=G-ABC123"></script></head><body><div id="___gatsby"></div></body></html>`, { server: "cloudflare", "cf-ray": "1-LHR", "x-shopid": "1" }],
+    "https://xkey.co.uk/": [200, "<html><head><title>x</title></head></html>", { server: "cloudflare", "cf-ray": "3-LHR" }],
     "https://blocked.co.uk/": [403, "<html>Access denied</html>", { server: "cloudflare", "cf-ray": "2-LHR" }],
   };
   const techFetch = async (u) => { const [st, body, h = {}] = techWeb[u] || [404, ""]; return st >= 300 && st < 400 ? new Response(null, { status: st, headers: { location: body } }) : new Response(body, { status: st, headers: { "content-type": "text/html; charset=utf-8", ...h } }); };
@@ -95,6 +97,11 @@ if (!only || only.test("backlink") || only.test("whois") || only.test("redirect"
     ["tech: Shopify with theme, consent banner and CDN; no duplicate hosting or React", async () => { const r = await tq("https://shop.example.com/"); const n = names(r);
       return /shop:Shopify/.test(n) && /theme:Dawn \(Shopify theme\)/.test(n) && /consent:Cookiebot/.test(n) && /cdn:Cloudflare/.test(n) && /analytics:Google Analytics 4/.test(n) && /js:Gatsby/.test(n) && !/Shopify hosting|js:React/.test(n) && !r.notes.some((x) => /cookie banner|No analytics/.test(x.text)); }],
     ["tech: blocked site still shows hosting; bad input", async () => { const r = await tq("blocked.co.uk"); const bad = (await techApi({}, new URLSearchParams({ url: "http://localhost/" }), techFetch)); return r.status === 403 && /bot protection/.test(r.notes[0].text) && /cdn:Cloudflare/.test(names(r)) && bad.status === 400; }],
+    ["hosting: owner from RDAP (IPv4 and nested IPv6), reverse DNS, country", async () => { const r = (await hostingApi({ DNS_FETCH: dnsStandIn(), ...whoisStandIns() }, new URLSearchParams({ d: "https://smithplumbing.co.uk/contact" }), techFetch)).body; const [a, b] = r.ips;
+      return r.exists && r.provider === "Krystal Hosting Ltd" && a.ip === "192.0.2.10" && a.ptr === "server12.krystal.uk" && a.country === "GB" && a.network === "KRYSTAL-UK" && b.version === 6 && b.org === "Krystal Hosting Ltd" && !r.notes.some((n) => /IPv6/.test(n.text)); }],
+    ["hosting: Cloudflare hides the host; missing domain; bad input", async () => { const env = { DNS_FETCH: dnsStandIn(), ...whoisStandIns() }; const r = (await hostingApi(env, new URLSearchParams({ d: "xkey.co.uk" }), techFetch)).body; const n = (await hostingApi(env, new URLSearchParams({ d: "nothing-here.co.uk" }), techFetch)).body; const bad = await hostingApi(env, new URLSearchParams({ d: "not a site" }), techFetch);
+      return r.provider === null && /behind Cloudflare/.test(r.how) && r.ips[0].org === "Cloudflare, Inc." && n.exists === false && bad.status === 400; }],
+    ["hosting: CIDR matching and RDAP parsing", () => inCidr("192.0.2.10", "192.0.0.0/8") && !inCidr("193.0.2.10", "192.0.0.0/8") && inCidr("2001:db8::10", "2001:db8::/32") && !inCidr("2001:db9::1", "2001:db8::/32") && !inCidr("192.0.2.1", "2001:db8::/32") && parseIpRdap({ name: "N", entities: [{ roles: ["technical"], vcardArray: ["vcard", [["fn", {}, "text", "T Ltd"]]] }] }).org === "T Ltd"],
     ["tech: no WordPress plugins without WordPress", () => { const t = detectTech('<div class="wpcf7 wp-block-group"></div>'); return !t.length; }],
   );
   for (let [name, fn] of checks) {
@@ -151,6 +158,8 @@ const S = [
   { name: "Domain authority checker – 25 sites in batches", path: "/domain-authority-checker", fill: [["da-urls", Array.from({ length: 24 }, (_, i) => `site${i}.co.uk`).concat("bbc.co.uk").join("\n")]], click: "#da-form button[type=submit]", expect: ["#da-out", /bbc\.co\.uk[\s\S]*#2[\s\S]*Sort by authority/] },
   { name: "Broken link checker – whole site", path: "/broken-link-checker", fill: [["lk-url", "xkey.co.uk"]], select: [["lk-max", "50"], ["lk-ext", "0"]], click: "#lk-form button[type=submit]", expect: ["#lk-out", /Finished\. Crawled 50 pages[\s\S]*No broken links found/], timeout: 120000 },
   { name: "DNS lookup", path: "/dns-lookup", fill: [["dn-d", "smithplumbing.co.uk"]], click: "#dn-form button[type=submit]", expect: ["#dn-out", /smithplumbing\.co\.uk[\s\S]*DNSSEC signed[\s\S]*SPF is set up[\s\S]*MX[\s\S]*10 mail\.smithplumbing\.co\.uk[\s\S]*_dmarc\.smithplumbing\.co\.uk[\s\S]*v=DMARC1/] },
+  { name: "Website hosting checker", path: "/website-hosting-checker", fill: [["ho-d", "xkey.co.uk"]], click: "#ho-form button[type=submit]", expect: ["#ho-out", /Hosted by Cloudflare[\s\S]*192\.0\.2\.30[\s\S]*CLOUDFLARENET/] },
+  { name: "Website hosting checker – opened from a link", path: "/website-hosting-checker?d=xkey.co.uk", expect: ["#ho-out", /192\.0\.2\.30/] },
   { name: "Website technology checker", path: "/website-technology-checker", fill: [["tc-url", "xkey.co.uk"]], click: "#tc-form button[type=submit]", expect: ["#tc-out", /technolog[\s\S]*Email provider[\s\S]*Google Workspace[\s\S]*DNS provider[\s\S]*Cloudflare[\s\S]*Google Search Console/] },
   { name: "Website technology checker – opened from a link", path: "/website-technology-checker?url=xkey.co.uk", expect: ["#tc-out", /Cloudflare/] },
   { name: "DNS lookup – problems, opened from a link", path: "/dns-lookup?d=badmail.co.uk", expect: ["#dn-out", /www\.badmail\.co\.uk doesn't resolve[\s\S]*2 SPF records/] },

@@ -40,6 +40,9 @@ Free SEO & AI search checker for UK businesses, made by IceWork (icework.co.uk).
 ## Website technology checker (/website-technology-checker)
 - `src/tech.js`, `GET /api/tech?url=` – fetches one page (≤5 redirects, browser user agent) and matches its HTML, headers and cookies against the `SIGNS` list (CMS/builder, shop, theme, page builder, SEO and WordPress plugins, JS frameworks, analytics, ads pixels, cookie banner, chat, reviews, booking, payments, fonts, CDN/host, server, language); MX/NS/TXT from DNS (`query` in dns.js) give email provider, DNS host, SPF senders and verified accounts. Lists only what leaves a trace. Add a technology by adding one line to `SIGNS` (and a test in test/tools.mjs if it's tricky).
 
+## Website hosting checker (/website-hosting-checker)
+- `src/hosting.js`, `GET /api/hosting?d=` – A/AAAA (≤2 IPv4 + 1 IPv6), each IP's network owner via RDAP (IANA ipv4/ipv6 bootstrap, longest-prefix match), reverse DNS (PTR), plus `getPage` + `detectTech` from tech.js for the platform/CDN. Hosted builders (Shopify, Wix …) and hosts with their own headers (WP Engine, Vercel …) win; behind a CDN (Cloudflare …) the real host is reported as hidden, never guessed. Tests: `ipRdap` in `whoisStandIns()`, PTR in `dnsStandIn()`.
+
 ## Layout
 - `src/` – XKey pages (`content.js`), shell/styles (`site.js`), routing + APIs (`index.js`), browser tools (`tools-client.js`, served as /assets/tools.js), page parser (`page-parse.js`), OG image (`og.js`).
 - `engine/` – SEO checker engine **shared with icework.co.uk** (repo joeinblackpool/ICEWORK, folder `src/`). `src/page-parse.js` is also copied to ICEWORK `src/` (it powers the competitor topic gap there). Keep the two copies identical: change it here, then copy the same files into ICEWORK `src/` and run its tests (`node test/check.mjs`, `node test/checker-unit.mjs`).

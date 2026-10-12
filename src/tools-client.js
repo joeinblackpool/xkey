@@ -564,6 +564,30 @@ export function toolsApp() {
     });
   }
 
+  // ---- website hosting checker (/api/hosting)
+  var ho = $("ho-form");
+  if (ho) {
+    var hoq = (location.search.match(/[?&]d=([^&]+)/) || [])[1];
+    if (hoq && !$("ho-d").value.trim()) { try { $("ho-d").value = decodeURIComponent(hoq.replace(/\+/g, " ")); } catch (e) {} setTimeout(function () { ho.requestSubmit ? ho.requestSubmit() : ho.dispatchEvent(new Event("submit", { cancelable: true })); }, 0); }
+    ho.addEventListener("submit", function (ev) {
+      ev.preventDefault();
+      var d = $("ho-d").value.trim(), out = $("ho-out");
+      if (!d) { $("ho-d").focus(); return; }
+      out.innerHTML = "<p>Finding the host…</p>";
+      fetch("/api/hosting?d=" + encodeURIComponent(d)).then(function (r) { return r.json(); }).then(function (j) {
+        if (j.error) { out.innerHTML = '<p class="s-fail">' + esc(j.error) + "</p>"; return; }
+        var lc = { fail: "#cf222e", warn: "#9a6700", ok: "#1a7f37", info: "inherit" }, icon = { fail: "✗", warn: "!", ok: "✓", info: "•" };
+        var h = '<div class="card" style="margin:16px 0"><p class="ct" style="overflow-wrap:anywhere">' + esc(j.name) + "</p>";
+        if (j.exists) h += '<p style="font-size:22px;margin:8px 0;overflow-wrap:anywhere"><b>' + (j.provider ? "Hosted by " + esc(j.provider) : "Host hidden") + "</b></p><p>" + esc(j.how) + "</p>" + (j.cdn.length ? '<p class="small">CDN and hosting signs: ' + esc(j.cdn.join(", ")) + "</p>" : "");
+        if (j.notes.length) h += '<ul style="list-style:none;padding:0;margin:8px 0">' + j.notes.map(function (n) { return '<li style="margin:6px 0;color:' + lc[n.level] + '"><b>' + icon[n.level] + "</b> " + esc(n.text) + "</li>"; }).join("") + "</ul>";
+        h += "</div>";
+        if (j.ips.length) h += '<div class="tablewrap"><table><thead><tr><th>IP address</th><th>Network owner</th><th>Country</th><th>Reverse DNS</th></tr></thead><tbody>' + j.ips.map(function (i) { return '<tr><td style="overflow-wrap:anywhere;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px">' + esc(i.ip) + '</td><td style="overflow-wrap:anywhere">' + esc(i.org || "–") + (i.network ? '<br><span class="small">' + esc(i.network) + (i.range ? " · " + esc(i.range) : "") + "</span>" : "") + "</td><td>" + esc(i.country || "–") + '</td><td style="overflow-wrap:anywhere">' + esc(i.ptr || "–") + "</td></tr>"; }).join("") + "</tbody></table></div>";
+        if (j.exists) h += '<p class="small">IP owners from the regional internet registries (RIPE, ARIN and others). See everything the site runs on with the <a href="/website-technology-checker?url=' + encodeURIComponent(j.name) + '">technology checker</a>, or its <a href="/dns-lookup?d=' + encodeURIComponent(j.name) + '">DNS records</a>.</p>';
+        out.innerHTML = h;
+      }).catch(function () { out.innerHTML = '<p class="s-fail">Couldn\'t check that site – please try again.</p>'; });
+    });
+  }
+
   // ---- website technology checker (/api/tech)
   var tc = $("tc-form");
   if (tc) {

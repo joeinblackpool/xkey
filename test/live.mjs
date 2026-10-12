@@ -58,6 +58,8 @@ if (process.argv.includes("site")) {
   [s, j] = await api("/api/tech?url=wordpress.org");
   const tk = (j.tech || []).map((t) => t.cat + ":" + t.name);
   check("tech: wordpress.org is WordPress, with DNS details", s === 200 && tk.includes("cms:WordPress") && tk.some((t) => t.startsWith("dns:")), `${s} ${j.error || ""} ${tk.join(", ")}`);
+  [s, j] = await api("/api/hosting?d=bbc.co.uk");
+  check("hosting: bbc.co.uk has IPs with owners", s === 200 && j.exists && (j.ips || []).length > 0 && j.ips.some((i) => i.org || i.network), `${s} ${j.error || ""} ${(j.ips || []).map((i) => i.ip + " " + (i.org || i.network)).join("; ")}`);
   [s, j] = await api("/api/whois?d=bbc.co.uk,github.com,rte.ie,google.de");
   const w = j.results || [];
   for (const r of w) console.log(JSON.stringify(r).slice(0, 300));

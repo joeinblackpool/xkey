@@ -4,7 +4,7 @@
 // Tests pass env.DNS_FETCH(url, init) -> Response.
 
 export const DNS_TYPES = ["A", "AAAA", "CNAME", "MX", "NS", "TXT", "CAA", "SOA"];
-const CODE = { 1: "A", 2: "NS", 5: "CNAME", 6: "SOA", 15: "MX", 16: "TXT", 28: "AAAA", 257: "CAA" };
+const CODE = { 1: "A", 2: "NS", 5: "CNAME", 6: "SOA", 12: "PTR", 15: "MX", 16: "TXT", 28: "AAAA", 257: "CAA" };
 const RESOLVERS = ["https://cloudflare-dns.com/dns-query", "https://dns.google/resolve"];
 
 /** "https://www.Example.co.uk/page" -> "www.example.co.uk" */
