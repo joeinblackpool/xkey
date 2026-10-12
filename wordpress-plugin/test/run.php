@@ -6,6 +6,15 @@
  */
 
 define( 'XKEY_SF_TESTING', true );
+
+// Stand-ins for the two WordPress helpers transforms.php uses (same behaviour as core).
+function wp_strip_all_tags( $text ) {
+	$text = preg_replace( '@<(script|style)[^>]*?>.*?</\\1>@si', '', $text );
+	return trim( strip_tags( $text ) );
+}
+function wp_parse_url( $url, $component = -1 ) {
+	return parse_url( $url, $component );
+}
 require __DIR__ . '/../xkey-seo-fixer/includes/transforms.php';
 
 $failures = 0;
