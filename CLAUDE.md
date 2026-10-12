@@ -23,6 +23,17 @@ Free SEO & AI search checker for UK businesses, made by IceWork (icework.co.uk).
 ## Domain authority checker (/domain-authority-checker)
 - Same index as the backlink checker. `GET /api/authority?d=a.com,b.co.uk` (≤10 sites; the page sends up to 100 in batches). Authority = 100 × (1 − ln(hc_rank) / ln(ranked)), min 1; falls back to link strength when a release has no ranks. Ranks are optional in the build: if the ranks file is missing, the build still runs with every rank 0.
 
+## Domain age checker (/domain-age-checker) and WHOIS lookup (/whois-lookup)
+- `src/whois.js`, `GET /api/whois?d=a.com,b.co.uk` (≤10; the age page sends up to 100 in batches; raw WHOIS text only for single lookups). Registry data via RDAP, base URL per ending from IANA's bootstrap (data.iana.org/rdap/dns.json, cached a day). Endings without RDAP (.de, .eu, .it, .ie …) fall back to WHOIS on port 43 (`cloudflare:sockets`, server from whois.iana.org). Results cached 12 h (not registered: 1 h).
+- Tests use stand-ins `env.WHOIS_FETCH` / `env.WHOIS_TCP` (`whoisStandIns()` in test/lib.mjs). Real-world check: `node test/live.mjs registries` (real registries) and `node test/live.mjs site` (live xkey.co.uk APIs), run by `.github/workflows/live-check.yml` on pushes, after deploys to main and weekly.
+
+## Redirect checker (/redirect-checker)
+- `src/redirects.js`, `GET /api/redirects?u=…&u=…[&agent=mobile]` (≤10; the page sends up to 100 in batches). Follows each hop with `redirect: "manual"` (max 10), re-validating every hop with the engine's `normaliseUrl`, and follows meta refresh (≤10 s) on HTML pages. Shares a 45-subrequest budget per API call. Desktop/mobile browser user agents only (no Googlebot impersonation). Tested in-process against xkey.co.uk's own redirects and a fake web in test/tools.mjs.
+
+## Broken link checker (/broken-link-checker) and HTTP header checker (/http-header-checker)
+- `src/linkcheck.js`: the browser drives a whole-site crawl (≤300 pages, ≤2,500 links). `GET /api/links/page?url=` reads one page (robots.txt respected, token `xkeylinkchecker`, same-site redirects followed) and returns its links and images with anchor text; `GET /api/links/check?u=…` (≤10) tests links (HEAD, GET if HEAD is refused, ≤5 redirects; 401/403/429/999 = "blocked", not broken), cached 1 h (broken 15 min), 45-subrequest budget per call.
+- `src/headers.js`: `GET /api/headers?url=` = `traceRedirects(…, withHeaders)` plus plain-English notes per hop (X-Robots-Tag noindex, Link canonical, charset, compression, Cache-Control, HSTS, server versions).
+
 ## Layout
 - `src/` – XKey pages (`content.js`), shell/styles (`site.js`), routing + APIs (`index.js`), browser tools (`tools-client.js`, served as /assets/tools.js), page parser (`page-parse.js`), OG image (`og.js`).
 - `engine/` – SEO checker engine **shared with icework.co.uk** (repo joeinblackpool/ICEWORK, folder `src/`). `src/page-parse.js` is also copied to ICEWORK `src/` (it powers the competitor topic gap there). Keep the two copies identical: change it here, then copy the same files into ICEWORK `src/` and run its tests (`node test/check.mjs`, `node test/checker-unit.mjs`).

@@ -1,0 +1,36 @@
+# Checks the tools that depend on outside data against the real internet:
+# - registries: src/whois.js against real RDAP and WHOIS servers (on pushes that change it)
+# - site: the live xkey.co.uk backlink, authority and WHOIS APIs (after each deploy to main, weekly, or by hand)
+# Offline tests are in test/all.mjs; this only catches changes in the outside world.
+name: Live check
+on:
+  push:
+    paths: ["src/whois.js", "src/backlinks.js", "test/live.mjs", ".github/workflows/live-check.yml"]
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  registries:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node test/live.mjs registries
+  site:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Wait for Cloudflare to deploy this commit
+        if: github.event_name == 'push'
+        run: sleep 180
+      - run: node test/live.mjs site

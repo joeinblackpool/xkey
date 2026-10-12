@@ -454,6 +454,243 @@ export function toolsApp() {
     draw(); work(); work();
   });
 
+  // ---- whole-site broken link checker (/api/links/page crawls, /api/links/check tests links)
+  var lk = $("lk-form");
+  if (lk) lk.addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var raw = $("lk-url").value.trim(), out = $("lk-out");
+    if (!raw) { $("lk-url").focus(); return; }
+    if (!/^https?:\/\//i.test(raw)) raw = "https://" + raw;
+    var maxPages = +$("lk-max").value, withExt = $("lk-ext").value === "1", MAXL = 2500;
+    var host; try { raw = new URL(raw).href; host = new URL(raw).hostname.replace(/^www\./, ""); } catch (e) { out.innerHTML = '<p class="s-fail">That doesn\'t look like a web address.</p>'; return; }
+    var pageLike = function (u) { return !/\.(jpe?g|png|gif|webp|avif|svg|ico|pdf|zip|docx?|xlsx?|pptx?|mp4|mp3|css|js|xml|txt|json|rss)(\?|$)/i.test(u); };
+    var queue = [raw], queued = {}, pages = [], links = {}, order = [], toCheck = [], activeP = 0, activeC = 0, stopped = false, fatal = "", capped = false;
+    queued[raw] = 1;
+    var stop = $("lk-stop"); stop.style.display = ""; stop.onclick = function () { stopped = true; stop.style.display = "none"; draw(); };
+    var addLink = function (l, page) {
+      var x = links[l.url];
+      if (!x) {
+        if (order.length >= MAXL) { capped = true; return; }
+        x = links[l.url] = { url: l.url, kind: l.kind, internal: l.internal, from: [], r: null }; order.push(l.url);
+        if (l.internal || withExt) toCheck.push(l.url);
+      }
+      if (x.from.length < 50 && !x.from.some(function (f) { return f.page === page; })) x.from.push({ page: page, text: l.text });
+    };
+    var num = function (n) { return Number(n).toLocaleString("en-GB"); };
+    var cell = function (v) { v = String(v == null ? "" : v); if (/^[=+\-@\t\r]/.test(v)) v = "'" + v; return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+    var by = function (v) { return order.map(function (u) { return links[u]; }).filter(function (x) { return x.r && x.r.verdict === v; }); };
+    var rows = function (list, showFinal) {
+      return '<div class="tablewrap"><table><thead><tr><th>' + (showFinal ? "Link → goes to" : "Link") + "</th><th>Status</th><th>Found on</th></tr></thead><tbody>" + list.map(function (x) {
+        var f = x.from[0] || {};
+        return '<tr><td style="overflow-wrap:anywhere"><a href="' + esc(x.url) + '" rel="nofollow noopener" target="_blank">' + esc(x.url) + "</a>" + (showFinal && x.r.final ? '<br><span class="small">→ ' + esc(x.r.final) + "</span>" : "") + '<br><span class="small">' + (x.kind === "image" ? "Image" : x.internal ? "Link to your site" : "Link to another site") + (f.text ? " · “" + esc(f.text) + "”" : "") + "</span></td>" +
+          '<td><b style="color:' + col(x.r.verdict === "redirect", x.r.verdict === "blocked") + '">' + (x.r.status || "–") + "</b>" + (x.r.note ? '<br><span class="small">' + esc(x.r.note) + "</span>" : "") + "</td>" +
+          '<td style="overflow-wrap:anywhere"><a href="' + esc(f.page) + '" rel="nofollow noopener" target="_blank">' + esc((f.page || "").replace(/^https?:\/\/[^\/]+/, "") || "/") + "</a>" + (x.from.length > 1 ? '<br><span class="small">and ' + (x.from.length - 1) + " more page" + (x.from.length > 2 ? "s" : "") + "</span>" : "") + "</td></tr>";
+      }).join("") + "</tbody></table></div>";
+    };
+    var finished = function () { return stopped || ((!queue.length || pages.length >= maxPages) && !activeP && !toCheck.length && !activeC); };
+    var draw = function () {
+      var checked = order.filter(function (u) { return links[u].r; }).length, todo = order.filter(function (u) { var x = links[u]; return x.internal || withExt; }).length;
+      var broken = by("broken"), blocked = by("blocked"), redir = by("redirect"), done = finished();
+      var h = '<p class="small">' + (done ? (stopped ? "Stopped. " : "Finished. ") : "Checking… ") + "Crawled " + num(pages.length) + " page" + (pages.length === 1 ? "" : "s") + " · tested " + num(checked) + " of " + num(todo) + " links and images</p>" + (fatal ? '<p class="s-fail">' + esc(fatal) + "</p>" : "");
+      h += '<div class="card" style="margin:16px 0"><div class="row" style="gap:28px"><div><b style="font-size:30px;color:' + col(!broken.length, false) + '">' + num(broken.length) + '</b><br><span class="small">broken</span></div><div><b style="font-size:30px">' + num(redir.length) + '</b><br><span class="small">redirecting</span></div><div><b style="font-size:30px">' + num(blocked.length) + '</b><br><span class="small">blocked our checker</span></div><div><b style="font-size:30px">' + num(pages.length) + '</b><br><span class="small">pages crawled</span></div></div></div>';
+      if (broken.length) h += "<h3>Broken links and images</h3>" + rows(broken);
+      else if (done && checked) h += '<p><strong style="color:#1a7f37">No broken links found.</strong></p>';
+      if (blocked.length) h += "<details><summary style=\"cursor:pointer\"><strong>" + blocked.length + " link" + (blocked.length === 1 ? "" : "s") + " refused our checker</strong> – check these in your browser</summary>" + rows(blocked) + "</details>";
+      if (redir.length) h += "<details><summary style=\"cursor:pointer\"><strong>" + redir.length + " link" + (redir.length === 1 ? "" : "s") + " redirect</strong> – point them straight at the final address</summary>" + rows(redir, true) + "</details>";
+      if (done && (broken.length || blocked.length || redir.length)) h += '<div class="row"><button type="button" class="btn ghost" id="lk-csv">Download CSV</button></div>';
+      if (done && (capped || pages.length >= maxPages)) h += '<p class="small">Stopped at ' + (capped ? num(MAXL) + " links" : num(maxPages) + " pages") + ". For bigger sites, use the <a href=\"/website-crawler\">website crawler</a>.</p>";
+      out.innerHTML = h;
+      var c = $("lk-csv"); if (c) c.onclick = function () {
+        var all = [["link", "status", "result", "goes_to", "type", "link_text", "found_on"]];
+        broken.concat(blocked, redir).forEach(function (x) { x.from.forEach(function (f) { all.push([x.url, x.r.status, x.r.verdict + (x.r.note ? ": " + x.r.note : ""), x.r.final || "", x.kind === "image" ? "image" : x.internal ? "internal" : "external", f.text, f.page]); }); });
+        var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["﻿" + all.map(function (r) { return r.map(cell).join(","); }).join("\r\n")], { type: "text/csv" })); a.download = "xkey-broken-links-" + host + ".csv"; document.body.appendChild(a); a.click(); a.remove();
+      };
+      if (done) stop.style.display = "none";
+    };
+    var crawl = function () {
+      if (stopped || !queue.length || pages.length + activeP >= maxPages) { if (finished()) draw(); return; }
+      var u = queue.shift(); activeP++;
+      fetch("/api/links/page?url=" + encodeURIComponent(u)).then(function (r) { return r.json(); }).then(function (j) {
+        if (j.error && !j.links) { if (!pages.length) fatal = j.error; return; }
+        pages.push(j);
+        if (j.url !== j.start && links[j.start] && !links[j.start].r && j.status === 200) links[j.start].r = { status: 200, verdict: "redirect", final: j.url };
+        if (j.status === 200 && links[j.url] && !links[j.url].r) { links[j.url].r = { status: 200, verdict: "ok" }; toCheck = toCheck.filter(function (x) { return x !== j.url; }); }
+        (j.links || []).forEach(function (l) {
+          addLink(l, j.url);
+          if (l.internal && l.kind === "link" && pageLike(l.url) && !queued[l.url] && pages.length + queue.length + activeP < maxPages * 2) { queued[l.url] = 1; queue.push(l.url); }
+        });
+      }).catch(function () {}).then(function () { activeP--; draw(); setTimeout(crawl, 500); check(); });
+    };
+    var check = function () {
+      if (stopped || activeC >= 2 || !toCheck.length) { if (finished()) draw(); return; }
+      var part = toCheck.splice(0, 10); activeC++;
+      fetch("/api/links/check?" + part.map(function (x) { return "u=" + encodeURIComponent(x); }).join("&")).then(function (r) { return r.json(); }).then(function (j) {
+        if (j.error) { fatal = j.error; stopped = true; return; }
+        j.results.forEach(function (r) { if (r.verdict === "later") toCheck.push(r.url); else if (links[r.url] && !links[r.url].r) links[r.url].r = r; });
+      }).catch(function () { part.forEach(function (x) { if (links[x] && !links[x].r) links[x].r = { status: 0, verdict: "broken", note: "Couldn't test" }; }); }).then(function () { activeC--; draw(); check(); });
+      check();
+    };
+    out.innerHTML = '<p class="small">Starting…</p>';
+    crawl(); setTimeout(crawl, 250);
+  });
+
+  // ---- HTTP header checker (/api/headers)
+  var hd = $("hd-form");
+  if (hd) {
+    var hdq = (location.search.match(/[?&]url=([^&]+)/) || [])[1];
+    if (hdq && !$("hd-url").value.trim()) { try { $("hd-url").value = decodeURIComponent(hdq.replace(/\+/g, " ")); } catch (e) {} setTimeout(function () { hd.requestSubmit ? hd.requestSubmit() : hd.dispatchEvent(new Event("submit", { cancelable: true })); }, 0); }
+    hd.addEventListener("submit", function (ev) {
+      ev.preventDefault();
+      var u = $("hd-url").value.trim(), out = $("hd-out");
+      if (!u) { $("hd-url").focus(); return; }
+      out.innerHTML = "<p>Fetching headers…</p>";
+      fetch("/api/headers?url=" + encodeURIComponent(u) + ($("hd-mobile").checked ? "&agent=mobile" : "")).then(function (r) { return r.json(); }).then(function (j) {
+        if (j.error) { out.innerHTML = '<p class="s-fail">' + esc(j.error) + "</p>"; return; }
+        var lc = { fail: "#cf222e", warn: "#9a6700", ok: "#1a7f37", info: "inherit" }, icon = { fail: "✗", warn: "!", ok: "✓", info: "•" };
+        out.innerHTML = j.hops.map(function (h, i) {
+          var s = h.status;
+          return '<div class="card" style="margin:16px 0"><p class="ct" style="overflow-wrap:anywhere">' + (j.hops.length > 1 ? "Step " + (i + 1) + ": " : "") + esc(h.url) + "</p>" +
+            '<p><b style="font-size:24px;color:' + col(s >= 200 && s < 300, s >= 300 && s < 400) + '">' + (s || "No response") + "</b> " + esc(h.text) + ' <span class="small">' + h.ms + " ms</span>" + (h.location ? '<br><span style="overflow-wrap:anywhere">→ ' + esc(h.location) + (h.type === "meta" ? " (meta refresh)" : "") + "</span>" : "") + "</p>" +
+            (h.notes && h.notes.length ? '<ul style="list-style:none;padding:0;margin:8px 0">' + h.notes.map(function (n) { return '<li style="margin:4px 0;overflow-wrap:anywhere;color:' + lc[n.level] + '"><b>' + icon[n.level] + "</b> " + esc(n.text) + "</li>"; }).join("") + "</ul>" : "") +
+            (h.headers && h.headers.length ? '<div class="tablewrap"><table><tbody>' + h.headers.map(function (kv) { return '<tr><th scope="row" style="text-align:left;white-space:nowrap;vertical-align:top">' + esc(kv[0]) + '</th><td style="overflow-wrap:anywhere;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px">' + esc(kv[1]) + "</td></tr>"; }).join("") + "</tbody></table></div>" : "") + "</div>";
+        }).join("") + (j.problems.length ? "<h3>Redirect notes</h3><ul>" + j.problems.map(function (p) { return "<li>" + esc(p) + "</li>"; }).join("") + "</ul>" : "") +
+          '<p class="small">Fetched from Cloudflare\'s network as a ' + ($("hd-mobile").checked ? "mobile" : "desktop") + " browser. Header names are shown in lower case, as HTTP/2 sends them.</p>";
+      }).catch(function () { out.innerHTML = '<p class="s-fail">Couldn\'t fetch that address – please try again.</p>'; });
+    });
+  }
+
+  // ---- redirect checker (/api/redirects, up to 100 addresses in batches of 10)
+  var rd = $("rd-form");
+  if (rd) {
+    var rdRun = function () {
+      var seen = {}, list = $("rd-urls").value.split(/\s+/).filter(function (x) { if (!/\./.test(x) || seen[x]) return false; seen[x] = 1; return true; }).slice(0, 100);
+      var out = $("rd-out"); if (!list.length) { out.innerHTML = '<p class="s-warn">Add at least one web address.</p>'; return; }
+      var agent = $("rd-agent").value, res = list.map(function () { return null; }), batches = [], failed = "";
+      for (var b = 0; b < list.length; b += 10) batches.push(b);
+      var stCol = function (s) { return col(s >= 200 && s < 300, s >= 300 && s < 400); };
+      var draw = function () {
+        var done = res.filter(Boolean).length;
+        out.innerHTML = (done < list.length ? '<p class="small">' + done + " of " + list.length + " checked…</p>" : "") + (failed ? '<p class="s-fail">' + esc(failed) + "</p>" : "") + list.map(function (u, i) {
+          var r = res[i];
+          if (!r) return '<div class="card" style="margin:12px 0"><p>' + esc(u) + ' <span class="small">Waiting…</span></p></div>';
+          if (r.error) return '<div class="card" style="margin:12px 0"><p style="overflow-wrap:anywhere"><b>' + esc(r.input) + '</b></p><p class="s-fail">' + esc(r.error) + "</p></div>";
+          var verdict = r.problems.length ? '<span style="color:' + col(false, r.ok) + '">' + (r.ok ? "Works, with " + r.problems.length + " thing" + (r.problems.length === 1 ? "" : "s") + " to fix" : "Problem") + "</span>" : '<span style="color:#1a7f37">' + (r.redirects ? "Good redirect" : "No redirect") + "</span>";
+          return '<details class="card" style="margin:12px 0"' + (list.length <= 4 ? " open" : "") + '><summary style="cursor:pointer;overflow-wrap:anywhere"><b>' + esc(r.start) + "</b> – " + r.redirects + " redirect" + (r.redirects === 1 ? "" : "s") + ', ends <b style="color:' + stCol(r.status) + '">' + (r.status || "no response") + "</b> · " + verdict + "</summary>" +
+            '<ol style="margin:12px 0 0;padding-left:22px">' + r.hops.map(function (h) {
+              return '<li style="margin:6px 0;overflow-wrap:anywhere"><b style="color:' + stCol(h.status) + '">' + (h.status || "–") + "</b> " + esc(h.text) + (h.type === "meta" ? " (meta refresh" + (h.delay ? ", " + h.delay + "s" : "") + ")" : "") + ' <span class="small">' + h.ms + " ms</span><br>" + esc(h.url) + "</li>";
+            }).join("") + "</ol>" +
+            (r.redirects ? '<p style="overflow-wrap:anywhere">Final address: <b>' + esc(r.final) + "</b></p>" : "") +
+            (r.problems.length ? '<ul style="margin:8px 0 0">' + r.problems.map(function (p) { return "<li>" + esc(p) + "</li>"; }).join("") + "</ul>" : "") + "</details>";
+        }).join("") +
+        (done === list.length ? '<div class="row"><button type="button" class="btn ghost" id="rd-csv">Download CSV</button></div><p class="small">Checked as a ' + (agent === "mobile" ? "mobile" : "desktop") + " browser from Cloudflare's network. Sites that block automated visits or redirect by country or with JavaScript may behave differently for you.</p>" : "");
+        var c = $("rd-csv"); if (c) c.onclick = function () {
+          var cell = function (v) { v = String(v == null ? "" : v); if (/^[=+\-@\t\r]/.test(v)) v = "'" + v; return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+          var rows = [["address", "redirects", "final_status", "final_address", "chain", "problems"]].concat(res.map(function (r, i) { return !r ? [list[i], "error"] : r.error ? [r.input, "error", "", "", "", r.error] : [r.start, r.redirects, r.status, r.final, r.hops.map(function (h) { return h.status + " " + h.url; }).join(" > "), r.problems.join(" ")]; }));
+          var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["﻿" + rows.map(function (r) { return r.map(cell).join(","); }).join("\r\n")], { type: "text/csv" })); a.download = "xkey-redirects.csv"; document.body.appendChild(a); a.click(); a.remove();
+        };
+      };
+      var next = 0;
+      var work = function () {
+        if (next >= batches.length) return; var start = batches[next++], part = list.slice(start, start + 10);
+        fetch("/api/redirects?agent=" + agent + part.map(function (x) { return "&u=" + encodeURIComponent(x); }).join("")).then(function (r) { return r.json(); }).then(function (j) {
+          if (j.error) throw new Error(j.error);
+          j.results.forEach(function (r, k) { res[start + k] = r; });
+        }).catch(function (e) {
+          failed = (e && e.message) || "Couldn't check those – please try again.";
+          part.forEach(function (s, k) { res[start + k] = { input: s, error: "Not checked" }; });
+        }).then(function () { draw(); work(); });
+      };
+      draw(); work(); work();
+    };
+    rd.addEventListener("submit", function (ev) { ev.preventDefault(); rdRun(); });
+    $("rd-four").addEventListener("click", function () {
+      var first = ($("rd-urls").value.split(/\s+/).filter(Boolean)[0] || "").replace(/^[a-z]+:\/\//i, "").split(/[\/?#]/)[0].replace(/^www\./i, "").toLowerCase();
+      if (!/\./.test(first)) { $("rd-urls").focus(); $("rd-out").innerHTML = '<p class="s-warn">Type your website address first.</p>'; return; }
+      $("rd-urls").value = ["http://" + first, "http://www." + first, "https://" + first, "https://www." + first].join("\n");
+      rdRun();
+    });
+  }
+
+  // ---- domain age checker + WHOIS lookup (registry data via /api/whois)
+  var ageText = function (iso) {
+    if (!iso) return "";
+    var a = new Date(iso + "T00:00:00Z"), n = new Date(), m = (n.getUTCFullYear() - a.getUTCFullYear()) * 12 + n.getUTCMonth() - a.getUTCMonth() - (n.getUTCDate() < a.getUTCDate() ? 1 : 0);
+    if (m < 0) return ""; var y = Math.floor(m / 12); m = m % 12;
+    return y ? y + " year" + (y === 1 ? "" : "s") + (m ? ", " + m + " month" + (m === 1 ? "" : "s") : "") : m ? m + " month" + (m === 1 ? "" : "s") : "under a month";
+  };
+  var ukDate = function (iso) { if (!iso) return ""; var d = new Date(iso + "T00:00:00Z"); return isNaN(d) ? iso : d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }); };
+  var daysLeft = function (iso) { return iso ? Math.round((new Date(iso + "T00:00:00Z") - Date.now()) / 86400000) : null; };
+  var expiryHtml = function (iso) {
+    if (!iso) return '<span class="small">Not published</span>';
+    var d = daysLeft(iso);
+    return '<span style="color:' + col(d > 60, d > 0) + '">' + esc(ukDate(iso)) + "</span>" + (d <= 60 ? ' <span class="small">(' + (d < 0 ? "expired" : d + " days left") + ")</span>" : "");
+  };
+  var dg = $("dg-form");
+  if (dg) dg.addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var seen = {}, sites = $("dg-urls").value.split(/[\s,]+/).filter(function (x) { x = x.toLowerCase(); if (!/\./.test(x) || seen[x]) return false; seen[x] = 1; return true; }).slice(0, 100);
+    var out = $("dg-out"); if (!sites.length) { out.innerHTML = '<p class="s-warn">Add at least one domain.</p>'; return; }
+    var res = sites.map(function () { return null; }), batches = [], failed = "", sorted = false;
+    for (var b = 0; b < sites.length; b += 10) batches.push(b);
+    var draw = function () {
+      var done = res.filter(Boolean).length, order = sites.map(function (s, i) { return i; });
+      var key = function (i) { return res[i] && res[i].created ? res[i].created : "9999"; };
+      if (sorted) order.sort(function (a, b) { return key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0; });
+      out.innerHTML = (done < sites.length ? '<p class="small">' + done + " of " + sites.length + " checked…</p>" : "") + (failed ? '<p class="s-fail">' + esc(failed) + "</p>" : "") +
+        '<div class="tablewrap"><table><thead><tr><th>Domain</th><th>Age</th><th>Registered</th><th>Expires</th><th>Registrar</th></tr></thead><tbody>' + order.map(function (i) {
+          var r = res[i]; if (!r) return "<tr><td>" + esc(sites[i]) + '</td><td colspan="4" class="small">Waiting…</td></tr>';
+          if (r.error) return '<tr><td style="overflow-wrap:anywhere">' + esc(r.domain || r.input) + '</td><td colspan="4" class="s-fail">' + esc(r.error) + "</td></tr>";
+          if (!r.registered) return '<tr><td style="overflow-wrap:anywhere">' + esc(r.domain) + '</td><td colspan="4"><b style="color:#1a7f37">Not registered</b> <span class="small">– it may be free to buy</span></td></tr>';
+          return '<tr><td style="overflow-wrap:anywhere"><a href="/whois-lookup?d=' + encodeURIComponent(r.domain) + '">' + esc(r.domain) + "</a></td><td><b>" + (r.created ? esc(ageText(r.created)) : '<span class="small">Not published</span>') + "</b></td><td>" + esc(ukDate(r.created)) + "</td><td>" + expiryHtml(r.expires) + '</td><td style="overflow-wrap:anywhere">' + esc(r.registrar) + "</td></tr>";
+        }).join("") + "</tbody></table></div>" +
+        (done === sites.length ? '<div class="row"><button type="button" class="btn ghost" id="dg-csv">Download CSV</button>' + (sites.length > 1 ? '<button type="button" class="btn ghost" id="dg-sort">' + (sorted ? "Original order" : "Oldest first") + "</button>" : "") + "</div>" : "") +
+        '<p class="small">Dates come from each domain\'s registry. Age counts from the start of the current registration. Click a domain for its full WHOIS record.</p>';
+      var c = $("dg-csv"); if (c) c.onclick = function () {
+        var cell = function (v) { v = String(v == null ? "" : v); if (/^[=+\-@\t\r]/.test(v)) v = "'" + v; return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+        var rows = [["domain", "registered", "age", "registered_on", "expires_on", "registrar", "name_servers"]].concat(res.map(function (r, i) { return !r ? [sites[i], "error"] : r.error ? [r.domain || r.input, "error", r.error] : !r.registered ? [r.domain, "no"] : [r.domain, "yes", ageText(r.created), r.created || "", r.expires || "", r.registrar || "", (r.nameservers || []).join(" ")]; }));
+        var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["﻿" + rows.map(function (r) { return r.map(cell).join(","); }).join("\r\n")], { type: "text/csv" })); a.download = "xkey-domain-age.csv"; document.body.appendChild(a); a.click(); a.remove();
+      };
+      var so = $("dg-sort"); if (so) so.onclick = function () { sorted = !sorted; draw(); };
+    };
+    var next = 0;
+    var work = function () {
+      if (next >= batches.length) return; var start = batches[next++], part = sites.slice(start, start + 10);
+      fetch("/api/whois?d=" + encodeURIComponent(part.join(","))).then(function (r) { return r.json(); }).then(function (j) {
+        if (j.error) throw new Error(j.error);
+        j.results.forEach(function (r, k) { res[start + k] = r; });
+      }).catch(function (e) {
+        failed = (e && e.message) || "Couldn't look those up – please try again.";
+        part.forEach(function (s, k) { res[start + k] = { input: s, error: "Not checked" }; });
+      }).then(function () { draw(); work(); });
+    };
+    draw(); work(); work();
+  });
+
+  var wh = $("wh-form");
+  if (wh) {
+    var whq = (location.search.match(/[?&]d=([^&]+)/) || [])[1];
+    if (whq && !$("wh-d").value.trim()) { try { $("wh-d").value = decodeURIComponent(whq.replace(/\+/g, " ")); } catch (e) {} setTimeout(function () { wh.requestSubmit ? wh.requestSubmit() : wh.dispatchEvent(new Event("submit", { cancelable: true })); }, 0); }
+    wh.addEventListener("submit", function (ev) {
+      ev.preventDefault();
+      var d = $("wh-d").value.trim(), out = $("wh-out");
+      if (!d) { $("wh-d").focus(); return; }
+      out.innerHTML = "<p>Asking the registry…</p>";
+      fetch("/api/whois?d=" + encodeURIComponent(d)).then(function (r) { return r.json(); }).then(function (j) {
+        var r = j.results ? j.results[0] : j;
+        if (j.error || r.error) { out.innerHTML = '<p class="s-fail">' + esc(j.error || r.error) + "</p>"; return; }
+        if (!r.registered) { out.innerHTML = '<div class="card" style="margin:16px 0"><p class="ct">' + esc(r.domain) + ' isn\'t registered</p><p>The registry has no record of it, so it\'s probably free to buy from any registrar. Check the spelling first.</p></div>'; return; }
+        var row = function (k, v) { return v ? "<tr><th scope=\"row\" style=\"text-align:left;white-space:nowrap\">" + k + '</th><td style="overflow-wrap:anywhere">' + v + "</td></tr>" : ""; };
+        var h = '<div class="card" style="margin:16px 0"><p class="ct">' + esc(r.domain) + '</p><div class="row" style="gap:28px"><div><b style="font-size:30px">' + (r.created ? esc(ageText(r.created)) : "–") + '</b><br><span class="small">' + (r.created ? "old (registered " + esc(ukDate(r.created)) + ")" : "registration date not published by this registry") + "</span></div>" +
+          (r.expires ? '<div><b style="font-size:30px">' + expiryHtml(r.expires) + '</b><br><span class="small">expiry date</span></div>' : "") + "</div></div>" +
+          '<div class="tablewrap"><table><tbody>' + row("Registrar", esc(r.registrar)) + row("Registered", esc(ukDate(r.created))) + row("Last updated", esc(ukDate(r.updated))) + row("Expires", r.expires ? expiryHtml(r.expires) : "") +
+          row("Name servers", (r.nameservers || []).map(esc).join("<br>")) + row("Status", (r.status || []).map(esc).join("<br>")) + row("DNSSEC", r.dnssec == null ? "" : r.dnssec ? "Signed" : "Not signed") + "</tbody></table></div>" +
+          (r.raw ? '<h3>Registry WHOIS record</h3><pre class="out">' + esc(r.raw.trim()) + "</pre>" : "") +
+          '<p class="small">Source: ' + (r.source === "rdap" ? 'the registry\'s RDAP service' + (r.rdap ? ' (<a href="' + esc(r.rdap) + '" rel="nofollow noopener" target="_blank">raw record</a>)' : "") : "the registry's WHOIS server " + esc(r.server || "")) + ". Personal details are hidden by registries for privacy. Check more domains at once with the <a href=\"/domain-age-checker\">domain age checker</a>.</p>";
+        out.innerHTML = h;
+      }).catch(function () { out.innerHTML = '<p class="s-fail">Couldn\'t look that up – please try again.</p>'; });
+    });
+  }
+
   // ---- your recent checks (stored only in this browser)
   var rc = $("recent");
   if (rc) {

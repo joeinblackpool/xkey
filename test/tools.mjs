@@ -5,7 +5,11 @@
 // fails on: a browser error (e.g. a script crashing on load), a missing/empty result, or a result
 // without the expected text. Checks run on xkey.co.uk itself, which the Worker handles
 // in-process, so no internet is needed.
-import { need, serve, blData } from "./lib.mjs";
+import { need, serve, blData, whoisStandIns } from "./lib.mjs";
+import { whoisApi, whoisDate, parseWhois } from "../src/whois.js";
+import { traceRedirects, metaRefresh, redirectsApi } from "../src/redirects.js";
+import { extractLinks, linkStatus, linksCheckApi } from "../src/linkcheck.js";
+import { headerNotes } from "../src/headers.js";
 import { backlinksApi, authorityApi, crc32 } from "../src/backlinks.js";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
@@ -18,7 +22,7 @@ const only = process.argv[2] ? new RegExp(process.argv[2], "i") : null;
 // 0) Backlink lookups straight against the index files: format 2 (all domains) and the older
 //    format 1 (.uk only), which the site must keep reading until a format-2 release is published.
 let apiFailed = 0;
-if (!only || only.test("backlink")) {
+if (!only || only.test("backlink") || only.test("whois") || only.test("redirect") || only.test("link") || only.test("header")) {
   const bl = async (dir, d, vs) => (await backlinksApi({ BL_DATA: blData(dir) }, { waitUntil() {} }, new URLSearchParams(vs ? { d, vs } : { d }))).body;
   const da = async (dir, d) => (await authorityApi({ BL_DATA: blData(dir) }, { waitUntil() {} }, new URLSearchParams({ d }))).body;
   const checks = [
@@ -33,6 +37,38 @@ if (!only || only.test("backlink")) {
     ["authority: more than 10 refused", async () => /Up to 10/.test((await da("backlinks", Array.from({ length: 11 }, (_, i) => `s${i}.com`).join(","))).error)],
     ["authority: falls back to link strength without ranks", async () => { const r = await da("backlinks-v1", "smithplumbing.co.uk example.com"); return !r.ranks && r.results[0].authority === r.results[0].strength && r.results[0].authority > 0 && /\.uk/.test(r.results[1].error); }],
   ];
+  const wh = async (d) => (await whoisApi(whoisStandIns(), { waitUntil() {} }, new URLSearchParams({ d }))).body;
+  checks.push(
+    ["whois: RDAP .com and .co.uk, nested registrar, not registered", async () => { const [e, s, n] = (await wh("https://www.example.com/x,smithplumbing.co.uk,nothing-here.co.uk")).results; return e.registered && e.created === "1995-08-14" && e.expires === "2027-08-13" && e.dnssec === true && /Assigned Numbers/.test(e.registrar) && e.nameservers[0] === "a.iana-servers.net" && s.registrar === "Tucows Inc" && s.created === "2009-03-02" && n.registered === false && !e.raw; }],
+    ["whois: WHOIS fallback (.ie dates, .de without dates, free .ie)", async () => { const [i, d, f] = (await wh("smith.ie,beispiel.de,free.ie")).results; return i.source === "whois" && i.created === "2001-03-12" && i.expires === "2027-03-12" && i.registrar === "Blacknight Solutions" && d.registered && !d.created && d.nameservers[0] === "ns1.beispiel.de" && f.registered === false; }],
+    ["whois: raw WHOIS text only for single lookups", async () => /Blacknight/.test((await wh("smith.ie")).results[0].raw)],
+    ["whois: ending without a registry server", async () => /isn't published/.test((await wh("thing.zz")).results[0].error)],
+    ["whois: more than 10 refused", async () => /Up to 10/.test((await wh(Array.from({ length: 11 }, (_, i) => `s${i}.com`).join(","))).error)],
+    ["whois: date formats", () => whoisDate("12-Mar-2001") === "2001-03-12" && whoisDate("2001.03.12 10:00:00") === "2001-03-12" && whoisDate("12/03/2001") === "2001-03-12" && whoisDate("20010312") === "2001-03-12" && whoisDate("before Aug-1996") === null && parseWhois("Registered on: 05-Jun-1996\n").created === "1996-06-05"],
+    ["whois: tidy status, name servers and EURid registrar", () => { const p = parseWhois("Domain Status: clientTransferProhibited https://icann.org/epp#clientTransferProhibited\nName Server: NS1.X.COM.\nRegistrar:\n        Name: ClearMedia NV\n"); return p.status[0] === "client transfer prohibited" && p.nameservers[0] === "ns1.x.com" && p.registrar === "ClearMedia NV"; }],
+  );
+  // a fake web for the redirect checker: path -> [status, location or html]
+  const web = { "/a": [301, "/b"], "/b": [302, "https://site.co.uk/c"], "/c": [200, '<html><head><meta http-equiv="refresh" content="0; URL=\'/d\'"></head><body>x</body></html>'], "/d": [200, "<html><body>done</body></html>"],
+    "/loop1": [301, "/loop2"], "/loop2": [301, "/loop1"], "/gone": [301, "/missing"], "/missing": [404, ""], "/private": [301, "http://127.0.0.1/admin"], "/insecure": [301, "http://site.co.uk/d"] };
+  let calls = 0;
+  const fakeFetch = async (u) => { calls++; const [st, v] = web[new URL(u).pathname] || [404, ""]; return st >= 300 && st < 400 ? new Response(null, { status: st, headers: { location: v } }) : new Response(v, { status: st, headers: { "content-type": "text/html" } }); };
+  checks.push(
+    ["redirects: 301 + 302 + meta refresh chain", async () => { const r = await traceRedirects("https://site.co.uk/a", fakeFetch); return r.redirects === 3 && r.final === "https://site.co.uk/d" && r.status === 200 && r.ok && r.hops[2].type === "meta" && r.problems.some((p) => /3 redirects/.test(p)) && r.problems.some((p) => /302/.test(p)) && r.problems.some((p) => /meta refresh/.test(p)); }],
+    ["redirects: loop, 404 end, private target, https to http", async () => { const [l, g, p, i] = await Promise.all(["site.co.uk/loop1", "https://site.co.uk/gone", "https://site.co.uk/private", "https://site.co.uk/insecure"].map((u) => traceRedirects(u, fakeFetch))); return !l.ok && /loop/i.test(l.problems[0]) && !g.ok && g.status === 404 && !p.ok && /can't be followed/.test(p.problems.join()) && p.hops.length === 1 && i.problems.some((x) => /insecure http/.test(x)); }],
+    ["redirects: meta refresh parsing", () => metaRefresh('<meta content="5;url=https://x.co.uk/" http-equiv="Refresh">').url === "https://x.co.uk/" && metaRefresh("<meta http-equiv=refresh content='0'>") === null && metaRefresh("<head></head><body><meta http-equiv=\"refresh\" content=\"0;url=/x\"></body>") === null],
+    ["redirects: subrequest budget and batch limit", async () => { calls = 0; const r = (await redirectsApi(new URLSearchParams(Array.from({ length: 10 }, () => ["u", "site.co.uk/loop1"])), fakeFetch)).body; const big = (await redirectsApi(new URLSearchParams(Array.from({ length: 11 }, (_, i) => ["u", `s${i}.co.uk`])), fakeFetch)).body; return calls <= 45 && r.results.length === 10 && /Up to 10/.test(big.error); }],
+  );
+  const lweb = { "/ok": [200], "/gone": [404], "/moved": [301, "/ok"], "/nohead": [405, null, 200], "/linkedin": [403, null, 403], "/err": [500] };
+  const lfetch = async (u, init) => { const [st, loc, get] = lweb[new URL(u).pathname] || [404]; const s = init && init.method === "HEAD" ? st : get || st; return new Response(null, { status: s, headers: loc ? { location: loc } : {} }); };
+  checks.push(
+    ["links: extract links, images, anchor text, skip mailto/js/#", () => { const l = extractLinks('<base href="https://site.co.uk/dir/"><a href="page">Our <b>page</b></a><a href="/x#top" rel="nofollow"><img src="/i.png" alt="Logo"></a><a href="mailto:a@b.co">m</a><a href="#top">t</a><a href="javascript:void(0)">j</a><a href="https://other.com/">Other</a><!-- <a href="/hidden">h</a> --><script>"<a href=/s>"</script>', "https://www.site.co.uk/"); const by = Object.fromEntries(l.map((x) => [x.url, x])); return l.length === 4 && by["https://site.co.uk/dir/page"].text === "Our page" && by["https://site.co.uk/dir/page"].internal && by["https://site.co.uk/x"].text === "Logo" && by["https://site.co.uk/x"].nofollow && by["https://site.co.uk/i.png"].kind === "image" && !by["https://other.com/"].internal; }],
+    ["links: statuses (ok, 404, redirect, HEAD refused, blocked, 500)", async () => { const r = await Promise.all(["/ok", "/gone", "/moved", "/nohead", "/linkedin", "/err"].map((p) => linkStatus("https://site.co.uk" + p, lfetch))); return r.map((x) => x.verdict).join() === "ok,broken,redirect,ok,blocked,broken" && r[2].final === "https://site.co.uk/ok" && r[1].status === 404; }],
+    ["links: private addresses skipped, batch limit", async () => (await linkStatus("http://localhost/x", lfetch)).verdict === "skipped" && /Up to 10/.test((await linksCheckApi(new URLSearchParams(Array.from({ length: 11 }, (_, i) => ["u", `https://s.co.uk/${i}`])), lfetch, { waitUntil() {} })).body.error)],
+  );
+  checks.push(
+    ["headers: noindex, compression, HSTS, version notes", () => { const n = headerNotes([["Content-Type", "text/html"], ["X-Robots-Tag", "noindex"], ["Server", "Apache/2.4.1"], ["Link", '<https://site.co.uk/a>; rel="canonical"']], "https://site.co.uk/", 200); const t = n.map((x) => x.level + ":" + x.text).join("|"); return /fail:X-Robots-Tag tells/.test(t) && /warn:Content-Type doesn't say/.test(t) && /warn:No Content-Encoding/.test(t) && /warn:No Strict-Transport/.test(t) && /Apache\/2\.4\.1/.test(t) && /Canonical address .*site\.co\.uk\/a/.test(t); }],
+    ["headers: a well-set-up page", () => headerNotes([["content-type", "text/html; charset=utf-8"], ["content-encoding", "br"], ["strict-transport-security", "max-age=31536000"], ["cache-control", "max-age=60"], ["x-content-type-options", "nosniff"]], "https://site.co.uk/", 200).every((x) => x.level === "ok" || x.level === "info")],
+  );
   for (let [name, fn] of checks) {
     let ok = false; try { ok = await fn(); } catch (e) { name += " – " + e.message; }
     console.log(`${ok ? " ok " : "FAIL"}  ${name}`);
@@ -45,7 +81,7 @@ const esbuild = await need("esbuild");
 const outfile = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "xkey-build-")), "worker.mjs");
 await (esbuild.build || esbuild.default.build)({
   entryPoints: [path.join(here, "../src/index.js")], bundle: true, format: "esm", platform: "neutral",
-  target: "es2022", keepNames: true, outfile, logLevel: "error", mainFields: ["module", "main"],
+  target: "es2022", keepNames: true, outfile, external: ["cloudflare:*"], logLevel: "error", mainFields: ["module", "main"],
 });
 const site = await serve(8790, outfile);
 const { chromium } = await need("playwright");
@@ -84,6 +120,16 @@ const S = [
   { name: "Backlink checker – opened from a link", path: "/backlink-checker?d=rival.co.uk", expect: ["#bl-out", /rival\.co\.uk[\s\S]*4[\s\S]*websites link to it/] },
   { name: "Domain authority checker", path: "/domain-authority-checker", fill: [["da-urls", "smithplumbing.co.uk\nhttps://www.wikipedia.org/\nnothing.co.uk"]], click: "#da-form button[type=submit]", expect: ["#da-out", /smithplumbing\.co\.uk[\s\S]*33[\s\S]*#5[\s\S]*wikipedia\.org[\s\S]*100[\s\S]*#1[\s\S]*No links found[\s\S]*Download CSV/] },
   { name: "Domain authority checker – 25 sites in batches", path: "/domain-authority-checker", fill: [["da-urls", Array.from({ length: 24 }, (_, i) => `site${i}.co.uk`).concat("bbc.co.uk").join("\n")]], click: "#da-form button[type=submit]", expect: ["#da-out", /bbc\.co\.uk[\s\S]*#2[\s\S]*Sort by authority/] },
+  { name: "Broken link checker – whole site", path: "/broken-link-checker", fill: [["lk-url", "xkey.co.uk"]], select: [["lk-max", "50"], ["lk-ext", "0"]], click: "#lk-form button[type=submit]", expect: ["#lk-out", /Finished\. Crawled 50 pages[\s\S]*No broken links found/], timeout: 120000 },
+  { name: "HTTP header checker", path: "/http-header-checker", fill: [["hd-url", "http://www.xkey.co.uk/about"]], click: "#hd-form button[type=submit]", expect: ["#hd-out", /Step 1: http:\/\/www\.xkey\.co\.uk\/about[\s\S]*301[\s\S]*location[\s\S]*Step 2: https:\/\/xkey\.co\.uk\/about[\s\S]*200[\s\S]*content-type[\s\S]*text\/html/] },
+  { name: "HTTP header checker – opened from a link", path: "/http-header-checker?url=xkey.co.uk", expect: ["#hd-out", /https:\/\/xkey\.co\.uk\/[\s\S]*200[\s\S]*content-type/] },
+  { name: "Redirect checker", path: "/redirect-checker", fill: [["rd-urls", "http://www.xkey.co.uk/seo-checker"]], click: "#rd-form button[type=submit]", expect: ["#rd-out", /http:\/\/www\.xkey\.co\.uk\/seo-checker[\s\S]*2 redirects, ends 200[\s\S]*301[\s\S]*301[\s\S]*200[\s\S]*Final address: https:\/\/xkey\.co\.uk\/[\s\S]*2 redirects in a row[\s\S]*Download CSV/] },
+  { name: "Redirect checker – http/https/www versions", path: "/redirect-checker", fill: [["rd-urls", "xkey.co.uk"]], click: "#rd-four", expect: ["#rd-out", /http:\/\/xkey\.co\.uk\/[\s\S]*1 redirect,[\s\S]*http:\/\/www\.xkey\.co\.uk[\s\S]*https:\/\/xkey\.co\.uk\/ – 0 redirects, ends 200[\s\S]*https:\/\/www\.xkey\.co\.uk[\s\S]*Download CSV/] },
+  { name: "Domain age checker", path: "/domain-age-checker", fill: [["dg-urls", "example.com\nsmithplumbing.co.uk\nnothing-here.co.uk\nsoon.co.uk\nbeispiel.de"]], click: "#dg-form button[type=submit]", expect: ["#dg-out", /example\.com[\s\S]*\d+ years[\s\S]*14 Aug 1995[\s\S]*smithplumbing\.co\.uk[\s\S]*Tucows[\s\S]*Not registered[\s\S]*\d+ days left[\s\S]*beispiel\.de[\s\S]*Not published[\s\S]*Download CSV/] },
+  { name: "Domain age checker – 25 in batches", path: "/domain-age-checker", fill: [["dg-urls", Array.from({ length: 24 }, (_, i) => `free${i}.co.uk`).concat("example.com").join("\n")]], click: "#dg-form button[type=submit]", expect: ["#dg-out", /example\.com[\s\S]*Oldest first/] },
+  { name: "WHOIS lookup", path: "/whois-lookup", fill: [["wh-d", "https://www.example.com/page"]], click: "#wh-form button[type=submit]", expect: ["#wh-out", /example\.com[\s\S]*\d+ years[\s\S]*Assigned Numbers[\s\S]*a\.iana-servers\.net[\s\S]*client transfer prohibited[\s\S]*Signed/] },
+  { name: "WHOIS lookup – WHOIS fallback, opened from a link", path: "/whois-lookup?d=smith.ie", expect: ["#wh-out", /smith\.ie[\s\S]*Blacknight[\s\S]*Registry WHOIS record[\s\S]*whois\.weare\.ie/] },
+  { name: "WHOIS lookup – not registered", path: "/whois-lookup", fill: [["wh-d", "nothing-here.co.uk"]], click: "#wh-form button[type=submit]", expect: ["#wh-out", /isn't registered/] },
   { name: "SEO score badge", path: "/seo-badge", fill: [["bd-site", "xkey.co.uk"]], expect: ["#bd-code", /badge\.svg\?site=xkey\.co\.uk/] },
 ];
 
@@ -105,6 +151,7 @@ for (const s of RUN) {
       if (!(await el.count())) { problem = `field ${id} not found`; break; }
       await el.fill(value);
     }
+    for (const [id, value] of s.select || []) await page.selectOption("#" + id, value);
     if (!problem && s.click) {
       const btn = page.locator(s.click.split(",").map((x) => x.trim().startsWith("#") || x.trim().startsWith("main") ? x : `main form:first-of-type ${x}`).join(", ")).first();
       if (!(await btn.count())) problem = `button ${s.click} not found`;
