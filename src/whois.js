@@ -52,6 +52,10 @@ export function whoisDate(s) {
   return isoDay(s.replace(/^[a-z]{3}\s+(?=[a-z]{3}\s)/i, ""));
 }
 
+// "clientTransferProhibited" (EPP style, used in WHOIS) -> "client transfer prohibited" (RDAP style)
+const statusText = (x) => String(x).replace(/([a-z])([A-Z])/g, "$1 $2").toLowerCase();
+const nsName = (x) => String(x || "").toLowerCase().replace(/\.$/, "");
+
 /** Pick the useful fields out of a registry's WHOIS text. */
 export function parseWhois(text) {
   const t = String(text || "");
@@ -60,9 +64,9 @@ export function parseWhois(text) {
   const created = whoisDate(field(/^\s*(?:creation date|created(?: on| date)?|registered(?: on| date)?|registration (?:time|date)|domain (?:record activated|registration date)|commencement date|registered)\s*[:.]+\s*(.+)$/im));
   const expires = whoisDate(field(/^\s*(?:registry expiry date|registrar registration expiration date|expir\w*(?: date| on)?|paid-till|renewal date|valid until)\s*[:.]+\s*(.+)$/im));
   const updated = whoisDate(field(/^\s*(?:updated date|last updated(?: on)?|last modified|changed|modified)\s*[:.]+\s*(.+)$/im));
-  const registrar = field(/^\s*(?:registrar(?: name)?|sponsoring registrar|registrar organization)\s*:\s*(\S.*)$/im).replace(/\s*\[.*$/, "");
-  const ns = [...t.matchAll(/^\s*(?:name server|nserver|nameservers?|ns\d?)\s*:\s*([a-z0-9.-]+\.[a-z]{2,})/gim)].map((m) => m[1].toLowerCase());
-  const status = [...t.matchAll(/^\s*(?:domain )?status\s*:\s*([a-z][\w -]*)/gim)].map((m) => m[1].trim().split(/\s+https?:/)[0]);
+  const registrar = field(/^\s*(?:registrar(?: name)?|sponsoring registrar|registrar organization)\s*:\s*(\S.*)$/im).replace(/\s*\[.*$/, "").replace(/^(name|organi[sz]ation):\s*/i, "");
+  const ns = [...t.matchAll(/^\s*(?:name server|nserver|nameservers?|ns\d?)\s*:\s*([a-z0-9.-]+\.[a-z]{2,})/gim)].map((m) => nsName(m[1]));
+  const status = [...t.matchAll(/^\s*(?:domain )?status\s*:\s*([a-z][\w -]*)/gim)].map((m) => statusText(m[1].trim().replace(/\s+https?$/i, "")));
   return { notFound: notFound && !created, created, expires, updated, registrar, nameservers: [...new Set(ns)].slice(0, 13), status: [...new Set(status)].slice(0, 10) };
 }
 
@@ -75,8 +79,8 @@ export function parseRdap(j) {
   let registrar = reg ? fn(reg) || (reg.publicIds && reg.publicIds[0] && `IANA ${reg.publicIds[0].identifier}`) || reg.handle || "" : "";
   return {
     created: isoDay(ev.registration || ""), expires: isoDay(ev.expiration || ""), updated: isoDay(ev["last changed"] || ""),
-    registrar: String(registrar || ""), nameservers: (j.nameservers || []).map((n) => String(n.ldhName || "").toLowerCase()).filter(Boolean).slice(0, 13),
-    status: (j.status || []).slice(0, 10).map(String), dnssec: j.secureDNS ? !!j.secureDNS.delegationSigned : null,
+    registrar: String(registrar || ""), nameservers: (j.nameservers || []).map((n) => nsName(n.ldhName)).filter(Boolean).slice(0, 13),
+    status: (j.status || []).slice(0, 10).map(statusText), dnssec: j.secureDNS ? !!j.secureDNS.delegationSigned : null,
   };
 }
 

@@ -42,6 +42,7 @@ if (!only || only.test("backlink") || only.test("whois")) {
     ["whois: ending without a registry server", async () => /isn't published/.test((await wh("thing.zz")).results[0].error)],
     ["whois: more than 10 refused", async () => /Up to 10/.test((await wh(Array.from({ length: 11 }, (_, i) => `s${i}.com`).join(","))).error)],
     ["whois: date formats", () => whoisDate("12-Mar-2001") === "2001-03-12" && whoisDate("2001.03.12 10:00:00") === "2001-03-12" && whoisDate("12/03/2001") === "2001-03-12" && whoisDate("20010312") === "2001-03-12" && whoisDate("before Aug-1996") === null && parseWhois("Registered on: 05-Jun-1996\n").created === "1996-06-05"],
+    ["whois: tidy status, name servers and EURid registrar", () => { const p = parseWhois("Domain Status: clientTransferProhibited https://icann.org/epp#clientTransferProhibited\nName Server: NS1.X.COM.\nRegistrar:\n        Name: ClearMedia NV\n"); return p.status[0] === "client transfer prohibited" && p.nameservers[0] === "ns1.x.com" && p.registrar === "ClearMedia NV"; }],
   );
   for (let [name, fn] of checks) {
     let ok = false; try { ok = await fn(); } catch (e) { name += " – " + e.message; }
