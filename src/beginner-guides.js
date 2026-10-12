@@ -65,4 +65,66 @@ export const BEGINNER_GUIDES = [
 <p>Exact monthly search numbers need Google Ads' Keyword Planner (free with an Ads account) or a paid tool, and for local services they're often too small to show anyway. For a small business, relevance beats volume: a phrase searched 20 times a month by people ready to buy is worth more than one searched 2,000 times by people just browsing.</p>`,
     faqs: [["How many keywords should a page target?", "One main topic, plus the close variations and questions that go with it. Trying to rank one page for unrelated searches usually means it ranks for none."], ["Do I need a paid keyword tool?", "Not to start. Google's suggestions, Search Console, a long-tail generator and a look at page one cover what most small businesses need."], ["How often should I do keyword research?", "Properly once, then check Search Console every month or two for new searches you're appearing for – they're ideas for new pages."]],
   },
+  {
+    path: "/guides/what-is-domain-authority", crumb: "What is domain authority?", parent: ["/guides", "Guides"], article: true,
+    title: "What Is Domain Authority? And How to Increase It",
+    desc: "Domain authority explained in plain English: what the score means, whether Google uses it, how to check yours free and honest ways to increase it.",
+    h1: "What is domain authority, and how do you increase it?",
+    lead: "Domain authority is a score from 0 to 100 that estimates how strong a website is, based on the links pointing to it. It's useful for comparing yourself with competitors, as long as you know what it is and isn't.",
+    sections: `<h2>Where does the term come from?</h2>
+<p>"Domain Authority" was made popular by the SEO company Moz, and other tools have their own versions with different names. They all work the same way: they look at which websites link to a site, and how strong those linking websites are themselves, then turn that into one number. XKey's <a href="/domain-authority-checker">free domain authority checker</a> uses Common Crawl's public map of the web, which ranks every website by how central it is in the web's links.</p>
+<h2>Does Google use domain authority?</h2>
+<p>No. Google has said it doesn't use any third-party authority score, and these numbers are estimates made by SEO tools, not by Google. But Google does use links as a major signal, so a site with strong, relevant links usually has a higher score <em>and</em> tends to rank more easily. Treat the score as a thermometer, not a goal.</p>
+<h2>What is a good domain authority score?</h2>
+<p>There's no universal good score – it's relative. A local plumber with a score of 15 can easily out-rank national sites with 60 for "plumber in Preston", because relevance and distance matter more for local searches. What matters is how you compare with the sites ranking for <em>your</em> searches. Put your site and your top competitors into the <a href="/domain-authority-checker">domain authority checker</a> to see the gap.</p>
+<h2>How do I check my domain authority?</h2>
+<ol><li>Open the <a href="/domain-authority-checker">domain authority checker</a> and paste your site and up to 99 others, one per line.</li><li>Click any site in the results to see the websites that link to it in the <a href="/backlink-checker">backlink checker</a>.</li><li>Check again every few months: the link data is refreshed quarterly, so the score moves slowly.</li></ol>
+<h2>How can I increase domain authority?</h2>
+<p>Only by earning links from websites that are themselves trusted. There are no shortcuts that last.</p>
+<ul><li><strong>Get the links you're already owed</strong> – suppliers, trade bodies, accreditations, local groups you support.</li><li><strong>Find competitors' links you don't have</strong> – the link gap in the <a href="/backlink-checker">backlink checker</a> lists sites that link to a competitor but not to you.</li><li><strong>Publish something worth linking to</strong> – real prices, a local guide, a checklist, your own data.</li><li><strong>Get in the local news</strong> with genuine stories.</li></ul>
+<p>Our guide to <a href="/guides/how-to-get-backlinks">getting backlinks the honest way</a> has twelve ideas.</p>
+<h2>What should I avoid?</h2>
+<p>Anything sold as "increase your DA fast": bought links, link packages, private blog networks and mass directory submissions. They can raise a tool's score for a while, but Google's spam systems are built to ignore or penalise exactly these links, and you can't easily undo the damage.</p>`,
+    faqs: [["Why is my domain authority 0?", "The data found no other websites linking to yours. That's normal for a new site. A handful of good links from suppliers, trade bodies and local groups is the place to start."], ["Why do different tools give different scores?", "Each tool crawls a different part of the web and uses its own formula. Compare sites using the same tool, never one tool's score with another's."], ["How long does it take to increase domain authority?", "Months rather than weeks. The link data behind most scores is refreshed every few weeks or months, and good links are earned gradually."]],
+  },
+  {
+    path: "/guides/on-page-seo-checklist", crumb: "On-page SEO checklist", parent: ["/guides", "Guides"], article: true,
+    title: "On-Page SEO Checklist: 15 Fixes for Better Rankings",
+    desc: "A plain-English on-page SEO checklist: 15 things to check on every page, from the title and headings to images, internal links, structured data and speed.",
+    h1: "On-page SEO checklist: 15 things to check on every page",
+    lead: "On-page SEO is everything you control on the page itself, and it's the quickest route to better rankings. Work through this list for each important page, top to bottom. The free SEO check tests most of it for you in about 20 seconds.",
+    sections: `<h2>Can Google find and read the page?</h2>
+<ol><li><strong>It loads with status 200</strong> – not an error or a chain of redirects.</li><li><strong>It isn't blocked</strong> – no noindex tag, and robots.txt allows it. Test rules with the <a href="/robots-txt-tester">robots.txt tester</a>.</li><li><strong>It's in your XML sitemap</strong> and on the secure https:// address.</li></ol>
+<h2>Does the page say clearly what it's about?</h2>
+<ol start="4"><li><strong>A unique title</strong> with the main search phrase near the start, short enough not to be cut off. Measure it with the <a href="/title-tag-checker">title tag checker</a>.</li><li><strong>A meta description</strong> that sells the click: what's here, for whom, and a reason to choose you.</li><li><strong>One H1 heading</strong> that matches the title's promise.</li><li><strong>A short, readable address</strong> such as /boiler-repair, not /page?id=123.</li><li><strong>The opening paragraph answers the search</strong> straight away – what you do, where, and for whom.</li></ol>
+<h2>Is the content the best answer?</h2>
+<ol start="9"><li><strong>Subheadings that match the questions people ask</strong>, so readers and AI assistants can jump to answers.</li><li><strong>Enough depth to be useful</strong> – prices, process, timescales, examples. Check length and keyword use with the <a href="/word-counter">word counter</a>; there's no magic word count.</li><li><strong>Signs of real experience</strong> – photos of your work, named people, reviews, qualifications.</li></ol>
+<h2>Is the page well connected?</h2>
+<ol start="12"><li><strong>Internal links in and out</strong> with descriptive wording, not "click here". The <a href="/anchor-text-checker">anchor text checker</a> grades every link on a page.</li><li><strong>Images with alt text</strong> describing what they show, and file sizes kept small.</li></ol>
+<h2>Is it built well?</h2>
+<ol start="14"><li><strong>Structured data</strong> for your business, products, articles or FAQs, so Google can show rich results. Make it with the <a href="/schema-generator">schema generator</a>.</li><li><strong>Fast and mobile-friendly</strong> – Google uses the mobile version of your page and measures real loading speed. See our guide to <a href="/guides/core-web-vitals">Core Web Vitals</a>.</li></ol>
+<h2>What's the quickest way to check all of this?</h2>
+<p>Run the <a href="/">free SEO check</a> on the page. It tests most of this list – plus AI search readiness and security – and sorts the fixes by impact. To check every page on the site at once, run the <a href="/website-audit">website audit</a>.</p>`,
+    faqs: [["What's the difference between on-page and off-page SEO?", "On-page SEO is what's on your own pages: content, titles, headings, links and code. Off-page SEO is what happens elsewhere, mainly links and mentions from other websites and your reviews."], ["How often should I review on-page SEO?", "Whenever you create or change a page, and a quick check of your key pages every few months. Weekly monitoring catches anything that breaks in between."], ["Does keyword density matter?", "Not as a number. Use your main phrase where it reads naturally – title, H1, opening paragraph – and cover the topic fully. Repeating it more doesn't help."]],
+  },
+  {
+    path: "/guides/how-to-get-google-reviews", crumb: "How to get more Google reviews", parent: ["/guides", "Guides"], article: true,
+    title: "How to Get More Google Reviews (Without Breaking the Rules)",
+    desc: "How to get more Google reviews the honest way: your review link, when and how to ask, replying to bad reviews, and what UK law and Google forbid.",
+    h1: "How to get more Google reviews",
+    lead: "Reviews help you rank in Google's map results and they're often what makes a customer pick you over the business next door. Most happy customers will leave one – they just need to be asked at the right moment, with a link that makes it easy.",
+    sections: `<h2>Why do Google reviews matter?</h2>
+<p>Google lists reviews as part of how prominent a business is in local search, alongside relevance and distance. Just as important, people read them: the number, the average and how recent they are all affect whether someone calls. Our <a href="/guides/local-seo-checklist">local SEO checklist</a> covers the other local signals.</p>
+<h2>How do I get my Google review link?</h2>
+<ol><li>Sign in to your <a href="/guides/google-business-profile">Google Business Profile</a> (search for your business name on Google while signed in).</li><li>Choose <strong>Ask for reviews</strong> (or Get more reviews).</li><li>Copy the short link. That opens the review form directly, with no searching needed.</li></ol>
+<p>Put the link in your email signature, invoices, follow-up texts and on your website's thank-you page. A printed QR code at the till or on the van works for walk-in and on-site customers.</p>
+<h2>When and how should I ask?</h2>
+<ul><li><strong>Ask at the happy moment</strong> – when the job's finished and the customer has just said thanks, or the day after delivery.</li><li><strong>Ask in person, then send the link</strong> by text or email the same day. A personal ask works far better than an automated one alone.</li><li><strong>Make it specific:</strong> "If you've got a minute, a review mentioning the boiler repair really helps us." Reviews that mention the service and town are more useful to readers.</li><li><strong>Ask everyone</strong>, not just customers you're sure loved it.</li></ul>
+<h2>Should I reply to reviews?</h2>
+<p>Yes, to all of them. Thank people by name for good reviews. For bad ones, reply calmly and briefly, offer to put it right offline, and never argue in public – future customers read your reply more than the complaint. If a review breaks Google's policies (spam, off-topic, hateful, or from someone who was never a customer), report it from your Business Profile; Google won't remove a review just for being negative.</p>
+<h2>What's against the rules?</h2>
+<ul><li><strong>Fake reviews</strong>, including ones written by you, staff, friends or family. Under the Digital Markets, Competition and Consumers Act 2024, fake reviews are banned in the UK.</li><li><strong>Paying or rewarding reviews</strong> – discounts, prize draws or freebies in return for a review break Google's policy.</li><li><strong>Review gating</strong> – only sending your review link to customers you think are happy.</li><li><strong>Buying reviews</strong> or using "review exchange" groups.</li></ul>
+<p>Breaking these can get reviews removed, a warning shown on your profile, or the profile suspended.</p>`,
+    faqs: [["How many Google reviews do I need?", "Enough to compare well with the businesses you compete with in the map results, and a steady flow of new ones. Recent reviews matter, so aim for regular reviews rather than a burst."], ["Can I ask customers to change a bad review?", "You can fix the problem and let them know, and some people choose to update their review. Don't pressure them or offer anything in return."], ["Do reviews on other sites help?", "Reviews on Facebook, Trustpilot or trade sites help customers trust you and can appear in search, but Google reviews have the most direct effect on Google Maps."]],
+  },
 ];
