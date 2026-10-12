@@ -5,7 +5,7 @@
 // fails on: a browser error (e.g. a script crashing on load), a missing/empty result, or a result
 // without the expected text. Checks run on xkey.co.uk itself, which the Worker handles
 // in-process, so no internet is needed.
-import { need, serve, blData, whoisStandIns, dnsStandIn } from "./lib.mjs";
+import { need, serve, blData, whoisStandIns, dnsStandIn, ctStandIn } from "./lib.mjs";
 import { whoisApi, whoisDate, parseWhois } from "../src/whois.js";
 import { traceRedirects, metaRefresh, redirectsApi } from "../src/redirects.js";
 import { extractLinks, linkStatus, linksCheckApi } from "../src/linkcheck.js";
@@ -14,6 +14,7 @@ import { dnsApi, dnsName } from "../src/dns.js";
 import { techApi, detectTech } from "../src/tech.js";
 import { hostingApi, inCidr, parseIpRdap } from "../src/hosting.js";
 import { headTags, metaApi } from "../src/meta.js";
+import { sslApi, mixedContent, ctLookup } from "../src/ssl.js";
 import { backlinksApi, authorityApi, crc32 } from "../src/backlinks.js";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
@@ -106,6 +107,16 @@ if (!only || only.test("backlink") || only.test("whois") || only.test("redirect"
     ["meta: head tags, hreflang in <head> and Link header, after a redirect", async () => { const t = headTags(`<html lang="en-GB"><head><title>T &amp; Co</title><meta property="og:title" content="OG"><meta name="description" content='D'><link rel="alternate" hreflang="en-GB" href="/en-gb/"><link rel="canonical" href="https://a.co.uk/"><!-- <meta property="og:image" content="x"> --></head><body><meta property="og:image" content="late"></body></html>`, "https://a.co.uk/");
       const r = (await metaApi(new URLSearchParams({ url: "smithplumbing.co.uk" }), async (u) => u === "https://smithplumbing.co.uk/" ? new Response(null, { status: 301, headers: { location: "https://www.smithplumbing.co.uk/" } }) : new Response("<html><head><title>W</title></head></html>", { headers: { "content-type": "text/html", link: '<https://www.smithplumbing.ie/>; rel="alternate"; hreflang="en-IE"' } }))).body;
       return t.title === "T & Co" && t.lang === "en-GB" && t.metas.length === 2 && t.metas[0].key === "og:title" && t.links[0].href === "https://a.co.uk/en-gb/" && t.links[0].hreflang === "en-GB" && r.url === "https://www.smithplumbing.co.uk/" && r.title === "W" && r.links.some((l) => l.header && l.hreflang === "en-IE"); }],
+    ["ssl: secure site, http redirect, HSTS, mixed content, certificate expiring soon", async () => {
+      const page = '<html><body><img src="http://cdn.smithplumbing.co.uk/a.jpg"><script src="http://old.example.com/x.js"></script><img src="https://ok/b.png" srcset="http://cdn.x/c.jpg 2x"><a href="http://fine.example.com/">link</a></body></html>';
+      const f = async (u) => u === "http://smithplumbing.co.uk/" ? new Response(null, { status: 301, headers: { location: "https://smithplumbing.co.uk/" } }) : u === "https://smithplumbing.co.uk/" ? new Response(page, { headers: { "content-type": "text/html", "strict-transport-security": "max-age=31536000" } }) : new Response("", { status: 404 });
+      const r = (await sslApi({ CT_FETCH: ctStandIn() }, new URLSearchParams({ d: "https://SmithPlumbing.co.uk/contact" }), f)).body; const t = r.checks.map((c) => c.level + ":" + c.text).join("|");
+      return r.secure && r.hsts === "max-age=31536000" && /ok:http:\/\/smithplumbing\.co\.uk redirects to https/.test(t) && /fail:1 insecure script/.test(t) && /warn:2 insecure image/.test(t) && /fail:.*expires in [45] days/.test(t) && r.cert.issuer === "Let's Encrypt" && r.mixed.length === 3; }],
+    ["ssl: no https, no redirect; CT newest certificate and errors", async () => {
+      const f = async (u) => { if (u.startsWith("https:")) throw new TypeError("TLS handshake failed"); return new Response("<html></html>", { headers: { "content-type": "text/html" } }); };
+      const r = (await sslApi({ CT_FETCH: ctStandIn() }, new URLSearchParams({ d: "down.co.uk" }), f)).body; const t = r.checks.map((c) => c.level + ":" + c.text).join("|");
+      const x = await ctLookup({ CT_FETCH: ctStandIn() }, "xkey.co.uk"), w = await ctLookup({ CT_FETCH: ctStandIn() }, "www.xkey.co.uk"), none = await ctLookup({ CT_FETCH: ctStandIn() }, "nothing.co.uk");
+      return !r.secure && /fail:We couldn't make a secure/.test(t) && /warn:http:\/\/down\.co\.uk doesn't redirect/.test(t) && r.ctError && x.issuer === "Google Trust Services" && x.daysLeft >= 59 && w && w.id === 2 && none === null && mixedContent('<link rel="canonical" href="http://a/">').length === 0; }],
     ["tech: no WordPress plugins without WordPress", () => { const t = detectTech('<div class="wpcf7 wp-block-group"></div>'); return !t.length; }],
   );
   for (let [name, fn] of checks) {
@@ -178,6 +189,11 @@ const S = [
   { name: "Website hosting checker – opened from a link", path: "/website-hosting-checker?d=xkey.co.uk", expect: ["#ho-out", /192\.0\.2\.30/] },
   { name: "Website technology checker", path: "/website-technology-checker", fill: [["tc-url", "xkey.co.uk"]], click: "#tc-form button[type=submit]", expect: ["#tc-out", /technolog[\s\S]*Email provider[\s\S]*Google Workspace[\s\S]*DNS provider[\s\S]*Cloudflare[\s\S]*Google Search Console/] },
   { name: "Website technology checker – opened from a link", path: "/website-technology-checker?url=xkey.co.uk", expect: ["#tc-out", /Cloudflare/] },
+  { name: "SSL checker", path: "/ssl-checker", fill: [["sl-d", "xkey.co.uk"]], click: "#sl-form button[type=submit]", expect: ["#sl-out", /Secure[\s\S]*loads over https[\s\S]*Google Trust Services[\s\S]*\*\.xkey\.co\.uk/] },
+  { name: "SSL checker – opened from a link", path: "/ssl-checker?d=xkey.co.uk", expect: ["#sl-out", /Expires/] },
+  { name: "UTM builder", path: "/utm-builder", fill: [["ut-campaign", "Spring Sale 2026"]], expect: ["#ut-out", /^https:\/\/smithplumbing\.co\.uk\/boiler-service\?utm_source=facebook&utm_medium=social&utm_campaign=spring-sale-2026$/] },
+  { name: "URL slug generator", path: "/url-slug-generator", fill: [["us-in", "Café & Bistro – Blackpool's Finest!\nThe 10 Best Boiler Brands in the UK (2026 Guide) for Homes and Small Businesses"]], expect: ["#us-out", /^cafe-and-bistro-blackpools-finest\s+the-10-best-boiler-brands-in-the-uk-2026-guide-for-homes-and$/] },
+  { name: "Case converter", path: "/case-converter", fill: [["cc-in", "the lord of the rings and i"]], click: "#cc-btns button[data-c=title]", expect: ["#cc-hidden", /^The Lord of the Rings and I$/] },
   { name: "DNS lookup – problems, opened from a link", path: "/dns-lookup?d=badmail.co.uk", expect: ["#dn-out", /www\.badmail\.co\.uk doesn't resolve[\s\S]*2 SPF records/] },
   { name: "HTTP header checker", path: "/http-header-checker", fill: [["hd-url", "http://www.xkey.co.uk/about"]], click: "#hd-form button[type=submit]", expect: ["#hd-out", /Step 1: http:\/\/www\.xkey\.co\.uk\/about[\s\S]*301[\s\S]*location[\s\S]*Step 2: https:\/\/xkey\.co\.uk\/about[\s\S]*200[\s\S]*content-type[\s\S]*text\/html/] },
   { name: "HTTP header checker – opened from a link", path: "/http-header-checker?url=xkey.co.uk", expect: ["#hd-out", /https:\/\/xkey\.co\.uk\/[\s\S]*200[\s\S]*content-type/] },

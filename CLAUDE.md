@@ -45,6 +45,11 @@ Free SEO & AI search checker for UK businesses, made by IceWork (icework.co.uk).
 
 ## Website down checker, Open Graph checker, hreflang checker
 - Browser-only logic in tools-client.js. The down checker (/website-down-checker) reuses `/api/redirects`. The Open Graph checker (/open-graph-checker) and hreflang checker (/hreflang-checker) use `src/meta.js`, `GET /api/meta?url=` (title, every head `<meta>`/`<link>`, html lang, hreflang from Link headers; `getPage` from tech.js); the hreflang checker loads up to 20 alternates (3 at a time) to check return links. Browser tests fake `/api/meta` with a scenario's `routes`.
+## SSL checker (/ssl-checker)
+- `src/ssl.js`, `GET /api/ssl?d=` – live: https connection (a failed TLS fetch = not secure), http→https redirect, HSTS, mixed content on the home page (`mixedContent`, active vs passive). Certificate issuer/dates/names from Certificate Transparency (crt.sh JSON, `exclude=expired`, newest covering cert) because Workers can't read the served certificate – the page says so. Tests: `env.CT_FETCH` (`ctStandIn()` in test/lib.mjs).
+
+## Browser-only text tools: UTM builder (/utm-builder), URL slug generator (/url-slug-generator), case converter (/case-converter)
+- All in tools-client.js, nothing sent to the server. Element id prefixes ut-, us-, cc- (sg- is taken by the schema generator).
 
 ## Layout
 - `src/` – XKey pages (`content.js`), shell/styles (`site.js`), routing + APIs (`index.js`), browser tools (`tools-client.js`, served as /assets/tools.js), page parser (`page-parse.js`), OG image (`og.js`).
