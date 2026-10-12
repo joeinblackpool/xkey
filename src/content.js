@@ -13,6 +13,10 @@ const TOOLS = [
   ["/domain-authority-checker", "Domain authority checker", "Authority scores for up to 100 websites at once, with links and global rank."],
   ["/redirect-checker", "Redirect checker", "Follow any address hop by hop: 301s, 302s, chains, loops and meta refreshes."],
   ["/http-header-checker", "HTTP header checker", "Every response header for any address, with what each one means for SEO."],
+  ["/ssl-checker", "SSL checker", "Is a site secure? Certificate expiry, https redirects, HSTS and mixed content."],
+  ["/utm-builder", "UTM link builder", "Tracking links for Google Analytics: source, medium and campaign, ready to copy."],
+  ["/url-slug-generator", "URL slug generator", "Turn titles into short, clean, SEO-friendly page addresses."],
+  ["/case-converter", "Case converter", "Sentence case, Title Case, UPPER, lower, camelCase and more in one click."],
   ["/website-technology-checker", "Website technology checker", "What is a site built with? CMS, theme, plugins, analytics, hosting and email."],
   ["/dns-lookup", "DNS lookup", "A, MX, TXT, NS and other records, plus SPF and DMARC email checks."],
   ["/domain-age-checker", "Domain age checker", "How old is a website? Registration and expiry dates for up to 100 domains."],
@@ -248,6 +252,67 @@ export const PAGES = [
 <h2>What it can't tell you</h2>
 <ul><li><strong>What visitors in other countries get.</strong> We visit from Cloudflare's network; sites can send different headers by location, cookie or login.</li><li><strong>Request headers.</strong> This shows what the server sends back, not what your browser sends.</li><li><strong>Sites that block checkers.</strong> A firewall may answer us with a 403 even when the site works in your browser.</li></ul>`,
     faqs: [["Is the HTTP header checker free?", "Yes. No sign-up, no email and no subscription, with only a fair-use limit to stop bots."], ["How do I see HTTP headers in my browser?", "Open developer tools (F12), go to the Network tab, reload the page and click the first request. This tool shows the same thing without the setup, and follows redirects for you."], ["Why is my page not indexed when the HTML has no noindex?", "Check the X-Robots-Tag header here. Some servers, plugins and CDNs add noindex in the header, where it's invisible in the page source."]],
+  },
+  {
+    path: "/ssl-checker", crumb: "SSL checker", parent: ["/seo-tools", "SEO tools"], title: "SSL Checker | Check a Site's Certificate & HTTPS Free",
+    desc: "Free SSL checker: see if a website's certificate is trusted, when it expires and who issued it, whether http redirects to https, HSTS and any mixed content.",
+    h1: "SSL certificate checker", eyebrow: "Any website · Free · No sign-up", app: "XKey SSL checker", form: "ssl",
+    lead: "Type a domain to check its SSL (TLS) certificate and https set-up: whether browsers trust it, when it expires, and anything on the page still loading insecurely.",
+    sections: `<h2>What the SSL checker tests</h2>
+<div class="grid">
+<div class="card"><p class="ct">Trusted certificate</p><p>We connect over https like a browser. If the certificate is missing, expired or for the wrong name, the connection fails and we tell you.</p></div>
+<div class="card"><p class="ct">Expiry and issuer</p><p>Who issued the certificate, the date it runs out and the names it covers, with a warning three weeks before expiry.</p></div>
+<div class="card"><p class="ct">Redirects and HSTS</p><p>Whether http:// sends people to https://, and whether HSTS tells browsers to always use https.</p></div>
+<div class="card"><p class="ct">Mixed content</p><p>Images, scripts and stylesheets on the page still loaded over http://, which browsers block or flag as "Not secure".</p></div>
+</div>
+<h2>Does SSL affect SEO?</h2>
+<p>Yes, in two ways. Google has used https as a ranking signal since 2014, and Chrome labels any page without it "Not secure", which puts visitors off. An expired certificate is worse: browsers show a full-page warning and almost everyone leaves. Most hosts now give free certificates from Let's Encrypt that renew automatically, so the usual problems are a renewal that silently failed, a missing redirect from http, or old http:// image links.</p>
+<h2>How to fix common SSL problems</h2>
+<ul><li><strong>Expired or about to expire:</strong> renew in your hosting control panel, and check automatic renewal is switched on.</li><li><strong>Wrong name:</strong> the certificate must cover both yourbusiness.co.uk and www.yourbusiness.co.uk. Ask your host to add the missing name.</li><li><strong>No redirect:</strong> add a 301 redirect from http:// to https:// (most hosts have a "force https" switch), then test it with the <a href="/redirect-checker">redirect checker</a>.</li><li><strong>Mixed content:</strong> change each http:// address in your pages to https://. On WordPress, a search-and-replace plugin fixes old links in one go.</li></ul>
+<h2>What it can't tell you</h2>
+<p>Workers can't read the certificate a server hands over, so the issuer and dates come from the public Certificate Transparency logs, which record every certificate browsers will trust. A site with several certificates may be using a different one from the newest we show. We check the home page for mixed content, not every page.</p>`,
+    faqs: [["Is the SSL checker free?", "Yes. No sign-up, no email and no subscription, with only a fair-use limit to stop bots."], ["What's the difference between SSL and TLS?", "TLS is the modern version of SSL. Everyone still says SSL certificate, but every secure site today uses TLS."], ["How long does an SSL certificate last?", "Free Let's Encrypt certificates last 90 days and renew automatically. Paid ones last up to a year, and browsers are moving to shorter lifetimes."], ["Do I need to pay for an SSL certificate?", "Not for a normal business website. A free certificate gives exactly the same padlock and encryption as a paid one."]],
+  },
+  {
+    path: "/utm-builder", crumb: "UTM link builder", parent: ["/seo-tools", "SEO tools"], title: "UTM Builder | Free Campaign URL Builder for GA4",
+    desc: "Free UTM builder: add utm_source, utm_medium and utm_campaign to any link so Google Analytics 4 shows which posts, emails and ads bring visitors.",
+    h1: "UTM link builder", eyebrow: "Instant tool · Unlimited", app: "XKey UTM builder", form: "utm",
+    lead: "Fill in where a link will be shared, and copy a tracking link that tells Google Analytics exactly where each visitor came from.",
+    sections: `<h2>What are UTM tags?</h2>
+<p>UTM tags are extra bits at the end of a link, such as <code>?utm_source=facebook&amp;utm_medium=social</code>. They don't change the page people see, but Google Analytics reads them and files the visit under that source, medium and campaign. Without them, a click from your newsletter or a WhatsApp group often shows up as "direct", and you can't tell what worked.</p>
+<h2>Which fields should I fill in?</h2>
+<ul><li><strong>Source</strong> – the site or list the link sits on: facebook, instagram, newsletter, google.</li><li><strong>Medium</strong> – the kind of link: social, email, cpc (paid ads), qr, print. GA4 groups visits into channels from this, so stick to common values.</li><li><strong>Campaign</strong> – your name for the push: spring-sale, boiler-offer-2026.</li><li><strong>Term and content</strong> – optional. Term is for paid keywords; content tells two links in the same email or post apart.</li></ul>
+<h2>Rules that keep your reports clean</h2>
+<ul><li>Use lower case every time. Analytics treats Facebook and facebook as two different sources.</li><li>Never add UTM tags to links between your own pages. They start a new visit and wipe out where the person really came from.</li><li>Google Ads tags its own links automatically. Only add UTMs there if you've turned auto-tagging off.</li><li>Keep a simple list of the names you use, so the whole team tags links the same way.</li></ul>
+<p>Everything runs in your browser, so you can build as many links as you like. Track what those visitors do next with your <a href="/seo-monitoring">weekly SEO monitoring</a>.</p>`,
+    faqs: [["Is the UTM builder free?", "Yes, and unlimited. It runs entirely in your browser, with no sign-up and nothing sent to us."], ["Do UTM tags affect SEO?", "Not if you only use them on links from other places, such as social posts and emails. Don't use them on internal links, and keep a canonical tag on your pages so Google indexes the clean address."], ["Where do I see UTM results?", "In Google Analytics 4, under Reports → Acquisition → Traffic acquisition. Switch the dimension to Session source / medium or Session campaign."], ["Can I shorten a UTM link?", "Yes. Any link shortener keeps the tags; the full address opens behind the short one."]],
+  },
+  {
+    path: "/url-slug-generator", crumb: "URL slug generator", parent: ["/seo-tools", "SEO tools"], title: "URL Slug Generator | SEO-Friendly Slugs Free",
+    desc: "Free URL slug generator: turn page titles into short, lower-case, hyphenated addresses that are easy to read and share, with accents and symbols cleaned up.",
+    h1: "URL slug generator", eyebrow: "Instant tool · Unlimited", app: "XKey URL slug generator", form: "slug",
+    lead: "Paste page titles, one per line, and get clean URL slugs: lower case, hyphens between words, accents and symbols removed, trimmed to a sensible length.",
+    sections: `<h2>What makes a good URL slug?</h2>
+<p>The slug is the part of the address after the domain, such as <code>/boiler-service-blackpool</code>. Google shows it in results and uses the words in it as a small clue to what the page is about. People read it too, before they click and when they share a link.</p>
+<ul><li><strong>Short and descriptive.</strong> Three to five words that say what the page is. Drop dates and numbers that will go out of date.</li><li><strong>Lower case with hyphens.</strong> Google treats hyphens as spaces between words. Underscores join words together.</li><li><strong>No accents, symbols or spaces.</strong> They turn into ugly codes like %C3%A9 when the link is copied.</li><li><strong>Your main keyword once.</strong> Never stuff it in twice.</li></ul>
+<h2>Should I change old URLs to match?</h2>
+<p>Usually not. A page's address carries its history in Google, and changing it without a 301 redirect throws that away. Use good slugs for new pages. If you must change an old one, redirect the old address to the new one and check it with the <a href="/redirect-checker">redirect checker</a>.</p>
+<h2>How this generator cleans text</h2>
+<p>It swaps accented letters for plain ones (é → e, ß → ss), turns &amp; into "and", removes apostrophes so "Blackpool's" becomes "blackpools", replaces everything else with hyphens and trims at a whole word. Tick "remove small words" to drop a, the, and, of and similar. Everything happens in your browser.</p>`,
+    faqs: [["Is the slug generator free?", "Yes, and unlimited. It runs in your browser with no sign-up."], ["How long should a URL slug be?", "As short as it can be while still describing the page. Most good slugs are under 60 characters, and many are under 30."], ["Should I remove stop words from slugs?", "It's optional. Removing them makes slugs shorter, but keep them if the slug reads oddly without them."], ["Does WordPress make slugs automatically?", "Yes, from the title, but it keeps every word. Edit the slug in the page settings before you publish – changing it later needs a redirect."]],
+  },
+  {
+    path: "/case-converter", crumb: "Case converter", parent: ["/seo-tools", "SEO tools"], title: "Case Converter | Sentence, Title, Upper & Lower Case",
+    desc: "Free case converter: change text to sentence case, Title Case, UPPER CASE, lower case, camelCase, snake_case or kebab-case in one click, then copy it.",
+    h1: "Case converter", eyebrow: "Instant tool · Unlimited", app: "XKey case converter", form: "caseconv",
+    lead: "Paste your text, pick a case and copy the result. Handy for headings, page titles, product names and anything typed with Caps Lock on.",
+    sections: `<h2>Which case should I use?</h2>
+<ul><li><strong>Sentence case</strong> – only the first word and names have capitals. Easiest to read; Google's own style and most UK websites use it for headings.</li><li><strong>Title Case</strong> – main words capitalised, small words like "and", "of" and "the" left lower case. Common for page titles and book-style headings.</li><li><strong>Capitalise Each Word</strong> – every word starts with a capital, small words included.</li><li><strong>UPPER CASE</strong> – use sparingly. Whole sentences in capitals read as shouting and are harder to scan.</li><li><strong>camelCase, snake_case and kebab-case</strong> – for code, file names and URLs. kebab-case is the format for page addresses; try the <a href="/url-slug-generator">URL slug generator</a> for those.</li></ul>
+<h2>Does letter case matter for SEO?</h2>
+<p>Not for rankings: Google ignores case when it matches searches. It matters for clicks. A title in sentence or title case looks tidier in search results than one in capitals, and Google sometimes rewrites shouty titles. Check how yours will look with the <a href="/title-tag-checker">title tag checker</a>. Case does matter in page addresses: /Contact and /contact can be two different pages, so keep URLs in lower case.</p>
+<h2>How the title case works</h2>
+<p>Every word is capitalised except short joining words (a, an, and, as, at, but, by, for, in, of, on, or, the, to, up, via, with) unless they start or end the line. Sentence case also capitalises the word "I" and the first word after a full stop, question mark or exclamation mark. Names in the middle of a sentence aren't known to us, so check those by eye.</p>`,
+    faqs: [["Is the case converter free?", "Yes, and unlimited. It runs in your browser, with no sign-up and nothing sent to us."], ["Can I undo a conversion?", "Press Ctrl+Z (Cmd+Z on a Mac) in the text box. Converting to lower case and back can't restore capitals on names, so keep a copy of the original."], ["Does it work with other languages?", "Yes for upper, lower and sentence case in any language with capital letters. The small-word list for title case is English."], ["Is there a limit on text length?", "No fixed limit. Very long documents work, though your browser may slow down past a few hundred thousand words."]],
   },
   {
     path: "/website-technology-checker", crumb: "Website technology checker", parent: ["/seo-tools", "SEO tools"], title: "Website Technology Checker | What's This Site Built With?",

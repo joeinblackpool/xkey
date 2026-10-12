@@ -176,6 +176,87 @@ export function toolsApp() {
     $("wc-kw").innerHTML = words.length ? '<div class="grid" style="margin-top:8px">' + table(count(1), "Top words") + table(count(2), "Top 2-word phrases") + table(count(3), "Top 3-word phrases") + "</div>" : "";
   });
 
+  // ---- UTM link builder
+  live("ut-form", function () {
+    var lower = $("ut-lower").checked, clean = function (v) { v = v.trim(); return lower ? v.toLowerCase().replace(/\s+/g, "-") : v; };
+    var raw = val("ut-url"), notes = [];
+    if (raw && !/^https?:\/\//i.test(raw)) raw = "https://" + raw;
+    var u; try { u = new URL(raw); } catch (e) { $("ut-out").textContent = ""; $("ut-notes").innerHTML = raw ? '<p class="s-warn">That doesn\'t look like a web address.</p>' : ""; return; }
+    [["utm_source", "ut-source"], ["utm_medium", "ut-medium"], ["utm_campaign", "ut-campaign"], ["utm_term", "ut-term"], ["utm_content", "ut-content"]].forEach(function (p) { var v = clean(val(p[1])); if (v) u.searchParams.set(p[0], v); else u.searchParams.delete(p[0]); });
+    var hash = u.hash; u.hash = ""; var out = u.href + hash;
+    if (!val("ut-source")) notes.push("Add a source – Google Analytics needs it to credit the visit.");
+    if (!val("ut-medium")) notes.push("Add a medium (social, email, cpc…) so the visit lands in the right channel in GA4.");
+    if (/gclid|fbclid/.test(u.search)) notes.push("The address already has an ad click id; don't share it.");
+    if (/^(organic|referral|\(none\))$/i.test(val("ut-medium"))) notes.push("\"" + val("ut-medium") + "\" is a medium GA4 uses for its own channels – pick another.");
+    $("ut-out").textContent = out;
+    $("ut-notes").innerHTML = (notes.length ? '<ul class="small">' + notes.map(function (n) { return "<li>" + esc(n) + "</li>"; }).join("") + "</ul>" : "") + '<p class="small">' + out.length + " characters. Never put UTM tags on links between pages of your own site – they restart the visit in Analytics.</p>";
+  });
+  copyBtn("ut-copy", "ut-out");
+
+  // ---- URL slug generator
+  var SMALL = " a an and the of to in on at for by or with from is are as be it its your our my ";
+  var slugify = function (t, max, drop) {
+    var s = t.normalize("NFKD").replace(/[̀-ͯ]/g, "").replace(/ß/g, "ss").replace(/æ/gi, "ae").replace(/ø/gi, "o").replace(/&/g, " and ").replace(/['’`]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+    var w = s.split(" ").filter(Boolean);
+    if (drop) { var kept = w.filter(function (x, i) { return i === 0 || SMALL.indexOf(" " + x + " ") < 0; }); if (kept.length) w = kept; }
+    var out = w.join("-");
+    if (max && out.length > max) { out = out.slice(0, max + 1); out = out.lastIndexOf("-") > 0 ? out.slice(0, out.lastIndexOf("-")) : out.slice(0, max); }
+    return out;
+  };
+  live("us-form", function () {
+    var max = +$("us-max").value, drop = $("us-stop").checked;
+    $("us-out").textContent = val("us-in").split(/\n/).map(function (l) { return l.trim() ? slugify(l, max, drop) : ""; }).filter(Boolean).join("\n");
+  });
+  copyBtn("us-copy", "us-out");
+
+  // ---- case converter
+  var cc = $("cc-form");
+  if (cc) {
+    var LOWER_T = " a an and as at but by for if in nor of off on or per so the to up via vs with ";
+    var words = function (t) { return t.replace(/([a-z0-9])([A-Z])/g, "$1 $2").split(/[^\p{L}\p{N}]+/u).filter(Boolean); };
+    var conv = {
+      lower: function (t) { return t.toLowerCase(); },
+      upper: function (t) { return t.toUpperCase(); },
+      sentence: function (t) { return t.toLowerCase().replace(/(^\s*|[.!?]\s+|\n\s*)(\p{Ll})/gu, function (m, a, b) { return a + b.toUpperCase(); }).replace(/\bi\b/g, "I"); },
+      capital: function (t) { return t.toLowerCase().replace(/(^|[\s(\["'“‘-])(\p{Ll})/gu, function (m, a, b) { return a + b.toUpperCase(); }); },
+      title: function (t) { return t.split(/\n/).map(function (line) { var ws = line.toLowerCase().split(/(\s+)/), real = ws.filter(function (x) { return x.trim(); }).length, n = 0; return ws.map(function (x) { if (!x.trim()) return x; n++; var first = n === 1, last = n === real; return !first && !last && LOWER_T.indexOf(" " + x.replace(/[^a-z]/g, "") + " ") >= 0 && x.replace(/[^a-z]/g, "") ? x : x.replace(/\p{Ll}/u, function (c) { return c.toUpperCase(); }); }).join(""); }).join("\n"); },
+      alt: function (t) { var i = 0; return t.replace(/\p{L}/gu, function (c) { return i++ % 2 ? c.toUpperCase() : c.toLowerCase(); }); },
+      camel: function (t) { return t.split(/\n/).map(function (l) { return words(l).map(function (w, i) { w = w.toLowerCase(); return i ? w.charAt(0).toUpperCase() + w.slice(1) : w; }).join(""); }).join("\n"); },
+      snake: function (t) { return t.split(/\n/).map(function (l) { return words(l).map(function (w) { return w.toLowerCase(); }).join("_"); }).join("\n"); },
+      kebab: function (t) { return t.split(/\n/).map(function (l) { return words(l).map(function (w) { return w.toLowerCase(); }).join("-"); }).join("\n"); },
+    };
+    var count = function () { var t = $("cc-in").value; $("cc-n").textContent = (t.match(/[\p{L}\p{N}][\p{L}\p{N}'’-]*/gu) || []).length + " words · " + t.length + " characters"; };
+    $("cc-in").addEventListener("input", count); count();
+    $("cc-btns").addEventListener("click", function (ev) { var b = ev.target.closest("button[data-c]"); if (!b) return; $("cc-in").value = conv[b.getAttribute("data-c")]($("cc-in").value); $("cc-hidden").textContent = $("cc-in").value; count(); });
+    cc.addEventListener("submit", function (ev) { ev.preventDefault(); });
+    $("cc-copy").addEventListener("click", function () { $("cc-hidden").textContent = $("cc-in").value; var b = $("cc-copy"); (navigator.clipboard ? navigator.clipboard.writeText($("cc-in").value) : Promise.reject()).then(function () { b.textContent = "Copied"; }, function () { $("cc-in").select(); b.textContent = "Press Ctrl+C to copy"; }); setTimeout(function () { b.textContent = "Copy text"; }, 2000); });
+  }
+
+  // ---- SSL checker (/api/ssl)
+  var sl = $("sl-form");
+  if (sl) {
+    var slq = (location.search.match(/[?&]d=([^&]+)/) || [])[1];
+    if (slq && !$("sl-d").value.trim()) { try { $("sl-d").value = decodeURIComponent(slq.replace(/\+/g, " ")); } catch (e) {} setTimeout(function () { sl.requestSubmit ? sl.requestSubmit() : sl.dispatchEvent(new Event("submit", { cancelable: true })); }, 0); }
+    sl.addEventListener("submit", function (ev) {
+      ev.preventDefault();
+      var d = $("sl-d").value.trim(), out = $("sl-out");
+      if (!d) { $("sl-d").focus(); return; }
+      out.innerHTML = "<p>Checking the certificate…</p>";
+      fetch("/api/ssl?d=" + encodeURIComponent(d)).then(function (r) { return r.json(); }).then(function (j) {
+        if (j.error) { out.innerHTML = '<p class="s-fail">' + esc(j.error) + "</p>"; return; }
+        var lc = { fail: "#cf222e", warn: "#9a6700", ok: "#1a7f37", info: "inherit" }, icon = { fail: "✗", warn: "!", ok: "✓", info: "•" };
+        var bad = j.checks.some(function (c) { return c.level === "fail"; });
+        var h = '<div class="card" style="margin:16px 0"><p class="ct" style="overflow-wrap:anywhere">' + esc(j.name) + '</p><p style="font-size:24px;margin:8px 0;color:' + (bad ? "#cf222e" : "#1a7f37") + '"><b>' + (j.secure ? (bad ? "Secure, with problems" : "Secure") : "Not secure") + "</b></p>" +
+          '<ul style="list-style:none;padding:0;margin:8px 0">' + j.checks.map(function (n) { return '<li style="margin:6px 0;overflow-wrap:anywhere;color:' + lc[n.level] + '"><b>' + icon[n.level] + "</b> " + esc(n.text) + "</li>"; }).join("") + "</ul></div>";
+        if (j.cert) h += '<div class="tablewrap"><table><tbody><tr><th scope="row" style="text-align:left">Issued by</th><td>' + esc(j.cert.issuer) + '</td></tr><tr><th scope="row" style="text-align:left">Valid from</th><td>' + esc(j.cert.from) + '</td></tr><tr><th scope="row" style="text-align:left">Expires</th><td style="color:' + col(j.cert.daysLeft >= 21, j.cert.daysLeft >= 7) + '">' + esc(j.cert.to) + " (" + j.cert.daysLeft + ' days)</td></tr><tr><th scope="row" style="text-align:left;vertical-align:top">Covers</th><td style="overflow-wrap:anywhere">' + j.cert.names.map(esc).join(", ") + "</td></tr></tbody></table></div>";
+        else h += '<p class="small">' + (j.ctError ? "The public certificate logs didn't answer just now, so we can't show the dates – try again in a minute." : "No current certificate for this exact name was found in the public certificate logs.") + "</p>";
+        if (j.mixed.length) h += "<h3>Insecure items on the page</h3><ul>" + j.mixed.slice(0, 30).map(function (m) { return '<li style="overflow-wrap:anywhere">' + (m.active ? "<b>Blocked</b> " : "") + "&lt;" + esc(m.tag) + "&gt; " + esc(m.url) + "</li>"; }).join("") + "</ul><p class=\"small\">Change each address to start with https://, or remove it.</p>";
+        h += '<p class="small">Certificate dates come from public Certificate Transparency logs (crt.sh), which list every certificate issued; the server checks are made live. See all response headers with the <a href="/http-header-checker?url=' + encodeURIComponent("https://" + j.name) + '">HTTP header checker</a>.</p>';
+        out.innerHTML = h;
+      }).catch(function () { out.innerHTML = '<p class="s-fail">Couldn\'t check that site – please try again.</p>'; });
+    });
+  }
+
   // ---- long-tail keyword generator
   live("kw-form", function () {
     var seed = val("kw-seed").toLowerCase().replace(/\s+/g, " "), town = val("kw-town").toLowerCase();

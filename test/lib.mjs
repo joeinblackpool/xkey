@@ -49,7 +49,7 @@ export async function serve(port = 8789, workerPath = "../src/index.js") {
   }) }) };
   // Backlink index stand-in: the files build.py publishes (format 2), from test/fixtures/backlinks.
   const BL_DATA = blData("backlinks");
-  const env = { STATE, AI, BL_DATA, ...whoisStandIns(), DNS_FETCH: dnsStandIn() };
+  const env = { STATE, AI, BL_DATA, ...whoisStandIns(), DNS_FETCH: dnsStandIn(), CT_FETCH: ctStandIn() };
   const worker = (await import(new URL(workerPath, import.meta.url).href)).default;
   const server = http.createServer(async (req, res) => {
     const chunks = []; for await (const c of req) chunks.push(c);
@@ -116,4 +116,15 @@ export function dnsStandIn() {
     const data = (zone[name] && zone[name][type]) || [];
     return Response.json({ Status: 0, AD: name.startsWith("smith"), Answer: data.map((d) => ({ name: name + ".", type: T[type], TTL: 300, data: d })) });
   };
+}
+
+/** Stand-in for crt.sh's JSON (see src/ssl.js): a current and an expired certificate for xkey.co.uk,
+ *  a wildcard one for smithplumbing.co.uk that expires in 5 days, and an error for down.co.uk. */
+export function ctStandIn() {
+  const day = (n) => new Date(Date.now() + n * 86_400_000).toISOString().slice(0, 19);
+  const certs = {
+    "xkey.co.uk": [{ id: 2, issuer_name: "C=US, O=Google Trust Services, CN=WE1", name_value: "xkey.co.uk\n*.xkey.co.uk", not_before: day(-30), not_after: day(60) }, { id: 1, issuer_name: "C=US, O=Let's Encrypt, CN=R3", name_value: "xkey.co.uk", not_before: day(-120), not_after: day(-30) }],
+    "smithplumbing.co.uk": [{ id: 3, issuer_name: "C=US, O=Let's Encrypt, CN=R11", name_value: "*.co.uk\nsmithplumbing.co.uk", not_before: day(-85), not_after: day(5) }],
+  };
+  return async (url) => { const q = new URL(url).searchParams.get("q"); if (q === "down.co.uk") return new Response("busy", { status: 502 }); return Response.json(certs[q] || []); };
 }
