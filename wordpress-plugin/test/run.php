@@ -5,7 +5,7 @@
  * Run: php wordpress-plugin/test/run.php
  */
 
-define( 'XKEY_SF_TESTING', true );
+define( 'ABSPATH', __DIR__ . '/' );
 
 // Stand-ins for the two WordPress helpers transforms.php uses (same behaviour as core).
 function wp_strip_all_tags( $text ) {
@@ -76,7 +76,9 @@ check( 'demote no-op', xkey_sf_demote_h1( '<p>none</p>' ), '<p>none</p>' );
 
 // Descriptions.
 check( 'desc short', xkey_sf_make_description( '<p>Hello <strong>world</strong>.</p>' ), 'Hello world.' );
-check( 'desc strips', xkey_sf_make_description( "<!-- wp:paragraph --><p>One&nbsp;two</p><!-- /wp:paragraph -->[gallery ids=\"1,2\"]<script>x()</script><style>p{}</style><h2>Three</h2>" ), 'One two Three' );
+check( 'desc strips', xkey_sf_make_description( "<!-- wp:paragraph --><p>One&nbsp;two</p><!-- /wp:paragraph -->[gallery ids=\"1,2\"]<script>x()</script><style>p{}</style><h2>Three</h2>" ), 'One two' );
+check( 'desc skips headings', xkey_sf_make_description( '<h1>Our services</h1><p>Kitchens fitted across Blackpool.</p>' ), 'Kitchens fitted across Blackpool.' );
+check( 'desc headings only', xkey_sf_make_description( '<h2>Just a heading</h2>' ), 'Just a heading' );
 $long = '<p>We fit new boilers across Blackpool and the Fylde coast. Gas Safe engineers, fixed prices and a ten-year guarantee on every install. Call us today for a free quote and same-week fitting.</p>';
 $d    = xkey_sf_make_description( $long );
 check( 'desc sentences', $d, 'We fit new boilers across Blackpool and the Fylde coast. Gas Safe engineers, fixed prices and a ten-year guarantee on every install.' );

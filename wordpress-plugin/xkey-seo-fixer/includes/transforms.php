@@ -3,13 +3,13 @@
  * Pure string transforms used by XKey SEO Fixer.
  *
  * Nothing in this file depends on WordPress, so it can be tested with plain PHP
- * (see wordpress-plugin/test/run.php). Every function changes only the exact
+ * (see wordpress-plugin/test/run.php, which defines ABSPATH). Every function changes only the exact
  * tag or attribute it targets and leaves the rest of the content byte-for-byte.
  *
  * @package XKey_SEO_Fixer
  */
 
-if ( ! defined( 'ABSPATH' ) && ! defined( 'XKEY_SF_TESTING' ) ) {
+if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
@@ -210,7 +210,7 @@ function xkey_sf_text_from_html( $html ) {
 }
 
 /**
- * Builds a meta description: whole sentences up to $max characters, or the
+ * Builds a meta description from the text outside headings: whole sentences up to $max characters, or the
  * text cut at a word boundary with an ellipsis.
  *
  * @param string $html Excerpt or post content.
@@ -218,7 +218,11 @@ function xkey_sf_text_from_html( $html ) {
  * @return string
  */
 function xkey_sf_make_description( $html, $max = 155 ) {
-	$text = xkey_sf_text_from_html( $html );
+	// Headings read badly in a search snippet ("Our services Our new kitchen…"), so use the body text when there is any.
+	$text = xkey_sf_text_from_html( preg_replace( '/<h([1-6])\b[^>]*>.*?<\/h\1\s*>/is', ' ', (string) $html ) );
+	if ( '' === $text ) {
+		$text = xkey_sf_text_from_html( $html );
+	}
 	if ( xkey_sf_strlen( $text ) <= $max ) {
 		return $text;
 	}
