@@ -23,6 +23,14 @@ Free SEO & AI search checker for UK businesses, made by IceWork (icework.co.uk).
 ## Domain authority checker (/domain-authority-checker)
 - Same index as the backlink checker. `GET /api/authority?d=a.com,b.co.uk` (≤10 sites; the page sends up to 100 in batches). Authority = 100 × (1 − ln(hc_rank) / ln(ranked)), min 1; falls back to link strength when a release has no ranks. Ranks are optional in the build: if the ranks file is missing, the build still runs with every rank 0.
 
+## Website reports (/website-report hub, /site/<domain>)
+- `src/site-report.js`: one server-rendered page per domain – authority, global rank, referring domains and the 50 strongest linkers (`siteLinks` in backlinks.js), registration via `lookupDomain` (whois.js, 4 s cap). Hosting and technology load only when the visitor presses the button (`/api/hosting`, `/api/tech`), so the page stays fast. `/site?d=` and non-canonical forms (www, capitals, subdomains) redirect to `/site/<registered domain>`.
+- **Indexing gate** (`indexable`): index,follow only for rank 1–1,000,000 with ≥ 50 referring domains; everything else is noindex,follow. No links + not registered = 404. Rendered pages are cached a day (`VERSION` in the cache key – bump it after template changes). Reports link to each linker's report, and the hub lists popular UK sites, so Google finds them without a sitemap.
+- check.mjs skips `/site/` links (they need the link index); tools.mjs covers them with the fixtures.
+
+## Email deliverability guides
+- `src/email-guides.js`: spam causes hub, Gmail/Yahoo/Microsoft sender rules, Microsoft 365 and Google Workspace SPF/DKIM/DMARC setup, DMARC rollout. They link to the MX/SPF/DKIM/DMARC checkers.
+
 ## Domain age checker (/domain-age-checker) and WHOIS lookup (/whois-lookup)
 - `src/whois.js`, `GET /api/whois?d=a.com,b.co.uk` (≤10; the age page sends up to 100 in batches; raw WHOIS text only for single lookups). Registry data via RDAP, base URL per ending from IANA's bootstrap (data.iana.org/rdap/dns.json, cached a day). Endings without RDAP (.de, .eu, .it, .ie …) fall back to WHOIS on port 43 (`cloudflare:sockets`, server from whois.iana.org). Results cached 12 h (not registered: 1 h).
 - Tests use stand-ins `env.WHOIS_FETCH` / `env.WHOIS_TCP` (`whoisStandIns()` in test/lib.mjs). Real-world check: `node test/live.mjs registries` (real registries) and `node test/live.mjs site` (live xkey.co.uk APIs), run by `.github/workflows/live-check.yml` on pushes, after deploys to main and weekly.

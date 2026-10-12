@@ -60,6 +60,7 @@ const TOOLS = [
   ["/bulk-seo-checker", "Bulk SEO checker", "Score up to 20 websites at once and download a CSV."],
   ["/redirect-map-generator", "Redirect map generator", "301 rules for .htaccess, Nginx, Cloudflare and more."],
   ["/seo-roi-calculator", "SEO ROI calculator", "What a better Google position could earn you."],
+  ["/website-report", "Website report", "Authority, rank, linking sites, age and hosting for any domain."],
   ["/seo-badge", "SEO score badge", "Show your score on your site – it updates itself weekly."],
   ...PRO_TOOLS,
 ];
@@ -72,6 +73,8 @@ import { GUIDES_8 } from "./guides-8.js";
 import { GUIDES_10 } from "./guides-10.js";
 import { DIRECTORIES_PAGE } from "./directories-page.js";
 import { MORE_PAGES } from "./more-pages.js";
+import { SITE_REPORT_PAGE } from "./site-report.js";
+import { EMAIL_GUIDES } from "./email-guides.js";
 
 export const PAGES = [
   {
@@ -1258,4 +1261,6 @@ Sitemap: https://yourdomain.co.uk/sitemap.xml</code></pre>
   ...GUIDES_10,
   DIRECTORIES_PAGE,
   ...MORE_PAGES,
+  SITE_REPORT_PAGE,
+  ...EMAIL_GUIDES,
 ];
