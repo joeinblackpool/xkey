@@ -5,7 +5,9 @@
 // fails on: a browser error (e.g. a script crashing on load), a missing/empty result, or a result
 // without the expected text. Checks run on xkey.co.uk itself, which the Worker handles
 // in-process, so no internet is needed.
-import { need, serve, blData, whoisStandIns, dnsStandIn, ctStandIn } from "./lib.mjs";
+import { need, serve, blData, whoisStandIns, dnsStandIn, ctStandIn, dohStandIn } from "./lib.mjs";
+import { propagationApi, encodeQuery, decodeAnswers } from "../src/propagation.js";
+import { ptrApi } from "../src/ptr.js";
 import { whoisApi, whoisDate, parseWhois } from "../src/whois.js";
 import { traceRedirects, metaRefresh, redirectsApi } from "../src/redirects.js";
 import { extractLinks, linkStatus, linksCheckApi } from "../src/linkcheck.js";
@@ -108,6 +110,13 @@ if (!only || only.test("backlink") || only.test("whois") || only.test("redirect"
     ["meta: head tags, hreflang in <head> and Link header, after a redirect", async () => { const t = headTags(`<html lang="en-GB"><head><title>T &amp; Co</title><meta property="og:title" content="OG"><meta name="description" content='D'><link rel="alternate" hreflang="en-GB" href="/en-gb/"><link rel="canonical" href="https://a.co.uk/"><!-- <meta property="og:image" content="x"> --></head><body><meta property="og:image" content="late"></body></html>`, "https://a.co.uk/");
       const r = (await metaApi(new URLSearchParams({ url: "smithplumbing.co.uk" }), async (u) => u === "https://smithplumbing.co.uk/" ? new Response(null, { status: 301, headers: { location: "https://www.smithplumbing.co.uk/" } }) : new Response("<html><head><title>W</title></head></html>", { headers: { "content-type": "text/html", link: '<https://www.smithplumbing.ie/>; rel="alternate"; hreflang="en-IE"' } }))).body;
       return t.title === "T & Co" && t.lang === "en-GB" && t.metas.length === 2 && t.metas[0].key === "og:title" && t.links[0].href === "https://a.co.uk/en-gb/" && t.links[0].hreflang === "en-GB" && r.url === "https://www.smithplumbing.co.uk/" && r.title === "W" && r.links.some((l) => l.header && l.hreflang === "en-IE"); }],
+    ["propagation: own name server, one resolver behind, one down; bad input", async () => { const env = { DNS_FETCH: dnsStandIn(), ...dohStandIn() }; const r = (await propagationApi(env, new URLSearchParams({ d: "xkey.co.uk", t: "a" }))).body; const q = r.resolvers.find((x) => /Quad9/.test(x.label)), ali = r.resolvers.find((x) => /Ali/.test(x.label));
+      const mx = (await propagationApi(env, new URLSearchParams({ d: "https://smithplumbing.co.uk/x", t: "MX" }))).body, nx = (await propagationApi(env, new URLSearchParams({ d: "nothing-xkey-12345.co.uk" }))).body, bad = await propagationApi(env, new URLSearchParams({ d: "xkey.co.uk", t: "SOA" }));
+      const v6 = decodeAnswers(encodeQuery("a.b", "AAAA")); // a query has no answers
+      return r.fromAuthority && r.authority.label === "ada.ns.cloudflare.com" && r.expected === "192.0.2.30" && q.key === "192.0.2.99" && q.match === false && !ali.ok && r.resolvers.filter((x) => x.match).length === 8
+        && mx.expected === "10 mail.smithplumbing.co.uk" && !mx.fromAuthority && nx.expected === "(does not exist)" && bad.status === 400 && v6.answers.length === 0; }],
+    ["ptr: IP, domain, IPv6, forward check, bad input", async () => { const r = (await ptrApi({ DNS_FETCH: dnsStandIn() }, new URLSearchParams({ q: "192.0.2.10, smithplumbing.co.uk 2001:DB8::10 999.1.1.1" }))).body.results; const none = await ptrApi({}, new URLSearchParams({ q: " " }));
+      return r[0].ptr[0] === "server12.krystal.uk" && r[0].confirmed && r[1].domain === "smithplumbing.co.uk" && r[1].confirmed && r[2].ip === "2001:db8::10" && r[2].domain && r[3].ip === "2001:db8::10" && !r[3].domain && r[4].error && none.status === 400; }],
     ["ssl: secure site, http redirect, HSTS, mixed content, certificate expiring soon", async () => {
       const page = '<html><body><img src="http://cdn.smithplumbing.co.uk/a.jpg"><script src="http://old.example.com/x.js"></script><img src="https://ok/b.png" srcset="http://cdn.x/c.jpg 2x"><a href="http://fine.example.com/">link</a></body></html>';
       const f = async (u) => u === "http://smithplumbing.co.uk/" ? new Response(null, { status: 301, headers: { location: "https://smithplumbing.co.uk/" } }) : u === "https://smithplumbing.co.uk/" ? new Response(page, { headers: { "content-type": "text/html", "strict-transport-security": "max-age=31536000" } }) : new Response("", { status: 404 });
@@ -196,6 +205,11 @@ const S = [
       if (/\/de/.test(at)) return { url: "https://shop.example.com/de/", status: 200, metas: [], links: [L("de", "de/")] };
       return { url: "https://shop.example.com" + new URL("https://" + at).pathname, status: 404, metas: [], links: [] }; }]],
     expect: ["#hl-out", /UK, but the country code[\s\S]*No x-default[\s\S]*2 of 3 alternate pages[\s\S]*fr-FR[\s\S]*Yes[\s\S]*de[\s\S]*No – add a tag/] },
+  { name: "DNS propagation checker", path: "/dns-propagation-checker", fill: [["dp-d", "xkey.co.uk"]], click: "#dp-form button[type=submit]", expect: ["#dp-out", /8 of 9 DNS services[\s\S]*Your name server[\s\S]*ada\.ns\.cloudflare\.com[\s\S]*192\.0\.2\.30[\s\S]*Quad9[\s\S]*192\.0\.2\.99[\s\S]*Different[\s\S]*AliDNS[\s\S]*No answer/] },
+  { name: "DNS propagation checker – MX from a link", path: "/dns-propagation-checker?d=smithplumbing.co.uk&t=mx", expect: ["#dp-out", /MX records for smithplumbing\.co\.uk[\s\S]*All 9 DNS services[\s\S]*10 mail\.smithplumbing\.co\.uk/] },
+  { name: "Reverse DNS lookup", path: "/reverse-dns-lookup", fill: [["pt-q", "192.0.2.10 xkey.co.uk"]], click: "#pt-form button[type=submit]", expect: ["#pt-out", /1 address has no reverse DNS[\s\S]*1 address has a reverse DNS name[\s\S]*server12\.krystal\.uk[\s\S]*Yes[\s\S]*192\.0\.2\.30[\s\S]*xkey\.co\.uk[\s\S]*none/] },
+  { name: "Meta tag checker", path: "/meta-tag-checker", fill: [["mc-url", "xkey.co.uk"]], click: "#mc-form button[type=submit]", expect: ["#mc-out", /xkey\.co\.uk[\s\S]*Title: \d+ characters[\s\S]*Every meta tag[\s\S]*viewport/] },
+  { name: "Meta tag checker – problems", path: "/meta-tag-checker?url=example.co.uk", routes: [[/\/api\/meta/, () => ({ url: "https://example.co.uk/", status: 200, title: "Home", lang: "", metas: [{ key: "robots", content: "noindex, nofollow" }, { key: "keywords", content: "a,b" }, { key: "description", content: "One" }, { key: "description", content: "Two" }], links: [] })]], expect: ["#mc-out", /Home[\s\S]*title is short[\s\S]*2 meta descriptions[\s\S]*noindex[\s\S]*No viewport[\s\S]*No canonical[\s\S]*No language[\s\S]*meta keywords/] },
   { name: "Website hosting checker", path: "/website-hosting-checker", fill: [["ho-d", "xkey.co.uk"]], click: "#ho-form button[type=submit]", expect: ["#ho-out", /Hosted by Cloudflare[\s\S]*192\.0\.2\.30[\s\S]*CLOUDFLARENET/] },
   { name: "Website hosting checker – opened from a link", path: "/website-hosting-checker?d=xkey.co.uk", expect: ["#ho-out", /192\.0\.2\.30/] },
   { name: "Website technology checker", path: "/website-technology-checker", fill: [["tc-url", "xkey.co.uk"]], click: "#tc-form button[type=submit]", expect: ["#tc-out", /technolog[\s\S]*Email provider[\s\S]*Google Workspace[\s\S]*DNS provider[\s\S]*Cloudflare[\s\S]*Google Search Console/] },

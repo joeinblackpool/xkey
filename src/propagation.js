@@ -101,7 +101,7 @@ export async function propagationApi(env, params) {
   let name; try { name = dnsName(params.get("d")); } catch (e) { return { status: 400, body: { error: e.message } }; }
   const type = (params.get("t") || "A").toUpperCase();
   if (!PROP_TYPES[type]) return { status: 400, body: { error: "Pick A, AAAA, CNAME, MX, NS or TXT." } };
-  const run = async (fn) => { const t0 = Date.now(); try { const r = await fn(); return { ok: true, nx: r.rcode === 3, rcode: r.rcode, answers: r.answers, ms: Date.now() - t0 }; } catch (e) { return { ok: false, error: e.name === "AbortError" ? "No answer in time" : "No answer", ms: Date.now() - t0 }; } };
+  const run = async (fn) => { const t0 = Date.now(); try { const r = await fn(); return { ok: true, nx: r.rcode === 3, rcode: r.rcode, answers: r.answers, ms: Date.now() - t0 }; } catch (e) { return { ok: false, error: e.name === "AbortError" ? "No answer in time" : "No answer", why: String(e.message || e).slice(0, 80), ms: Date.now() - t0 }; } };
   const [pub, auth] = await Promise.all([
     Promise.all(RESOLVERS.map(([label, country, url]) => run(() => viaDoh(env, url, name, type)).then((r) => ({ label, country, ...r })))),
     (async () => {

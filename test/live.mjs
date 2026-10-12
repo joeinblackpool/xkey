@@ -47,7 +47,7 @@ if (process.argv.includes("dns")) {
   for (const [d, t] of [["bbc.co.uk", "A"], ["github.com", "MX"], ["google.com", "TXT"], ["www.gov.uk", "CNAME"], ["this-domain-is-not-registered-xkey-12345.co.uk", "A"]]) {
     const r = (await propagationApi(env, new URLSearchParams({ d, t }))).body;
     console.log(d, t, JSON.stringify(r.expected), "authority:", r.authority && (r.authority.ok ? r.authority.label : r.authority.error));
-    for (const x of r.resolvers) console.log("   ", x.label.padEnd(24), x.ok ? (x.match ? "same" : "DIFF " + x.key.replace(/\n/g, " | ")) : x.error, x.ms + "ms");
+    for (const x of r.resolvers) console.log("   ", x.label.padEnd(24), x.ok ? (x.match ? "same" : "DIFF " + x.key.replace(/\n/g, " | ")) : x.error + " (" + x.why + ")", x.ms + "ms");
     const ok = r.resolvers.filter((x) => x.ok);
     check(`propagation: ${d} ${t} – most services answer and agree`, ok.length >= 7 && ok.filter((x) => x.match).length >= ok.length - 2, `${ok.length} answered, ${ok.filter((x) => x.match).length} same`);
     if (t !== "CNAME") check(`propagation: ${d} – own name server answers`, !!(r.authority && r.authority.ok), r.authority ? r.authority.label + " " + (r.authority.error || "") : "none");
