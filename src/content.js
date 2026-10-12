@@ -3,6 +3,7 @@
 // focus: report section to jump to after a check (matches the report's section ids).
 import { BUILDER_GUIDES } from "./builder-guides.js";
 import { BEGINNER_GUIDES } from "./beginner-guides.js";
+import { TRADE_GUIDES } from "./trade-guides.js";
 
 const TOOLS = [
   ["/", "Free SEO check", "Full single-page audit: Google readiness, AI search, speed, security and local SEO."],
@@ -958,6 +959,7 @@ Sitemap: https://yourdomain.co.uk/sitemap.xml</code></pre>
   },
   ...BEGINNER_GUIDES,
   ...BUILDER_GUIDES,
+  ...TRADE_GUIDES,
   {
     path: "/about", crumb: "About", title: "About XKey | Free UK SEO Checker",
     desc: "XKey is a free SEO and AI search checker made by IceWork, a small web studio in Blackpool, for UK businesses.",
