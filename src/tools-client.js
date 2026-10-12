@@ -1124,6 +1124,166 @@ export function toolsApp() {
     });
   });
 
+  // ---- favicon generator (drawn on a canvas in the browser; .ico holds 16, 32 and 48 px PNGs)
+  var fg = $("fg-form");
+  if (fg) {
+    var fgImg = null, fgUrls = [], fgTimer = 0;
+    var fgMode = function () { return $("fg-m-img").checked ? "img" : "text"; };
+    var fgDraw = function (size) {
+      var c = document.createElement("canvas"); c.width = c.height = size;
+      var x = c.getContext("2d");
+      if (fgMode() === "img") {
+        if (!fgImg) return null;
+        var w = fgImg.naturalWidth || fgImg.width, h = fgImg.naturalHeight || fgImg.height, s = Math.min(w, h);
+        x.imageSmoothingQuality = "high";
+        x.drawImage(fgImg, (w - s) / 2, (h - s) / 2, s, s, 0, 0, size, size);
+        return c;
+      }
+      var shape = $("fg-shape").value, r = shape === "circle" ? size / 2 : shape === "round" ? size * 0.2 : 0;
+      x.fillStyle = $("fg-bg").value;
+      x.beginPath(); x.moveTo(r, 0); x.arcTo(size, 0, size, size, r); x.arcTo(size, size, 0, size, r); x.arcTo(0, size, 0, 0, r); x.arcTo(0, 0, size, 0, r); x.closePath(); x.fill();
+      var t = $("fg-t").value.trim().slice(0, 3) || "?";
+      x.fillStyle = $("fg-fg").value; x.textAlign = "center"; x.textBaseline = "middle";
+      x.font = "700 " + Math.round(size * [0.62, 0.48, 0.36][t.length - 1]) + "px system-ui, -apple-system, Segoe UI, Arial, sans-serif";
+      x.fillText(t, size / 2, size * 0.54);
+      return c;
+    };
+    var fgBlob = function (c) { return new Promise(function (ok) { c.toBlob(ok, "image/png"); }); };
+    var fgIco = function (blobs) {
+      return Promise.all(blobs.map(function (b) { return b.arrayBuffer(); })).then(function (bufs) {
+        var head = new DataView(new ArrayBuffer(6 + 16 * bufs.length)), off = 6 + 16 * bufs.length, sizes = [16, 32, 48];
+        head.setUint16(2, 1, true); head.setUint16(4, bufs.length, true);
+        bufs.forEach(function (b, i) { var e = 6 + 16 * i; head.setUint8(e, sizes[i]); head.setUint8(e + 1, sizes[i]); head.setUint16(e + 4, 1, true); head.setUint16(e + 6, 32, true); head.setUint32(e + 8, b.byteLength, true); head.setUint32(e + 12, off, true); off += b.byteLength; });
+        return new Blob([head.buffer].concat(bufs), { type: "image/x-icon" });
+      });
+    };
+    var fgSvg = function () {
+      var t = ($("fg-t").value.trim().slice(0, 3) || "?").replace(/[&<>]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]; }), shape = $("fg-shape").value;
+      var bg = shape === "circle" ? '<circle cx="50" cy="50" r="50"' : '<rect width="100" height="100"' + (shape === "round" ? ' rx="20"' : "");
+      return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">' + bg + ' fill="' + $("fg-bg").value + '"/><text x="50" y="54" text-anchor="middle" dominant-baseline="middle" font-family="system-ui,-apple-system,Segoe UI,Arial,sans-serif" font-weight="700" font-size="' + [62, 48, 36][t.replace(/&\w+;/g, "x").length - 1] + '" fill="' + $("fg-fg").value + '">' + t + "</text></svg>";
+    };
+    var fgRun = function () {
+      $("fg-text").hidden = fgMode() !== "text"; $("fg-img").hidden = fgMode() !== "img";
+      if (fgMode() === "img" && !fgImg) { $("fg-prev").innerHTML = '<p class="small">Choose an image to see your favicon.</p>'; $("fg-dl").innerHTML = ""; $("fg-code").textContent = ""; return; }
+      var sizes = [16, 32, 48, 180, 192, 512], cs = sizes.map(fgDraw);
+      $("fg-prev").innerHTML = "";
+      [16, 32, 48, 180].forEach(function (s, i) { var d = document.createElement("div"); d.style.textAlign = "center"; var im = new Image(); im.src = cs[i].toDataURL(); im.width = im.height = Math.min(s, 96); im.alt = s + " × " + s + " favicon preview"; d.appendChild(im); d.insertAdjacentHTML("beforeend", '<div class="small">' + s + " px</div>"); $("fg-prev").appendChild(d); });
+      Promise.all(cs.map(fgBlob)).then(function (bl) {
+        return fgIco(bl.slice(0, 3)).then(function (ico) {
+          fgUrls.forEach(function (u) { URL.revokeObjectURL(u); }); fgUrls = [];
+          var text = fgMode() === "text";
+          var files = [["favicon.ico", ico], ["apple-touch-icon.png", bl[3]], ["icon-192.png", bl[4]], ["icon-512.png", bl[5]]];
+          if (text) files.push(["favicon.svg", new Blob([fgSvg()], { type: "image/svg+xml" })]);
+          files.push(["site.webmanifest", new Blob([JSON.stringify({ name: "Your site", icons: [{ src: "/icon-192.png", type: "image/png", sizes: "192x192" }, { src: "/icon-512.png", type: "image/png", sizes: "512x512" }] }, null, 2)], { type: "application/manifest+json" })]);
+          $("fg-dl").innerHTML = files.map(function (f) { var u = URL.createObjectURL(f[1]); fgUrls.push(u); return '<a class="btn ghost" href="' + u + '" download="' + f[0] + '">' + f[0] + "</a>"; }).join("");
+          $("fg-code").textContent = '<link rel="icon" href="/favicon.ico" sizes="48x48">\n' + (text ? '<link rel="icon" href="/favicon.svg" type="image/svg+xml">\n' : "") + '<link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192">\n<link rel="apple-touch-icon" href="/apple-touch-icon.png">\n<link rel="manifest" href="/site.webmanifest">';
+        });
+      });
+    };
+    var fgLater = function () { clearTimeout(fgTimer); fgTimer = setTimeout(fgRun, 120); };
+    fg.addEventListener("input", fgLater); fg.addEventListener("change", fgLater);
+    fg.addEventListener("submit", function (ev) { ev.preventDefault(); });
+    $("fg-file").addEventListener("change", function () {
+      var f = this.files && this.files[0]; if (!f) return;
+      var im = new Image(); im.onload = function () { fgImg = im; fgRun(); }; im.onerror = function () { fgImg = null; $("fg-prev").innerHTML = '<p class="s-fail">That file couldn\'t be read as an image.</p>'; }; im.src = URL.createObjectURL(f);
+    });
+    copyBtn("fg-copy", "fg-code");
+    fgRun();
+  }
+
+  // ---- hreflang tag generator
+  var hg = $("hg-form");
+  if (hg) {
+    var HG_LANG = [["en", "English"], ["cy", "Welsh"], ["ga", "Irish"], ["gd", "Scottish Gaelic"], ["fr", "French"], ["de", "German"], ["es", "Spanish"], ["it", "Italian"], ["pt", "Portuguese"], ["nl", "Dutch"], ["pl", "Polish"], ["ro", "Romanian"], ["sv", "Swedish"], ["da", "Danish"], ["no", "Norwegian"], ["fi", "Finnish"], ["el", "Greek"], ["cs", "Czech"], ["hu", "Hungarian"], ["tr", "Turkish"], ["ru", "Russian"], ["uk", "Ukrainian"], ["ar", "Arabic"], ["he", "Hebrew"], ["hi", "Hindi"], ["ur", "Urdu"], ["pa", "Punjabi"], ["bn", "Bengali"], ["zh-Hans", "Chinese (simplified)"], ["zh-Hant", "Chinese (traditional)"], ["ja", "Japanese"], ["ko", "Korean"], ["th", "Thai"], ["vi", "Vietnamese"], ["id", "Indonesian"], ["ms", "Malay"]];
+    var HG_REG = [["", "Any country"], ["GB", "United Kingdom (GB)"], ["IE", "Ireland"], ["US", "United States"], ["CA", "Canada"], ["AU", "Australia"], ["NZ", "New Zealand"], ["ZA", "South Africa"], ["IN", "India"], ["FR", "France"], ["BE", "Belgium"], ["CH", "Switzerland"], ["LU", "Luxembourg"], ["DE", "Germany"], ["AT", "Austria"], ["ES", "Spain"], ["MX", "Mexico"], ["AR", "Argentina"], ["IT", "Italy"], ["PT", "Portugal"], ["BR", "Brazil"], ["NL", "Netherlands"], ["PL", "Poland"], ["SE", "Sweden"], ["DK", "Denmark"], ["NO", "Norway"], ["FI", "Finland"], ["GR", "Greece"], ["CY", "Cyprus"], ["MT", "Malta"], ["TR", "Turkey"], ["AE", "United Arab Emirates"], ["SA", "Saudi Arabia"], ["SG", "Singapore"], ["HK", "Hong Kong"], ["CN", "China"], ["TW", "Taiwan"], ["JP", "Japan"], ["KR", "South Korea"]];
+    var hgOpts = function (list, v) { return list.map(function (o) { return '<option value="' + o[0] + '"' + (o[0] === v ? " selected" : "") + ">" + esc(o[1] + (o[0] ? " (" + o[0] + ")" : "")).replace(" (GB) (GB)", " (GB)") + "</option>"; }).join(""); };
+    var hgN = 0;
+    var hgRow = function (l, r, u) {
+      var i = ++hgN, d = document.createElement("div");
+      d.className = "row hg-row"; d.style.cssText = "align-items:flex-end;margin:6px 0";
+      d.innerHTML = '<div style="flex:1 1 150px"><label for="hg-l' + i + '">Language</label><select id="hg-l' + i + '" class="hg-l">' + hgOpts(HG_LANG, l) + '</select></div><div style="flex:1 1 150px"><label for="hg-r' + i + '">Country</label><select id="hg-r' + i + '" class="hg-r">' + hgOpts(HG_REG, r) + '</select></div><div style="flex:3 1 240px"><label for="hg-u' + i + '">Page address</label><input id="hg-u' + i + '" class="hg-u" type="text" inputmode="url" value="' + attr(u || "") + '"></div><button class="btn ghost hg-del" type="button" aria-label="Remove this version" style="min-width:48px">×</button>';
+      $("hg-rows").appendChild(d);
+    };
+    hgRow("en", "GB", "https://smithplumbing.co.uk/"); hgRow("en", "IE", "https://smithplumbing.ie/"); hgRow("fr", "FR", "https://smithplumbing.com/fr/");
+    var hgRun = function () {
+      var rows = [].slice.call(document.querySelectorAll(".hg-row")).map(function (d) { var l = d.querySelector(".hg-l").value, r = d.querySelector(".hg-r").value; return { code: l + (r ? "-" + r : ""), url: d.querySelector(".hg-u").value.trim() }; }).filter(function (x) { return x.url; });
+      var xd = $("hg-xd").value.trim(), all = rows.slice(), n = [];
+      if (xd) all.push({ code: "x-default", url: xd });
+      var seen = {};
+      all.forEach(function (x) { if (seen[x.code]) n.push(["fail", x.code + " is used twice. Each code can point to only one address."]); seen[x.code] = 1; if (!/^https?:\/\//i.test(x.url)) n.push(["warn", x.url + " should be a full address starting https://."]); });
+      var langs = {}; rows.forEach(function (x) { var l = x.code.split("-")[0]; langs[l] = langs[l] || []; langs[l].push(x.code); });
+      Object.keys(langs).forEach(function (l) { if (langs[l].length > 1 && langs[l].indexOf(l) < 0) n.push(["info", "You have several country versions in " + l + " but none for " + l + " on its own. Visitors who speak " + l + " elsewhere will get x-default; add a plain \"" + l + "\" row if one version suits them."]); });
+      if (rows.length < 2) n.push(["warn", "hreflang needs at least two versions of the page."]);
+      if (!xd) n.push(["info", "No x-default. It's optional, but recommended: it names the page for visitors whose language or country isn't listed."]);
+      if (!n.some(function (x) { return x[0] !== "info"; })) n.push(["ok", "Put these same tags on every version listed, including this one. Each page must list all the others and itself."]);
+      var fmt = $("hg-fmt").value, out;
+      if (fmt === "xml") out = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n' + rows.map(function (p) { return "  <url>\n    <loc>" + attr(p.url) + "</loc>\n" + all.map(function (x) { return '    <xhtml:link rel="alternate" hreflang="' + x.code + '" href="' + attr(x.url) + '"/>\n'; }).join("") + "  </url>\n"; }).join("") + "</urlset>";
+      else if (fmt === "header") out = "Link: " + all.map(function (x) { return "<" + x.url + '>; rel="alternate"; hreflang="' + x.code + '"'; }).join(",\n      ");
+      else out = all.map(function (x) { return '<link rel="alternate" hreflang="' + x.code + '" href="' + attr(x.url) + '">'; }).join("\n");
+      $("hg-out").textContent = out;
+      $("hg-notes").innerHTML = noteList(n) + '<p class="small">After publishing, test the tags and return links with our <a href="/hreflang-checker">hreflang checker</a>.</p>';
+    };
+    $("hg-add").addEventListener("click", function () { hgRow("en", "", ""); hgRun(); });
+    $("hg-rows").addEventListener("click", function (ev) { var b = ev.target.closest(".hg-del"); if (b) { b.parentNode.remove(); hgRun(); } });
+    live("hg-form", hgRun);
+    copyBtn("hg-copy", "hg-out");
+  }
+
+  // ---- email header analyzer (parsed in the browser only)
+  var eh = $("eh-form");
+  if (eh) {
+    var EH_SAMPLE = "Delivered-To: jo@smithplumbing.co.uk\nReceived: by 2002:a05:7300:1234 with SMTP id x9csp1;\n        Mon, 12 Oct 2026 09:15:12 -0700 (PDT)\nAuthentication-Results: mx.google.com;\n       dkim=pass header.i=@supplier.co.uk header.s=s1;\n       spf=pass (google.com: domain of invoices@supplier.co.uk designates 192.0.2.25 as permitted sender) smtp.mailfrom=invoices@supplier.co.uk;\n       dmarc=pass (p=QUARANTINE sp=QUARANTINE dis=NONE) header.from=supplier.co.uk\nReceived: from mail.supplier.co.uk (mail.supplier.co.uk. [192.0.2.25])\n        by mx.google.com with ESMTPS id a1si2;\n        Mon, 12 Oct 2026 09:15:11 -0700 (PDT)\nReceived: from crm.supplier.co.uk (crm.supplier.co.uk [10.0.0.8])\n        by mail.supplier.co.uk (Postfix) with ESMTP id 4F2;\n        Mon, 12 Oct 2026 17:13:40 +0100 (BST)\nFrom: Supplier Accounts <invoices@supplier.co.uk>\nReply-To: accounts@supplier-payments.com\nTo: jo@smithplumbing.co.uk\nSubject: Invoice 2231 due\nDate: Mon, 12 Oct 2026 17:13:38 +0100\nMessage-ID: <2231.1760285618@crm.supplier.co.uk>\nX-Mailer: SupplierCRM 4.2\n";
+    $("eh-sample").addEventListener("click", function () { $("eh-in").value = EH_SAMPLE; eh.requestSubmit ? eh.requestSubmit() : eh.dispatchEvent(new Event("submit", { cancelable: true })); });
+    var ehDomain = function (v) { var m = String(v || "").match(/@([a-z0-9.-]+\.[a-z]{2,})/i); return m ? m[1].toLowerCase().replace(/\.$/, "") : ""; };
+    var ehOrg = function (d) { var p = d.split("."); return p.slice(/\.(co|org|ac|gov|me|ltd|plc|net|sch|com)\.[a-z]{2}$/.test(d) ? -3 : -2).join("."); };
+    var ehTime = function (s) { var t = Date.parse(String(s || "").replace(/\([^)]*\)/g, "").replace(/\s+/g, " ").trim()); return isNaN(t) ? null : t; };
+    var ehAgo = function (ms) { var s = Math.round(ms / 1000); return s < 0 ? "clock differs" : s < 60 ? s + " s" : s < 3600 ? Math.round(s / 60) + " min" : (s / 3600).toFixed(1) + " h"; };
+    eh.addEventListener("submit", function (ev) {
+      ev.preventDefault();
+      var raw = $("eh-in").value.replace(/\r\n?/g, "\n"), out = $("eh-out");
+      if (!raw.trim()) { $("eh-in").focus(); return; }
+      var lines = raw.replace(/^\s*\n/, "").split("\n"), hs = [];
+      for (var i = 0; i < lines.length; i++) {
+        var l = lines[i];
+        if (!l.trim()) { if (hs.length) break; continue; }
+        if (/^[ \t]/.test(l) && hs.length) hs[hs.length - 1][1] += " " + l.trim();
+        else { var m = l.match(/^([!-9;-~]+):\s*(.*)$/); if (m) hs.push([m[1], m[2]]); }
+      }
+      if (!hs.length) { out.innerHTML = '<p class="s-fail">No headers found. In Gmail use ⋮ → Show original; in Outlook, File → Properties → Internet headers; in Apple Mail, View → Message → All Headers.</p>'; return; }
+      var get = function (k) { k = k.toLowerCase(); for (var j = 0; j < hs.length; j++) if (hs[j][0].toLowerCase() === k) return hs[j][1]; return ""; };
+      var all = function (k) { k = k.toLowerCase(); return hs.filter(function (h) { return h[0].toLowerCase() === k; }).map(function (h) { return h[1]; }); };
+      var hops = all("Received").reverse().map(function (v) {
+        var semi = v.lastIndexOf(";"), when = semi >= 0 ? ehTime(v.slice(semi + 1)) : null, body = semi >= 0 ? v.slice(0, semi) : v;
+        var f = (body.match(/\bfrom\s+(.+?)(?=\s+by\s|\s+with\s|\s+id\s|$)/i) || [])[1] || "", b = (body.match(/\bby\s+(\S+)/i) || [])[1] || "", w = (body.match(/\bwith\s+(\S+)/i) || [])[1] || "";
+        return { from: f.replace(/\s+/g, " ").slice(0, 120), by: b, with: w, when: when };
+      });
+      var ar = all("Authentication-Results")[0] || "", n = [];
+      var res = function (k) { var m = ar.match(new RegExp("\\b" + k + "\\s*=\\s*([a-z]+)", "i")); return m ? m[1].toLowerCase() : ""; };
+      var spf = res("spf") || ((get("Received-SPF").match(/^\s*([a-z]+)/i) || [])[1] || "").toLowerCase(), dkim = res("dkim"), dmarc = res("dmarc");
+      var pill = function (name, v) { var c = v === "pass" ? "s-pass" : /fail|permerror/.test(v) && v !== "softfail" ? "s-fail" : v ? "s-warn" : "small"; return '<span style="display:inline-block;margin:4px 16px 4px 0"><b>' + name + '</b> <span class="' + c + '">' + esc(v || "not shown") + "</span></span>"; };
+      var from = get("From"), fromD = ehDomain(from), rp = ehDomain(get("Return-Path")) || ehDomain((ar.match(/smtp\.mailfrom=(\S+)/i) || [])[1] ? "x@" + ar.match(/smtp\.mailfrom=([^\s;]+)/i)[1].replace(/^.*@/, "") : ""), rt = ehDomain(get("Reply-To"));
+      if (dmarc === "fail") n.push(["fail", "DMARC failed: the email didn't prove it really came from " + (fromD || "the sender's domain") + ". Treat it with suspicion."]);
+      else if (dmarc === "pass") n.push(["ok", "DMARC passed for " + (fromD || "the sender") + ": the sending domain is genuine."]);
+      if (spf && spf !== "pass") n.push([/fail/.test(spf) && spf !== "softfail" ? "fail" : "warn", "SPF result: " + spf + ". The server that sent it isn't clearly allowed to send for this domain."]);
+      if (dkim && dkim !== "pass") n.push(["warn", "DKIM result: " + dkim + ". The signature is missing or didn't match, so the message may have been changed or faked."]);
+      if (!ar && !get("Received-SPF")) n.push(["info", "No Authentication-Results header. Copy the headers from the receiving mailbox (not a forwarded copy) to see SPF, DKIM and DMARC results."]);
+      if (rt && fromD && ehOrg(rt) !== ehOrg(fromD)) n.push(["warn", "Replies go to " + rt + ", a different domain from the sender (" + fromD + "). That's common in invoice fraud: check before replying or paying."]);
+      if (rp && fromD && ehOrg(rp) !== ehOrg(fromD)) n.push(["info", "The bounce address is on " + rp + ", not " + fromD + ". Normal for email services such as Mailchimp or Microsoft 365, but it needs DKIM to pass DMARC."]);
+      var spam = get("X-Spam-Status") || get("X-Spam-Flag") || get("X-Spam-Score");
+      if (spam) n.push([/^yes/i.test(spam) ? "warn" : "info", "Spam filter: " + spam.slice(0, 160)]);
+      var total = hops.length > 1 && hops[0].when && hops[hops.length - 1].when ? hops[hops.length - 1].when - hops[0].when : null;
+      if (total != null && total > 10 * 60000) n.push(["warn", "Delivery took " + ehAgo(total) + " from the first server to the last. Look for the slow hop below."]);
+      var h = '<div class="card" style="margin:16px 0"><p class="ct">' + esc(get("Subject") || "(no subject)") + "</p>" + '<p style="margin:4px 0">' + pill("SPF", spf) + pill("DKIM", dkim) + pill("DMARC", dmarc) + "</p>" + noteList(n) + "</div>";
+      h += '<div class="tablewrap"><table><tbody>' + [["From", from], ["Reply-To", get("Reply-To")], ["Return-Path", get("Return-Path")], ["To", get("To")], ["Date", get("Date")], ["Message-ID", get("Message-ID")], ["Sent with", get("X-Mailer") || get("User-Agent")]].filter(function (r) { return r[1]; }).map(function (r) { return "<tr><th>" + r[0] + '</th><td style="overflow-wrap:anywhere">' + esc(r[1]) + "</td></tr>"; }).join("") + "</tbody></table></div>";
+      if (hops.length) h += "<h3>Route: " + hops.length + " hop" + (hops.length > 1 ? "s" : "") + (total != null ? ", " + ehAgo(total) + " in total" : "") + '</h3><div class="tablewrap"><table><thead><tr><th>#</th><th>From</th><th>By</th><th>With</th><th>Delay</th></tr></thead><tbody>' + hops.map(function (x, k) {
+        var d = k && x.when && hops[k - 1].when ? x.when - hops[k - 1].when : null;
+        return "<tr><td>" + (k + 1) + '</td><td style="overflow-wrap:anywhere">' + esc(x.from || "–") + '</td><td style="overflow-wrap:anywhere">' + esc(x.by || "–") + "</td><td>" + esc(x.with) + '</td><td style="color:' + (d != null && d > 5 * 60000 ? "#cf222e" : "inherit") + '">' + (d == null ? (k ? "?" : "start") : ehAgo(d)) + "</td></tr>";
+      }).join("") + "</tbody></table></div>";
+      if (fromD) h += '<p class="small">Check ' + esc(fromD) + "'s email setup: <a href=\"/spf-checker?d=" + encodeURIComponent(fromD) + '">SPF</a> · <a href="/dmarc-checker?d=' + encodeURIComponent(fromD) + '">DMARC</a> · <a href="/dkim-checker?d=' + encodeURIComponent(fromD) + '">DKIM</a> · <a href="/mx-lookup?d=' + encodeURIComponent(fromD) + '">MX</a></p>';
+      out.innerHTML = h;
+    });
+  }
+
   // ---- HTTP header checker (/api/headers)
   var hd = $("hd-form");
   if (hd) {

@@ -57,6 +57,10 @@ Free SEO & AI search checker for UK businesses, made by IceWork (icework.co.uk).
 ## Browser-only text tools: UTM builder (/utm-builder), URL slug generator (/url-slug-generator), case converter (/case-converter)
 - All in tools-client.js, nothing sent to the server. Element id prefixes ut-, us-, cc- (sg- is taken by the schema generator).
 
+## Browser-only: favicon generator (/favicon-generator), hreflang generator (/hreflang-generator), email header analyzer (/email-header-analyzer)
+- All in tools-client.js, nothing uploaded (ids fg-, hg-, eh-). The favicon generator draws on a canvas and builds favicon.ico itself (16/32/48 PNGs in an ICO container), plus 180/192/512 PNGs, an SVG (letters only) and site.webmanifest. Upload tests use a scenario's `files` and the `png(w, h)` helper in test/tools.mjs.
+- Other threads own the image compressor/WebP converter and redirect map generator ideas – don't build those here.
+
 ## Layout
 - `src/` – XKey pages (`content.js`), shell/styles (`site.js`), routing + APIs (`index.js`), browser tools (`tools-client.js`, served as /assets/tools.js), page parser (`page-parse.js`), OG image (`og.js`).
 - `engine/` – SEO checker engine **shared with icework.co.uk** (repo joeinblackpool/ICEWORK, folder `src/`). `src/page-parse.js` is also copied to ICEWORK `src/` (it powers the competitor topic gap there). Keep the two copies identical: change it here, then copy the same files into ICEWORK `src/` and run its tests (`node test/check.mjs`, `node test/checker-unit.mjs`).
