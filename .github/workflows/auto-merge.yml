@@ -56,10 +56,8 @@ jobs:
             if printf '%s\n' "$checks" | awk -F'\t' '$2 != "completed"' | grep -q .; then
               echo "A check is still running."; echo "::endgroup::"; continue
             fi
-            if printf '%s\n' "$checks" | awk -F'\t' '$3 != "success" && $3 != "skipped" && $3 != "neutral"' | grep -q .; then
-              echo "A check didn't pass: not merging."; echo "::endgroup::"; continue
-            fi
             # Tests must have run after main last changed, unless the branch already contains main.
+            # Checked before failures, so a run that failed against an older main is retried.
             tested_at=$(printf '%s\n' "$test_line" | cut -f4)
             main_at=$(gh api "repos/$R/commits/main" --jq '.commit.committer.date')
             behind=$(gh api "repos/$R/compare/main...$sha" --jq '.behind_by')
@@ -67,6 +65,9 @@ jobs:
               echo "Tested before main changed: re-testing with the newest main merged in."
               gh workflow run tests.yml -R "$R" --ref "$branch" || echo "::warning::Couldn't start the tests for #$n."
               echo "::endgroup::"; continue
+            fi
+            if printf '%s\n' "$checks" | awk -F'\t' '$3 != "success" && $3 != "skipped" && $3 != "neutral"' | grep -q .; then
+              echo "A check didn't pass: not merging."; echo "::endgroup::"; continue
             fi
             mergeable=""
             for try in 1 2 3 4 5; do
