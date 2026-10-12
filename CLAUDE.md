@@ -36,6 +36,7 @@ Free SEO & AI search checker for UK businesses, made by IceWork (icework.co.uk).
 - Browser scripts are served from Function#toString: never rely on bundler helpers in them (wrangler.jsonc sets `keep_names: false`; src/index.js adds a `__name` shim as a safety net).
 
 ## Rules
+- **Joe's absolute rule: search visitors come first.** The site's number one goal is to rank first on Google for every product and service it offers – without visitors the site isn't worth doing. Rank every piece of work by how many search visitors it will bring, and never ship anything that could hurt rankings (thin or near-duplicate pages, slower pages, hidden text, blocked crawlers, changed addresses without redirects).
 - Never break Google's rules: no scraping Google results, no fake reviews, no bought links, no doorway pages.
 - Copy is honest: "unlimited" only for tools that run in the browser; say what a tool can't measure.
 - Free means free: no sign-up, no email, no subscription. Rate limits only to stop abuse.
