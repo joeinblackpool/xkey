@@ -15,6 +15,7 @@ import { headersApi } from "./headers.js";
 import { dnsApi } from "./dns.js";
 import { techApi } from "./tech.js";
 import { hostingApi } from "./hosting.js";
+import { metaApi } from "./meta.js";
 
 const BY_PATH = Object.fromEntries(PAGES.map((p) => [p.path, p]));
 const GUIDES = PAGES.filter((p) => p.path.startsWith("/guides/"));
@@ -114,6 +115,9 @@ Contact | /contact | Phone, email and opening hours</textarea>
   links: () => `<form class="tool" id="lk-form"><label for="lk-url">Your website</label><input id="lk-url" type="text" inputmode="url" autocomplete="url" placeholder="yourbusiness.co.uk" required>
 <div class="row" style="margin-top:4px"><div style="flex:1 1 200px"><label for="lk-max">Pages to crawl</label><select id="lk-max"><option value="50">Up to 50</option><option value="150" selected>Up to 150</option><option value="300">Up to 300</option></select></div><div style="flex:1 1 200px"><label for="lk-ext">Links to other sites</label><select id="lk-ext"><option value="1" selected>Check them too</option><option value="0">Only my own pages</option></select></div></div>
 <div class="row" style="margin-top:16px"><button class="btn" type="submit">Find broken links</button><button class="btn ghost" type="button" id="lk-stop" style="display:none">Stop</button></div><div id="lk-out" aria-live="polite"></div></form><script src="/assets/tools.js" defer></script>`,
+  updown: () => `<form class="ck-form" id="ud-form"><label for="ud-url" class="sr">Website address</label><input id="ud-url" type="text" inputmode="url" autocomplete="url" placeholder="anywebsite.co.uk" required><button class="btn" type="submit">Is it down?</button></form><div id="ud-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
+  ogcheck: () => `<form class="ck-form" id="oc-form"><label for="oc-url" class="sr">Page address</label><input id="oc-url" type="text" inputmode="url" autocomplete="url" placeholder="yourwebsite.co.uk/page" required><button class="btn" type="submit">Check sharing tags</button></form><div id="oc-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
+  hreflang: () => `<form class="ck-form" id="hl-form"><label for="hl-url" class="sr">Page address</label><input id="hl-url" type="text" inputmode="url" autocomplete="url" placeholder="yourwebsite.com/en-gb/" required><button class="btn" type="submit">Check hreflang</button></form><div id="hl-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
   hosting: () => `<form class="ck-form" id="ho-form"><label for="ho-d" class="sr">Website address</label><input id="ho-d" type="text" inputmode="url" autocomplete="url" placeholder="anywebsite.co.uk" required><button class="btn" type="submit">Find the host</button></form><div id="ho-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
   tech: () => `<form class="ck-form" id="tc-form"><label for="tc-url" class="sr">Website address</label><input id="tc-url" type="text" inputmode="url" autocomplete="url" placeholder="anywebsite.co.uk" required><button class="btn" type="submit">Check technology</button></form><div id="tc-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
   dns: () => `<form class="ck-form" id="dn-form"><label for="dn-d" class="sr">Domain name</label><input id="dn-d" type="text" inputmode="url" autocomplete="url" placeholder="yourbusiness.co.uk" required><button class="btn" type="submit">Look up DNS</button></form><div id="dn-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
@@ -359,6 +363,11 @@ const worker = {
         // 300 batches of up to 10 links = 3,000 links an hour per connection (one full check is up to 2,500)
         if (await rateLimited(request, "linkcheck", 300)) return Response.json({ error: "You've checked a lot of links this hour – please try again later." }, { status: 429 });
         const r = await linksCheckApi(url.searchParams, selfFetch(env, c), c);
+        return Response.json(r.body, { status: r.status, headers: { "cache-control": "no-store" } });
+      }
+      case "/api/meta": {
+        if (await rateLimited(request, "meta", 600)) return Response.json({ error: "You've checked a lot of pages this hour – please try again later." }, { status: 429 });
+        const r = await metaApi(url.searchParams, selfFetch(env, c));
         return Response.json(r.body, { status: r.status, headers: { "cache-control": "no-store" } });
       }
       case "/api/hosting": {

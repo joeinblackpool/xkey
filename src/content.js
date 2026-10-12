@@ -13,6 +13,9 @@ const TOOLS = [
   ["/domain-authority-checker", "Domain authority checker", "Authority scores for up to 100 websites at once, with links and global rank."],
   ["/redirect-checker", "Redirect checker", "Follow any address hop by hop: 301s, 302s, chains, loops and meta refreshes."],
   ["/http-header-checker", "HTTP header checker", "Every response header for any address, with what each one means for SEO."],
+  ["/website-down-checker", "Website down checker", "Is a website down for everyone or just you? Live status and response time."],
+  ["/open-graph-checker", "Open Graph checker", "See how any page looks when shared on Facebook, LinkedIn, WhatsApp and X."],
+  ["/hreflang-checker", "Hreflang checker", "Check language and country tags, return links and x-default on any page."],
   ["/website-hosting-checker", "Website hosting checker", "Who hosts a website? The hosting company, IP address, CDN and server location."],
   ["/website-technology-checker", "Website technology checker", "What is a site built with? CMS, theme, plugins, analytics, hosting and email."],
   ["/dns-lookup", "DNS lookup", "A, MX, TXT, NS and other records, plus SPF and DMARC email checks."],
@@ -249,6 +252,63 @@ export const PAGES = [
 <h2>What it can't tell you</h2>
 <ul><li><strong>What visitors in other countries get.</strong> We visit from Cloudflare's network; sites can send different headers by location, cookie or login.</li><li><strong>Request headers.</strong> This shows what the server sends back, not what your browser sends.</li><li><strong>Sites that block checkers.</strong> A firewall may answer us with a 403 even when the site works in your browser.</li></ul>`,
     faqs: [["Is the HTTP header checker free?", "Yes. No sign-up, no email and no subscription, with only a fair-use limit to stop bots."], ["How do I see HTTP headers in my browser?", "Open developer tools (F12), go to the Network tab, reload the page and click the first request. This tool shows the same thing without the setup, and follows redirects for you."], ["Why is my page not indexed when the HTML has no noindex?", "Check the X-Robots-Tag header here. Some servers, plugins and CDNs add noindex in the header, where it's invisible in the page source."]],
+  },
+  {
+    path: "/website-down-checker", crumb: "Website down checker", parent: ["/seo-tools", "SEO tools"], title: "Is It Down? Website Down Checker for Any Site",
+    desc: "Free website down checker: find out if a site is down for everyone or just you, with its live status code, response time and any redirects. No sign-up.",
+    h1: "Is this website down?", eyebrow: "Any website · Free · No sign-up", app: "XKey website down checker", form: "updown",
+    lead: "Type a web address and we'll try to load it right now from Cloudflare's network, so you can tell if it's down for everyone or just for you.",
+    sections: `<h2>What the down checker tells you</h2>
+<div class="grid">
+<div class="card"><p class="ct">Up or down</p><p>A plain answer: the site loads, it's down, or it's answering with an error page.</p></div>
+<div class="card"><p class="ct">Status code and speed</p><p>The HTTP status (200, 404, 500, 503…) and how long the server took to answer.</p></div>
+<div class="card"><p class="ct">Redirects</p><p>Every redirect on the way, so you can spot a loop or a redirect to a dead address.</p></div>
+</div>
+<h2>It's up for you but down for me. What now?</h2>
+<ol><li>Reload the page with your browser's cache bypassed (Ctrl + F5 on Windows, Cmd + Shift + R on a Mac), or try a private window.</li><li>Try the site on mobile data instead of Wi-Fi. If it works there, the problem is your network or router.</li><li>Restart your router, or switch your computer's DNS to a public resolver such as 1.1.1.1 or 8.8.8.8.</li><li>If it still won't load, a firewall or the site's bot protection may be blocking your connection. Contact the site owner.</li></ol>
+<h2>What the codes mean</h2>
+<ul><li><strong>200</strong> – the page loaded normally.</li><li><strong>301 / 302</strong> – a redirect to another address; we follow it to the end.</li><li><strong>403</strong> – the server refused the request, often bot protection. The site may still work in a browser.</li><li><strong>404 / 410</strong> – the server is up, but that page doesn't exist.</li><li><strong>500, 502, 503, 504</strong> – the server or something in front of it has a problem. This is what "down" usually means.</li><li><strong>No response</strong> – the server didn't answer at all, the domain doesn't resolve, or the connection timed out.</li></ul>
+<h2>Does downtime hurt SEO?</h2>
+<p>A short outage doesn't. Google retries later. But if a site keeps returning 5xx errors or timing out for more than a day or two, Google crawls it less and can start dropping pages from results. Turn on free <a href="/seo-monitoring">weekly SEO monitoring</a> to catch problems, and check the server with the <a href="/website-hosting-checker">hosting checker</a>.</p>`,
+    faqs: [["Is the down checker free?", "Yes. No sign-up, no email and no subscription, with only a fair-use limit to stop bots."], ["Where do you check from?", "From Cloudflare's network, normally the data centre nearest to you. One check from one place can't see a regional outage elsewhere in the world."], ["Why does it say 403 when the site works for me?", "Some sites block automated checks with bot protection. A 403 usually means the server is up and refusing us, not that it's down."], ["Can it alert me when my site goes down?", "Not yet. For now, check here when you suspect a problem, and use weekly SEO monitoring to catch pages that break."]],
+  },
+  {
+    path: "/open-graph-checker", crumb: "Open Graph checker", parent: ["/seo-tools", "SEO tools"], title: "Open Graph Checker | Preview Social Shares Free",
+    desc: "Free Open Graph checker: see how any page looks when shared on Facebook, LinkedIn, WhatsApp and X, and check its og: and Twitter card tags.",
+    h1: "Open Graph checker", eyebrow: "Any page · Free · No sign-up", app: "XKey Open Graph checker", form: "ogcheck",
+    lead: "Enter a page address to preview its link card and check every Open Graph and X (Twitter) card tag, with a plain list of anything missing or wrong.",
+    sections: `<h2>What the Open Graph checker looks at</h2>
+<div class="grid">
+<div class="card"><p class="ct">The preview</p><p>The title, description, image and site name the big platforms will show, read the way their link previewers read them.</p></div>
+<div class="card"><p class="ct">The image</p><p>Whether og:image is there, uses a full https:// address, loads, and is big enough (1200 × 630 is ideal).</p></div>
+<div class="card"><p class="ct">Every tag</p><p>All og:, twitter: and article: tags on the page, plus the canonical address, so you can spot duplicates and leftovers.</p></div>
+</div>
+<h2>Why do Open Graph tags matter?</h2>
+<p>When someone shares your page on Facebook, LinkedIn, WhatsApp, Slack or X, the platform builds the card from these tags. Without them it guesses, often picking a logo or a random image and the wrong text. A clear card with a good image gets more clicks, and every share is a visitor. Open Graph tags don't change Google rankings directly, but they decide how your links look everywhere else.</p>
+<h2>How to fix the problems it finds</h2>
+<ul><li>Create the tags with our <a href="/open-graph-generator">Open Graph generator</a> and paste them into the page's &lt;head&gt;. On WordPress, Yoast SEO and Rank Math add them for you.</li><li>Use an image at least 1200 × 630 pixels, under 5 MB, on a full https:// address.</li><li>After fixing, ask the platform to re-read the page. Facebook and LinkedIn cache cards, so old previews can stick for a while.</li></ul>
+<h2>What it can't check</h2>
+<p>Each platform crops and trims a little differently, and some only show a card after they've fetched the page themselves, so treat the preview as a close guide rather than an exact copy. Pages behind a login or bot protection can't be read.</p>`,
+    faqs: [["Is the Open Graph checker free?", "Yes. No sign-up, no email and no subscription, with only a fair-use limit to stop bots."], ["My card still shows the old image. Why?", "Facebook, LinkedIn and X cache link previews. Once your tags are right, use each platform's own sharing debugger to make it fetch the page again."], ["Do I need Twitter card tags too?", "X falls back to Open Graph tags, but it needs twitter:card set to summary_large_image to show the big image."], ["What size should og:image be?", "1200 × 630 pixels works everywhere. Keep important text away from the edges, because some apps crop to a square."]],
+  },
+  {
+    path: "/hreflang-checker", crumb: "Hreflang checker", parent: ["/seo-tools", "SEO tools"], title: "Hreflang Checker | Test Hreflang Tags Free",
+    desc: "Free hreflang checker: test the language and country tags on any page, check every alternate page links back, and catch wrong codes such as en-UK.",
+    h1: "Hreflang checker", eyebrow: "Any page · Free · No sign-up", app: "XKey hreflang checker", form: "hreflang",
+    lead: "Enter a page address to list its hreflang tags, check each language code, and load every alternate version to confirm it links back.",
+    sections: `<h2>What the hreflang checker tests</h2>
+<div class="grid">
+<div class="card"><p class="ct">Valid codes</p><p>Every hreflang value must be a real language code, with an optional country: en, en-GB, fr-BE. A common slip is en-UK, which Google ignores.</p></div>
+<div class="card"><p class="ct">Return links</p><p>If page A points to page B, B must point back to A. We open every alternate page and check, because one-way tags are ignored.</p></div>
+<div class="card"><p class="ct">Self-reference and x-default</p><p>Each page should list itself, and an x-default tells Google which version to show everyone else.</p></div>
+</div>
+<h2>Who needs hreflang?</h2>
+<p>Only sites with the same content in more than one language or for more than one country, such as a UK and an Irish version of a shop, or English and Welsh pages. A single-language UK site doesn't need it at all. Hreflang doesn't raise rankings; it makes sure each searcher gets the right version, with the right currency and spelling.</p>
+<h2>The mistakes we see most</h2>
+<ul><li><strong>en-UK instead of en-GB.</strong> The country code for the United Kingdom is GB. "uk" on its own means Ukrainian.</li><li><strong>Missing return links.</strong> The US page points to the UK page, but the UK page doesn't point back.</li><li><strong>Alternates that redirect or 404.</strong> Every hreflang address must load directly with a 200.</li><li><strong>Pointing every language at the home page</strong> instead of at the matching page.</li></ul>
+<h2>What it can't check</h2>
+<p>We read tags in the page's &lt;head&gt; and in HTTP Link headers. Hreflang listed only in an XML sitemap isn't checked here; use the <a href="/sitemap-checker">sitemap checker</a> for the sitemap itself. We open up to 20 alternate pages per check.</p>`,
+    faqs: [["Is the hreflang checker free?", "Yes. No sign-up, no email and no subscription, with only a fair-use limit to stop bots."], ["Should I use en or en-GB?", "Use en-GB if you also have versions for other English-speaking countries. Use en alone if one English version serves everyone."], ["Do I need x-default?", "It's recommended. It names the page to show people whose language or country doesn't match any version, often a language picker or your main site."], ["Does hreflang need to be on every page?", "On every page that has translated or regional versions, and each of those versions must list all the others, including itself."]],
   },
   {
     path: "/website-hosting-checker", crumb: "Website hosting checker", parent: ["/seo-tools", "SEO tools"], title: "Website Hosting Checker | Who Is Hosting This Site?",
