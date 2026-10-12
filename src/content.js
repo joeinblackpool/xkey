@@ -18,6 +18,10 @@ const TOOLS = [
   ["/website-down-checker", "Website down checker", "Is a website down for everyone or just you? Live status and response time."],
   ["/open-graph-checker", "Open Graph checker", "See how any page looks when shared on Facebook, LinkedIn, WhatsApp and X."],
   ["/hreflang-checker", "Hreflang checker", "Check language and country tags, return links and x-default on any page."],
+  ["/schema-markup-validator", "Schema markup validator", "Check the structured data on any page or paste code, with Google's rich result rules."],
+  ["/heading-checker", "Heading checker", "See any page's H1 to H6 outline and fix missing, double or skipped headings."],
+  ["/alt-text-checker", "Alt text checker", "Find images with missing, empty or weak alt text, and linked images with no words."],
+  ["/canonical-checker", "Canonical checker", "Find a page's canonical URL, test it loads, and spot noindex tags and headers."],
   ["/website-hosting-checker", "Website hosting checker", "Who hosts a website? The hosting company, IP address, CDN and server location."],
   ["/ssl-checker", "SSL checker", "Is a site secure? Certificate expiry, https redirects, HSTS and mixed content."],
   ["/utm-builder", "UTM link builder", "Tracking links for Google Analytics: source, medium and campaign, ready to copy."],
@@ -390,6 +394,90 @@ export const PAGES = [
 <h2>How this generator cleans text</h2>
 <p>It swaps accented letters for plain ones (é → e, ß → ss), turns &amp; into "and", removes apostrophes so "Blackpool's" becomes "blackpools", replaces everything else with hyphens and trims at a whole word. Tick "remove small words" to drop a, the, and, of and similar. Everything happens in your browser.</p>`,
     faqs: [["Is the slug generator free?", "Yes, and unlimited. It runs in your browser with no sign-up."], ["How long should a URL slug be?", "As short as it can be while still describing the page. Most good slugs are under 60 characters, and many are under 30."], ["Should I remove stop words from slugs?", "It's optional. Removing them makes slugs shorter, but keep them if the slug reads oddly without them."], ["Does WordPress make slugs automatically?", "Yes, from the title, but it keeps every word. Edit the slug in the page settings before you publish – changing it later needs a redirect."]],
+  },
+  {
+    path: "/schema-markup-validator", crumb: "Schema markup validator", parent: ["/seo-tools", "SEO tools"], title: "Schema Markup Validator | Test Structured Data Free",
+    desc: "Free schema markup validator: check the JSON-LD structured data on any page or paste your code, and see which properties Google needs for rich results.",
+    h1: "Schema markup validator", eyebrow: "Any page or pasted code · Free · No sign-up", app: "XKey schema markup validator", form: "schemacheck",
+    lead: "Enter a page address, or paste your JSON-LD, to list every schema type, catch broken code, and check the properties Google needs before it will show stars, prices, dates or other rich results.",
+    sections: `<h2>What the schema validator checks</h2>
+<div class="grid">
+<div class="card"><p class="ct">The code itself</p><p>Every JSON-LD block is parsed the way Google parses it. A missing comma or stray quote breaks the whole block, and we show you where.</p></div>
+<div class="card"><p class="ct">Each schema type</p><p>LocalBusiness, Organization, Product, Article, FAQPage, BreadcrumbList, Event, Recipe, Review, JobPosting, VideoObject and more, including items inside @graph.</p></div>
+<div class="card"><p class="ct">Rich result needs</p><p>For the types Google uses, the properties it requires and the ones it recommends, so you know what stops a rich result and what only makes it weaker.</p></div>
+</div>
+<h2>Why structured data matters</h2>
+<p>Schema markup tells search engines in plain data what a page is about: that this is a plumber in Blackpool with these opening hours, or a product at £24.99 that's in stock. Google uses it for rich results such as review stars, prices, breadcrumbs and event dates, which take more space on the results page and win more clicks. AI assistants such as ChatGPT and Google's AI Overviews also read it to understand who you are, so a clean LocalBusiness or Organization block helps you get named in AI answers.</p>
+<h2>Common schema mistakes we find</h2>
+<ul><li><strong>Broken JSON.</strong> A trailing comma or a curly quote copied from a word processor makes the whole block invisible to Google.</li><li><strong>Missing required properties.</strong> A Product with no offers, review or aggregateRating can't show as a rich result.</li><li><strong>Marking up things visitors can't see.</strong> Reviews, prices and FAQs in your schema must also appear on the page, or Google can ignore them or take manual action.</li><li><strong>Old or made-up types.</strong> A misspelt @type, or http://schema.org mixed with https, usually still works, but unknown types are ignored.</li><li><strong>Two plugins adding the same thing.</strong> WordPress themes and SEO plugins often both add Organization or WebSite blocks with different details.</li></ul>
+<h2>How to fix the problems it finds</h2>
+<p>Build a clean block for your business with our <a href="/schema-generator">local business schema generator</a>, then paste it here to check it before it goes live. On WordPress, Yoast SEO and Rank Math add most schema for you; fix the details in their settings rather than adding a second copy by hand. After a fix, run the page through this validator again, then ask Google to re-crawl it from Search Console.</p>
+<h2>What it can't check</h2>
+<p>We read the page's HTML as it arrives. Schema added later by JavaScript (some site builders and tag managers do this) isn't seen here, though Google can often still see it. Microdata and RDFa types are listed but not checked property by property. Passing these checks makes a page eligible for rich results; Google still decides whether to show them.</p>`,
+    faqs: [["Is the schema markup validator free?", "Yes. No sign-up, no email and no subscription. Pasted code is checked in your browser, and page checks have only a fair-use limit to stop bots."], ["Is this the same as Google's Rich Results Test?", "It checks the same required and recommended properties for the common rich result types, and also flags broken JSON and duplicate blocks. Google's test also renders JavaScript and is the final word on what Google itself sees."], ["What happened to Google's Structured Data Testing Tool?", "Google retired it in 2021. Its replacements are the Rich Results Test and the Schema Markup Validator at schema.org, which checks against the full vocabulary but not Google's rich result rules."], ["Does schema markup improve rankings?", "Not directly. It makes your listing eligible for rich results, which usually get more clicks, and it helps search engines and AI tools understand your business."], ["Which schema should a local business use?", "LocalBusiness, or a more specific type such as Plumber, Dentist or Restaurant, with your name, address, phone, opening hours and website. Add BreadcrumbList on inner pages and FAQPage only where the questions are on the page."]],
+  },
+  {
+    path: "/heading-checker", crumb: "Heading checker", parent: ["/seo-tools", "SEO tools"], title: "Heading Checker | Free H1 to H6 Tag Checker",
+    desc: "Free heading checker: see the H1 to H6 outline of any page, check it has one clear H1, and spot skipped levels, empty headings and hidden headings.",
+    h1: "Heading checker", eyebrow: "Any page · Free · No sign-up", app: "XKey heading checker", form: "headings",
+    lead: "Enter a page address to see its headings as an indented outline, the way search engines and screen readers read them, with a plain list of anything to fix.",
+    sections: `<h2>What the heading checker tests</h2>
+<div class="grid">
+<div class="card"><p class="ct">The H1</p><p>Whether the page has one H1, whether it's empty or hidden, how long it is, and whether it says something different from the page title.</p></div>
+<div class="card"><p class="ct">The outline</p><p>Every H1 to H6 in order, indented by level, so you can see at a glance if the page reads like a well-organised document.</p></div>
+<div class="card"><p class="ct">Structure problems</p><p>Skipped levels (an H2 followed by an H4), empty headings, headings hidden from view, and headings used only to make text big.</p></div>
+</div>
+<h2>Do headings matter for SEO?</h2>
+<p>Yes, in two ways. Google reads headings to understand what each part of a page covers, and a clear H1 that matches what people search for is one of the simplest on-page signals you control. Headings also matter to visitors: most people scan a page before reading it, and a good set of H2s lets them find their answer fast, which keeps them on your site. AI assistants lean on headings too when they pick a passage to quote.</p>
+<h2>What a good heading structure looks like</h2>
+<ul><li><strong>One H1</strong> that says what the page is about, ideally with the main search phrase: "Emergency plumber in Blackpool", not "Welcome".</li><li><strong>H2s for each main section</strong>, written the way people search: "How much does a boiler service cost?"</li><li><strong>H3s inside H2s</strong> for sub-points, and so on. Don't jump from H2 to H4 to make text smaller; change the size with styling instead.</li><li><strong>No headings for decoration.</strong> Phone numbers, "Read more" and footer titles are better as normal text.</li></ul>
+<h2>How to fix the problems it finds</h2>
+<p>In WordPress, Wix, Squarespace and most builders you choose the heading level from the text style menu, separately from the size. Change the level there and adjust the look in your theme settings. If your theme makes the logo or site name an H1 on every page, ask your developer to change it so each page's own title is the H1. Then check the title and description too with our <a href="/title-tag-checker">title tag checker</a>.</p>
+<h2>What it can't check</h2>
+<p>We read the page's HTML as it arrives, so headings added later by JavaScript may be missing. We flag headings marked hidden in the HTML, but can't see ones hidden by a stylesheet.</p>`,
+    faqs: [["Is the heading checker free?", "Yes. No sign-up, no email and no subscription, with only a fair-use limit to stop bots."], ["Can a page have more than one H1?", "It's allowed and Google says it copes, but one clear H1 is still best practice. It makes the page's topic obvious to search engines, screen readers and visitors."], ["Should the H1 be the same as the title tag?", "They can be the same or close. The title tag is written for the search results; the H1 greets people on the page. Both should cover the same topic."], ["How long should an H1 be?", "Short enough to read at a glance, usually under 70 characters. Put the most important words first."]],
+  },
+  {
+    path: "/alt-text-checker", crumb: "Alt text checker", parent: ["/seo-tools", "SEO tools"], title: "Alt Text Checker | Find Images Missing Alt Tags",
+    desc: "Free alt text checker: list every image on a page with its alt text, and find images with missing, empty, too long or file-name alt tags in seconds.",
+    h1: "Image alt text checker", eyebrow: "Any page · Free · No sign-up", app: "XKey alt text checker", form: "alttext",
+    lead: "Enter a page address to list every image with its alt text, and see which images are missing it, which use a file name, and which links are images with no words at all.",
+    sections: `<h2>What the alt text checker looks for</h2>
+<div class="grid">
+<div class="card"><p class="ct">Missing alt</p><p>Images with no alt attribute at all. Screen readers read out the file name instead, and Google gets no words to go on.</p></div>
+<div class="card"><p class="ct">Linked images</p><p>Logos and buttons that are links but have no alt text, so the link has no anchor text for Google or screen reader users.</p></div>
+<div class="card"><p class="ct">Weak alt text</p><p>Alt text that is a file name (IMG_0423.jpg), says "image of", repeats on many images, or runs on far too long.</p></div>
+</div>
+<h2>Why alt text matters</h2>
+<p>Alt text is the short description of an image in the page's code. It's read aloud by screen readers for blind and partially sighted visitors, shown when an image fails to load, and used by Google to understand the picture. Good alt text helps your images appear in Google Images and gives the page more relevant words. For an image that is a link, such as your logo, the alt text is the link's anchor text. Under the Equality Act, UK businesses are expected to make their websites usable for disabled people, and missing alt text is one of the most common failures.</p>
+<h2>How to write good alt text</h2>
+<ul><li><strong>Describe what matters in the picture</strong>, in a short sentence: "Engineer fitting a combi boiler in a Blackpool kitchen".</li><li><strong>Skip "image of" or "picture of".</strong> Screen readers already say it's an image.</li><li><strong>Keep it under about 125 characters.</strong> Some screen readers cut longer text.</li><li><strong>Don't stuff keywords.</strong> Mention your service or town only when it's honestly in the picture.</li><li><strong>Use an empty alt (alt="")</strong> for purely decorative images, such as dividers and background shapes, so screen readers skip them. An image that is a link should never be empty.</li></ul>
+<h2>How to fix the problems it finds</h2>
+<p>In WordPress, open the Media Library, click the image and fill in "Alternative Text"; images already placed on a page may need it set in the block too. Wix, Squarespace and Shopify have an alt text box in each image's settings. Then check the page's links with our <a href="/broken-link-checker">broken link checker</a>.</p>
+<h2>What it can't check</h2>
+<p>We read the HTML as it arrives, so images added later by JavaScript or set as CSS backgrounds aren't listed. We can tell you an alt text is missing or weak, but only a person can judge whether it describes the picture well.</p>`,
+    faqs: [["Is the alt text checker free?", "Yes. No sign-up, no email and no subscription, with only a fair-use limit to stop bots."], ["Is alt text a ranking factor?", "It helps Google understand images and ranks them in Google Images, and for linked images it acts as anchor text. It's a small signal for the page itself, but an easy one to get right."], ["Should every image have alt text?", "Every image needs an alt attribute. Images that carry meaning need a description; purely decorative ones should have an empty alt='' so screen readers skip them."], ["What's the difference between alt text and a title attribute?", "Alt text describes the image for screen readers and search engines. The title attribute only shows as a tooltip on hover and is mostly ignored."]],
+  },
+  {
+    path: "/canonical-checker", crumb: "Canonical checker", parent: ["/seo-tools", "SEO tools"], title: "Canonical Tag Checker | Is My Page Indexable?",
+    desc: "Free canonical tag checker: find the canonical URL of any page, test that it loads, and check for noindex in meta robots or X-Robots-Tag headers.",
+    h1: "Canonical tag checker", eyebrow: "Any page · Free · No sign-up", app: "XKey canonical checker", form: "canonical",
+    lead: "Enter a page address to find its canonical tag, check the address it points to really works, and see whether anything on the page tells Google not to index it.",
+    sections: `<h2>What the canonical checker tests</h2>
+<div class="grid">
+<div class="card"><p class="ct">The canonical tag</p><p>Whether the page has one, whether it points to itself or another page, and whether there are two different ones (Google then ignores both).</p></div>
+<div class="card"><p class="ct">The target address</p><p>We load the canonical address to check it answers 200 directly, rather than redirecting, returning an error or being blocked.</p></div>
+<div class="card"><p class="ct">Noindex signals</p><p>Meta robots, googlebot tags and the X-Robots-Tag header, so you can see in one place whether Google is allowed to index the page.</p></div>
+</div>
+<h2>What is a canonical tag?</h2>
+<p>A canonical tag is a line in a page's head, &lt;link rel="canonical" href="…"&gt;, that tells search engines which address is the main version of the page. The same page can often be reached several ways: with and without www, with tracking codes such as ?utm_source=, or through different category paths in a shop. The canonical tag gathers all of them into one address, so links and ranking signals aren't split, and Google shows the address you want in its results.</p>
+<h2>Common canonical mistakes</h2>
+<ul><li><strong>Every page pointing at the home page.</strong> A theme setting or a plugin mistake that tells Google to drop all your inner pages.</li><li><strong>Canonical to a redirect or a 404.</strong> Google then has to guess, and often picks a different address from the one you wanted.</li><li><strong>http or the wrong domain.</strong> A canonical to http:// on an https site, or to a staging or old domain, left over from building the site.</li><li><strong>Noindex plus a canonical to another page.</strong> Mixed signals: one says "drop this page", the other says "this is a copy".</li><li><strong>A canonical in the body.</strong> Google only reads canonical tags in the &lt;head&gt;.</li></ul>
+<h2>How to fix the problems it finds</h2>
+<p>On WordPress, Yoast SEO and Rank Math set a self-referencing canonical on every page; you can change one page's canonical in its SEO settings. Shopify adds canonicals itself. If the checker finds a noindex you didn't expect, look for "Discourage search engines" in WordPress Settings → Reading, or the page's own SEO settings. Check the redirects with our <a href="/redirect-checker">redirect checker</a>, then ask Google to re-crawl the page from Search Console.</p>
+<h2>What it can't check</h2>
+<p>A canonical tag is a strong hint, not an order: Google can still choose a different main address, and only Search Console's URL Inspection shows which one it picked. We don't run JavaScript, so a canonical changed by a script after the page loads isn't seen here. robots.txt rules are checked by our <a href="/robots-txt-tester">robots.txt tester</a>.</p>`,
+    faqs: [["Is the canonical checker free?", "Yes. No sign-up, no email and no subscription, with only a fair-use limit to stop bots."], ["Should every page have a canonical tag?", "It's good practice. A canonical pointing to the page's own clean address protects it against copies created by tracking codes, filters and www or http versions."], ["Does a canonical tag pass link value?", "Google treats it as a strong hint to combine the duplicate addresses, including their links, into the chosen main version."], ["What's the difference between a canonical and a 301 redirect?", "A 301 sends visitors and Google to the new address. A canonical leaves both addresses working for visitors and only tells search engines which one to show."]],
   },
   {
     path: "/case-converter", crumb: "Case converter", parent: ["/seo-tools", "SEO tools"], title: "Case Converter | Sentence, Title, Upper & Lower Case",

@@ -64,6 +64,8 @@ if (process.argv.includes("site")) {
   check("meta: bbc.co.uk has Open Graph tags", s === 200 && j.status === 200 && (j.metas || []).some((m) => m.key === "og:title"), `${s} ${j.status} ${j.error || ""}`);
   [s, j] = await api("/api/ssl?d=bbc.co.uk");
   check("ssl: bbc.co.uk is secure and redirects to https", s === 200 && j.secure && (j.checks || []).some((c) => /redirects to https/.test(c.text)), `${s} ${j.error || ""} cert ${j.cert ? j.cert.issuer + " " + j.cert.to : j.ctError ? "CT error" : "none"}`);
+  [s, j] = await api("/api/onpage?url=https://www.bbc.co.uk/");
+  check("onpage: bbc.co.uk headings, images and JSON-LD", s === 200 && j.status === 200 && (j.headings || []).length > 3 && (j.images || []).length > 3 && (j.jsonld || []).length > 0, `${s} ${j.status} ${j.error || ""} h ${(j.headings || []).length} img ${(j.images || []).length} ld ${(j.jsonld || []).length}`);
   [s, j] = await api("/api/email?d=bbc.co.uk");
   check("email: bbc.co.uk MX, SPF and DMARC", s === 200 && j.mx && j.mx.records.length > 0 && j.spf && j.spf.root && !j.spf.root.missing && j.dmarc && !!j.dmarc.record, `${s} ${j.error || ""} mx ${j.mx && j.mx.records.length} dmarc ${j.dmarc && j.dmarc.record}`);
   // every page in the sitemap loads with a title
