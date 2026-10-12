@@ -8,6 +8,7 @@ import { createMonitor, runMonitor, getMonitor, validId, dashboard, runDueMonito
 import { robotsAllows, pixelWidth, normaliseUrl, fetchRobots, crawlStart, crawlBatch, fetchHtml, runCheck } from "../engine/checker.js";
 import { summarisePage } from "./page-parse.js";
 import { backlinksApi, authorityApi } from "./backlinks.js";
+import { traceRedirects } from "./redirects.js";
 
 const BY_PATH = Object.fromEntries(PAGES.map((p) => [p.path, p]));
 const GUIDES = PAGES.filter((p) => p.path.startsWith("/guides/"));
@@ -116,6 +117,9 @@ Contact | /contact | Phone, email and opening hours</textarea>
 <p style="margin:16px 0 0"><button class="btn" type="submit">Write with AI</button></p><div id="ai-out" aria-live="polite"></div></form><script src="/assets/tools.js" defer></script>`,
   bulk: () => `<form class="tool" id="bk-form"><label for="bk-urls">Web addresses – one per line, up to 20</label><textarea id="bk-urls" spellcheck="false" placeholder="yoursite.co.uk&#10;competitor.co.uk&#10;yoursite.co.uk/services"></textarea>
 <p style="margin:16px 0 0"><button class="btn" type="submit">Check them all</button></p><div id="bk-out" aria-live="polite"></div></form><script src="/assets/tools.js" defer></script>`,
+  redirects: () => `<form class="tool" id="rd-form"><label for="rd-urls">Web addresses – one per line, up to 100</label><textarea id="rd-urls" spellcheck="false" placeholder="yourwebsite.co.uk&#10;http://yourwebsite.co.uk/old-page"></textarea>
+<label style="display:flex;gap:10px;align-items:center;font-weight:400"><input id="rd-all" type="checkbox" checked style="width:auto"> For a bare domain, also check its http:// and www versions</label>
+<p style="margin:16px 0 0"><button class="btn" type="submit">Check redirects</button></p><div id="rd-out" aria-live="polite"></div></form><script src="/assets/tools.js" defer></script>`,
   badge: () => `<form class="tool" id="bd-form"><label for="bd-site">Your website</label><input id="bd-site" type="text" inputmode="url" placeholder="yoursite.co.uk">
 <p style="margin:16px 0 6px;font-weight:600">Preview</p><div id="bd-prev"></div><p style="margin:16px 0 6px;font-weight:600">Code to paste into your site</p><pre class="out" id="bd-code"></pre><button class="btn" type="button" id="bd-copy">Copy</button></form><script src="/assets/tools.js" defer></script>`,
 };
@@ -326,6 +330,14 @@ const worker = {
         if (await rateLimited(request, "authority", 60)) return Response.json({ error: "You've checked a lot of sites this hour – please try again later." }, { status: 429 });
         const r = await authorityApi(env, c, url.searchParams);
         return Response.json(r.body, { status: r.status, headers: { "cache-control": r.status === 200 ? "public, max-age=3600" : "no-store" } });
+      }
+      case "/api/redirects": {
+        let t; try { t = normaliseUrl(url.searchParams.get("url")); } catch (e) { return Response.json({ error: e.message }, { status: 400 }); }
+        // up to 100 addresses (×4 versions) per run
+        if (await rateLimited(request, "redirects", 600)) return Response.json({ error: "You've checked a lot of addresses this hour – please try again later." }, { status: 429 });
+        if (await over(`redirects-host/${t.hostname}/${Math.floor(Date.now() / 3_600_000)}`, 400)) return Response.json({ error: "That website has been checked a lot this hour – please try again later." }, { status: 429 });
+        try { return Response.json(await traceRedirects(t.href, selfFetch(env, c)), { headers: { "cache-control": "no-store" } }); }
+        catch (e) { return Response.json({ error: (e && e.message) || "Couldn't check that address." }, { status: 400 }); }
       }
       case "/api/robots": {
         let t; try { t = normaliseUrl(url.searchParams.get("url")); } catch (e) { return Response.json({ error: e.message }, { status: 400 }); }

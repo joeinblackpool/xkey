@@ -530,6 +530,63 @@ export function toolsApp() {
     draw(); work(); work(); work();
   });
 
+  // ---- redirect checker (each address followed hop by hop on the server, 4 at a time)
+  var rd = $("rd-form");
+  if (rd) rd.addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var seen = {}, lines = $("rd-urls").value.split(/\s+/).filter(function (x) { x = x.toLowerCase(); if (!/\./.test(x) || seen[x]) return false; seen[x] = 1; return true; }).slice(0, 100);
+    var out = $("rd-out"); if (!lines.length) { out.innerHTML = '<p class="s-warn">Add at least one web address.</p>'; return; }
+    // a bare domain (no scheme, no path) with the box ticked becomes its four versions
+    var groups = [];
+    lines.forEach(function (l) {
+      var bare = /^(www\.)?[a-z0-9-]+(\.[a-z0-9-]+)+\/?$/i.test(l);
+      if (bare && $("rd-all").checked && lines.length <= 25) { var h = l.replace(/\/$/, "").replace(/^www\./i, "").toLowerCase(); groups.push({ host: h, urls: ["http://" + h + "/", "http://www." + h + "/", "https://" + h + "/", "https://www." + h + "/"] }); }
+      else groups.push({ urls: [l] });
+    });
+    var jobs = []; groups.forEach(function (g) { g.res = g.urls.map(function () { return null; }); g.urls.forEach(function (u, k) { jobs.push([g, k]); }); });
+    var done = 0, next = 0, ic = { pass: "✓", warn: "!", fail: "✗" };
+    var stat = function (s) { return '<b class="' + (s >= 200 && s < 300 ? "s-pass" : s >= 300 && s < 400 ? "s-warn" : "s-fail") + '">' + (s || "–") + "</b>"; };
+    var card = function (r, label) {
+      if (!r) return '<div class="card" style="margin:12px 0"><p class="ct" style="overflow-wrap:anywhere">' + esc(label) + '</p><p class="small">Waiting…</p></div>';
+      if (r.error) return '<div class="card" style="margin:12px 0"><p class="ct" style="overflow-wrap:anywhere">' + esc(label) + '</p><p class="s-fail">' + esc(r.error) + "</p></div>";
+      var chain = r.hops.map(function (h, i) { return "<tr><td>" + (i + 1) + "</td><td>" + stat(h.status) + '<br><span class="small">' + esc(h.name) + '</span></td><td style="overflow-wrap:anywhere;font-size:14px">' + esc(h.url) + (h.to ? '<br><span class="small">→ ' + esc(h.to) + "</span>" : "") + '</td><td class="small">' + h.ms + " ms</td></tr>"; }).join("");
+      var last = r.hops[r.hops.length - 1], hd = Object.keys(last.headers || {});
+      return '<div class="card" style="margin:12px 0"><p class="ct" style="overflow-wrap:anywhere">' + esc(label) + "</p>" +
+        '<ul class="chk">' + r.verdict.map(function (v) { return '<li><span class="ic s-' + v[0] + '">' + ic[v[0]] + "</span><div><p style=\"margin:0;color:var(--fg)\">" + esc(v[1]) + "</p></div></li>"; }).join("") + "</ul>" +
+        '<div class="tablewrap"><table><thead><tr><th>#</th><th>Status</th><th>Address</th><th>Time</th></tr></thead><tbody>' + chain + "</tbody></table></div>" +
+        (hd.length ? '<details><summary class="small" style="padding:10px 0">HTTP headers of the final page</summary><pre class="out">' + esc(hd.map(function (k) { return k + ": " + last.headers[k]; }).join("\n")) + "</pre></details>" : "") + "</div>";
+    };
+    var draw = function () {
+      var h = done < jobs.length ? '<p class="small">' + done + " of " + jobs.length + " checked…</p>" : "";
+      if (jobs.length > 1) h += '<div class="tablewrap"><table><thead><tr><th>Address</th><th>Status</th><th>Redirects</th><th>Ends at</th></tr></thead><tbody>' + jobs.map(function (j) {
+        var r = j[0].res[j[1]], u = j[0].urls[j[1]];
+        return '<tr><td style="overflow-wrap:anywhere;font-size:14px">' + esc(u) + "</td>" + (!r ? '<td colspan="3" class="small">Waiting…</td>' : r.error ? '<td colspan="3" class="s-fail">' + esc(r.error) + "</td>" : "<td>" + r.hops.map(function (x) { return stat(x.status); }).join(" → ") + "</td><td>" + r.redirects + '</td><td style="overflow-wrap:anywhere;font-size:14px">' + esc(r.final) + "</td>") + "</tr>";
+      }).join("") + "</tbody></table></div>";
+      groups.forEach(function (g) {
+        if (g.host && g.res.every(Boolean)) {
+          var ends = {}; g.res.forEach(function (r) { if (!r.error && r.status === 200) ends[r.final] = 1; }); var e = Object.keys(ends);
+          var ok = e.length === 1 && g.res.every(function (r) { return !r.error && r.status === 200; }) && /^https:/.test(e[0]);
+          h += '<p class="' + (ok ? "s-pass" : "s-fail") + '" style="font-weight:600">' + (ok ? "✓ All four versions of " + esc(g.host) + " end at " + esc(e[0]) + ". Exactly right." : "✗ The four versions of " + esc(g.host) + " don't all end at one secure address" + (e.length > 1 ? " (they end at " + e.length + " different ones)" : "") + ". Google may treat them as separate sites and split your rankings – redirect them all to one https:// address with a 301.") + "</p>";
+        }
+      });
+      if (done === jobs.length && jobs.length > 1) h += '<p><button type="button" class="btn ghost" id="rd-csv">Download CSV</button></p>';
+      if (jobs.length <= 8) groups.forEach(function (g) { g.urls.forEach(function (u, k) { h += card(g.res[k], u); }); });
+      else h += '<p class="small">Check fewer than 9 addresses to see every hop, verdict and header.</p>';
+      out.innerHTML = h;
+      var c = $("rd-csv"); if (c) c.onclick = function () {
+        var cell = function (v) { v = String(v == null ? "" : v); if (/^[=+\-@\t\r]/.test(v)) v = "'" + v; return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+        var rows = [["address", "final_status", "redirects", "final_address", "chain", "problems"]].concat(jobs.map(function (j) { var r = j[0].res[j[1]], u = j[0].urls[j[1]]; return !r || r.error ? [u, "error", "", "", "", r && r.error] : [u, r.status, r.redirects, r.final, r.hops.map(function (x) { return x.status; }).join(" > "), r.verdict.filter(function (v) { return v[0] !== "pass"; }).map(function (v) { return v[1]; }).join(" | ")]; }));
+        var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["﻿" + rows.map(function (r) { return r.map(cell).join(","); }).join("\r\n")], { type: "text/csv" })); a.download = "xkey-redirects.csv"; document.body.appendChild(a); a.click(); a.remove();
+      };
+    };
+    var work = function () {
+      if (next >= jobs.length) return; var j = jobs[next++];
+      fetch("/api/redirects?url=" + encodeURIComponent(j[0].urls[j[1]])).then(function (r) { return r.json(); }).then(function (x) { j[0].res[j[1]] = x; }, function () { j[0].res[j[1]] = { error: "Couldn't be checked" }; })
+        .then(function () { done++; draw(); work(); });
+    };
+    draw(); work(); work(); work(); work();
+  });
+
   // ---- score badge
   live("bd-form", function () {
     var site = val("bd-site").replace(/^https?:\/\//i, "").replace(/\/.*$/, "").toLowerCase();

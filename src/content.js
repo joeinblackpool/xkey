@@ -34,6 +34,7 @@ const TOOLS = [
   ["/anchor-text-checker", "Anchor text checker", "Grade every link on a page and generate better anchors."],
   ["/local-search-checker", "Local search checker", "See Google results as they appear in any UK town."],
   ["/ai-meta-description-generator", "AI title & description writer", "AI reads your page and writes titles and descriptions that fit Google."],
+  ["/redirect-checker", "Redirect checker", "Follow any address hop by hop: 301s, 302s, chains, loops and HTTP status codes, up to 100 at once."],
   ["/bulk-seo-checker", "Bulk SEO checker", "Score up to 20 websites at once and download a CSV."],
   ["/seo-badge", "SEO score badge", "Show your score on your site – it updates itself weekly."],
 ];
@@ -536,6 +537,22 @@ export const PAGES = [
     faqs: [["Why is the limit 20?", "Each check fetches a page and its supporting files, so 20 at a time keeps the tool fast and free for everyone. Run another batch whenever you like."]],
   },
   {
+    path: "/redirect-checker", crumb: "Redirect checker", parent: ["/seo-tools", "SEO tools"], title: "Redirect Checker | 301, 302 & HTTP Status, Bulk, Free",
+    desc: "Free redirect checker: follow any web address hop by hop and see every 301, 302 and HTTP status code, redirect chains and loops. Up to 100 at once.",
+    h1: "Redirect checker", eyebrow: "Free · No sign-up", app: "XKey redirect checker",
+    lead: "See exactly where a web address goes: every redirect, its status code and the page it ends on, with a plain-English verdict. Check one address, all four versions of your domain, or up to 100 at once.",
+    form: "redirects",
+    sections: `<h2>Why check your redirects?</h2>
+<p>Redirects quietly decide whether your old pages keep their Google rankings. A <strong>301</strong> tells Google a page has moved for good, so its rankings follow it. A <strong>302</strong> says the move is temporary, so Google may keep showing the old address. Chains of several redirects slow every visit, and a redirect loop makes a page impossible to reach.</p>
+<h2>When should I use it?</h2>
+<ul><li><strong>After moving to a new website or domain</strong> – check your old addresses all land on the right new pages.</li><li><strong>After switching to https://</strong> – check every version of your domain ends at one secure address.</li><li><strong>When Search Console reports “Page with redirect”</strong> or “Redirect error” – see exactly what's happening.</li><li><strong>Before changing page addresses</strong> – list the old ones, then test them all once the change is live.</li></ul>
+<h2>What do the status codes mean?</h2>
+<ul><li><strong>200</strong> – the page loaded. <strong>301 / 308</strong> – moved for good (best for SEO). <strong>302 / 307</strong> – moved for now.</li><li><strong>404</strong> – not found. <strong>410</strong> – deleted on purpose. <strong>5xx</strong> – the server failed.</li></ul>
+<h2>How do I fix a redirect problem?</h2>
+<p>On WordPress, the free Redirection plugin manages redirects. Wix, Squarespace and Shopify each have a built-in redirect manager in their settings – search their help for “URL redirects”. Always point old addresses straight at the final page, and update your own links to use the final address. Then run the <a href="/website-audit">website audit</a> to find internal links that still go through redirects.</p>`,
+    faqs: [["Does it follow redirects like Google does?", "It follows HTTP redirects (301, 302, 303, 307 and 308) one hop at a time, up to 10, the way a search engine does. It doesn't run JavaScript or meta refresh redirects, which Google handles less reliably anyway."], ["Is there a limit?", "Up to 100 addresses per run, and a fair-use limit per hour to stop abuse. No sign-up or email."]],
+  },
+  {
     path: "/seo-badge", crumb: "SEO score badge", parent: ["/seo-tools", "SEO tools"], title: "Free SEO Score Badge for Your Website | XKey",
     desc: "Show visitors your website is well built: add a free XKey SEO score badge that updates itself weekly. Copy one line of code – no sign-up.",
     h1: "Free SEO score badge for your website", eyebrow: "Free · Updates itself", app: "XKey SEO score badge",
@@ -551,7 +568,7 @@ export const PAGES = [
   },
   {
     path: "/seo-tools", crumb: "SEO tools", title: "Free SEO Tools | No Sign-Up, No Email, No Subscription",
-    desc: "32 free SEO tools with no sign-up, no email and no subscription: SEO check, site audit, meta tag and sitemap generators, keyword ideas and more.",
+    desc: "33 free SEO tools with no sign-up, no email and no subscription: SEO check, site audit, meta tag and sitemap generators, keyword ideas and more.",
     h1: "Free SEO tools", eyebrow: "No sign-up", lead: "Every tool is free, with no account, no email and no subscription. The generators and counters run in your browser, so they're unlimited and nothing you type leaves your device.",
     sections: `<h2>Which SEO tool should I start with?</h2><p>Start with the <a href="/">free SEO check</a> on your most important page – it covers everything below in one report. Then run the <a href="/website-audit">website audit</a> to catch site-wide problems, and turn on <a href="/seo-monitoring">weekly monitoring</a> so nothing breaks unnoticed.</p><h2>Are these SEO tools really free?</h2><p>Yes. No sign-up, no trial and no limits beyond fair-use rate limits that stop abuse. XKey is paid for by <a href="https://icework.co.uk" rel="noopener">IceWork</a>, who build websites, as a useful free service.</p><h2>Do the single-topic tools run a different check?</h2><p>The checkers for speed, schema, sitemaps, security, mobile and local SEO run the full check and open your report at that section, so you never miss a bigger problem elsewhere on the page.</p>`, tools: true, itemList: TOOLS,
   },
