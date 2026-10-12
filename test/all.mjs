@@ -1,5 +1,6 @@
 // Every XKey test, in order. Run before every push:  node test/all.mjs
 //  0. platform.mjs – website builder detection and its how-to-fix steps
+//  0b. pro.mjs  – uptime monitor, website analytics and the WordPress plugin ZIP
 //  1. check.mjs  – every page: titles, descriptions, links, JSON-LD, XKey's own checker
 //  2. tools.mjs  – builds the site like Cloudflare does, then clicks through every tool
 //  3. mobile.mjs – every page on an iPhone and a Pixel: no sideways scroll, tappable buttons
@@ -9,7 +10,7 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 const here = path.dirname(fileURLToPath(import.meta.url));
 let failed = [];
-for (const t of ["platform.mjs", "check.mjs", "tools.mjs", "mobile.mjs"]) {
+for (const t of ["platform.mjs", "pro.mjs", "check.mjs", "tools.mjs", "mobile.mjs"]) {
   console.log(`\n=== ${t} ===`);
   const r = spawnSync(process.execPath, [path.join(here, t)], { stdio: "inherit" });
   if (r.status !== 0) failed.push(t);

@@ -54,6 +54,26 @@ Free SEO & AI search checker for UK businesses, made by IceWork (icework.co.uk).
 ## Browser-only text tools: UTM builder (/utm-builder), URL slug generator (/url-slug-generator), case converter (/case-converter)
 - All in tools-client.js, nothing sent to the server. Element id prefixes ut-, us-, cc- (sg- is taken by the schema generator).
 
+## Rank tracker, content editor, backlink audit, ad checker, brand monitoring (src/pro-pages.js, src/pro-client.js)
+- Pages in `src/pro-pages.js` (`PRO_PAGES`, tool cards `PRO_TOOLS`, forms `PRO_FORMS`); browser code `src/pro-client.js` served as /assets/pro.js (loaded only on these pages). Element id prefixes rk-, ce-, ba-, ad-, bm-, an-.
+- /rank-tracker: reads Search Console Performance exports (the ZIP – unzipped in the browser with DecompressionStream – or a pasted table; comparison columns and Filters.csv country are understood). Snapshots per site + region in localStorage `xk-rank`. No Google sign-in, nothing sent to us.
+- /seo-content-editor: live score; competing pages (≤5) are read through `/api/page` for target length, shared terms and questions. Draft kept in localStorage `xk-editor`.
+- /toxic-backlink-checker: `/api/backlinks` linkers graded by name/strength heuristics, anchor text read from the strongest 15 linkers' home pages via `/api/page`, disavow.txt builder. Honest limit: home pages only, 50 strongest linkers.
+- /competitor-ads-checker: ad tags from `/api/tech` plus links into the Google Ads Transparency Centre, Meta, LinkedIn and TikTok ad libraries. No spend figures (not public).
+- /brand-monitoring: search links (run in the visitor's browser – never scrape Google), a Google Alerts link, and an unlinked-mention check via `/api/page`.
+
+## Uptime monitor (/uptime-monitor, src/uptime.js)
+- `POST /api/uptime` (url, optional alert: ntfy topic or Slack/Discord/Teams webhook – other hosts refused) → private dashboard /uptime/<id> (noindex, robots-disallowed). Checked by the 15-minute cron (`runUptime`, oldest-checked first, `UPTIME_PER_RUN` default 30 per run, failures re-checked before alerting). Down = 5xx/404/timeout/connection error or an error page (database, WordPress critical error, PHP fatal…); slow = over 4 s.
+- KV: everything in one key `up:all`, written once per cron run; new monitors wait in `up:new:<id>` and stops in `up:del:<id>` until the next run. Max 200 monitors.
+
+## Website analytics (/website-analytics, src/analytics.js)
+- D1 database `xkey-analytics` (binding `ANALYTICS`). `POST /api/analytics` → /analytics/<secret> dashboard (noindex). Sites add `<script defer data-site="KEY" src="https://xkey.co.uk/a.js">` (<1 kB, no cookies); beacons go to `POST /api/a` (always 204). Aggregated rows only; visitors = daily-salted SHA-256 (salt in KV `an:salt:<day>`). Caps: 100 sites, 5,000 pageviews per site per day. Hashes pruned after 31 days, totals after 400 (cron, 03:00 UTC).
+- Tests: `d1StandIn()` in test/lib.mjs (Node's built-in SQLite); `node test/pro.mjs`.
+
+## WordPress plugin (wordpress-plugin/xkey-seo-fixer, /wordpress-seo-plugin)
+- PHP plugin (Tools → XKey SEO Fixer): alt text, meta descriptions (Yoast/Rank Math/SEOPress fields, else its own tag), H1→H2 in content, broken internal links. Pure transforms in `includes/transforms.php`, tested by `php wordpress-plugin/test/run.php`.
+- Served as /downloads/xkey-seo-fixer.zip, zipped by the Worker from `src/wp-plugin-files.js`. After changing the plugin run `node wordpress-plugin/bundle.mjs` (test/pro.mjs fails if the bundle is stale).
+
 ## Layout
 - `src/` – XKey pages (`content.js`), shell/styles (`site.js`), routing + APIs (`index.js`), browser tools (`tools-client.js`, served as /assets/tools.js), page parser (`page-parse.js`), OG image (`og.js`).
 - `engine/` – SEO checker engine **shared with icework.co.uk** (repo joeinblackpool/ICEWORK, folder `src/`). `src/page-parse.js` is also copied to ICEWORK `src/` (it powers the competitor topic gap there). Keep the two copies identical: change it here, then copy the same files into ICEWORK `src/` and run its tests (`node test/check.mjs`, `node test/checker-unit.mjs`).
