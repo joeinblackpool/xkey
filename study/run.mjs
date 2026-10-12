@@ -3,7 +3,7 @@
 //    the most-linked .uk sites ("top"), and a seeded random sample of everyday .uk sites ranked between
 //    500,000 and 5,000,000 on the whole web ("everyday" – mostly small businesses, clubs and charities).
 // 2. Runs XKey's own SEO check on each home page, plus DNS email records, AI crawler rules and the builder/CMS.
-// 3. Writes the aggregates to src/study-data.js (served on /uk-website-study) and one row per site to study/rows.json.
+// 3. Writes the aggregates to src/study-data.js (served on /uk-website-study) and one row per site to study/rows.json (a run artifact, not committed).
 // Polite: one site at a time per worker, our own user agent, robots.txt obeyed for the home page.
 // Run: node study/run.mjs [--top 500] [--sample 1000] [--release cc-main-2026-jul-aug-sep] [--workers 12]
 import fs from "node:fs";

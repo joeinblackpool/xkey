@@ -7,6 +7,7 @@ import { BEGINNER_GUIDES } from "./beginner-guides.js";
 import { TRADE_GUIDES } from "./trade-guides.js";
 import { PRO_PAGES, PRO_TOOLS } from "./pro-pages.js";
 import { BUNDLE5_PAGES } from "./bundle5-pages.js";
+import { STUDY_PAGE } from "./study-page.js";
 
 const TOOLS = [
   ["/", "Free SEO check", "Full single-page audit: Google readiness, AI search, speed, security and local SEO."],
@@ -1265,6 +1266,7 @@ Sitemap: https://yourdomain.co.uk/sitemap.xml</code></pre>
   },
   ...PRO_PAGES,
   ...BUNDLE5_PAGES,
+  STUDY_PAGE,
   ...MORE_GUIDES,
   ...GUIDES_8,
   ...GUIDES_10,
