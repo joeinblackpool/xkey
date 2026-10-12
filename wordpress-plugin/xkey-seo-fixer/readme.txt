@@ -1,5 +1,5 @@
 === XKey SEO Fixer ===
-Contributors: xkey
+Contributors: joeinblackpool
 Tags: seo, alt text, meta description, broken links, headings
 Requires at least: 6.0
 Tested up to: 6.8
