@@ -65,6 +65,7 @@ const toolPage = (path, crumb, title, desc, h1, lead, focus, app, sections, faqs
 
 import { MORE_GUIDES } from "./more-guides.js";
 import { GUIDES_8 } from "./guides-8.js";
+import { GUIDES_10 } from "./guides-10.js";
 
 export const PAGES = [
   {
@@ -1244,4 +1245,5 @@ Sitemap: https://yourdomain.co.uk/sitemap.xml</code></pre>
   },
   ...MORE_GUIDES,
   ...GUIDES_8,
+  ...GUIDES_10,
 ];
