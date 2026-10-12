@@ -84,6 +84,8 @@ Free SEO & AI search checker for UK businesses, made by IceWork (icework.co.uk).
 ## Browser-only tools in tools-extra.js: QR code generator, Google review link generator, image compressor, privacy policy generator
 - `src/tools-extra.js` (served as /assets/extra.js: `qrMatrix` + `extraApp` via toString, so no imports or bundler helpers), pages and forms in `src/extra-pages.js`. Element id prefixes qr-, rv-, ic-, pp-. Nothing is sent to the server.
 - `qrMatrix(text, ecl)` is a full QR encoder (byte mode, versions 1–40, all four error levels, best mask). Static codes only: the link is in the code, no redirect. Verified by decoding with OpenCV; tools.mjs checks structure and the pages.
+## Comparison and reference pages
+- `src/compare-pages.js`: /seo-glossary (A–Z from the `TERMS` list – add a term as one line, with an optional tool or guide link), free Ahrefs and Semrush alternatives, DA vs DR vs other scores, best website builder for SEO, Webflow and GoDaddy builder guides. Keep claims about other companies' products to what they publish themselves.
 
 ## UK business directories, redirect map generator, SEO ROI calculator
 - `src/directories-page.js`: /uk-business-directories – `GROUPS` list (name, domain, link, best for); the page fills each authority from /api/authority after load.

@@ -82,6 +82,7 @@ import { MORE_PAGES } from "./more-pages.js";
 import { EXTRA_PAGES } from "./extra-pages.js";
 import { SITE_REPORT_PAGE } from "./site-report.js";
 import { EMAIL_GUIDES } from "./email-guides.js";
+import { COMPARE_PAGES } from "./compare-pages.js";
 
 export const PAGES = [
   {
@@ -1272,4 +1273,5 @@ Sitemap: https://yourdomain.co.uk/sitemap.xml</code></pre>
   ...EXTRA_PAGES,
   SITE_REPORT_PAGE,
   ...EMAIL_GUIDES,
+  ...COMPARE_PAGES,
 ];
