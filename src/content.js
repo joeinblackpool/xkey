@@ -6,6 +6,7 @@ import { BUILDER_GUIDES } from "./builder-guides.js";
 import { BEGINNER_GUIDES } from "./beginner-guides.js";
 import { TRADE_GUIDES } from "./trade-guides.js";
 import { PRO_PAGES, PRO_TOOLS } from "./pro-pages.js";
+import { BUNDLE5_PAGES } from "./bundle5-pages.js";
 
 const TOOLS = [
   ["/", "Free SEO check", "Full single-page audit: Google readiness, AI search, speed, security and local SEO."],
@@ -66,6 +67,7 @@ const TOOLS = [
   ["/privacy-policy-generator", "Privacy policy generator", "A UK GDPR privacy policy and cookie wording for your site."],
   ["/seo-badge", "SEO score badge", "Show your score on your site – it updates itself weekly."],
   ...PRO_TOOLS,
+  ["/accessibility-checker", "Accessibility checker", "Test any page for WCAG problems: alt text, labels, link names, zoom and headings."],
 ];
 export const toolCards = (except) => `<div class="grid">${TOOLS.filter(([p]) => p !== except).map(([p, t, d]) => `<a class="card" href="${p}"><p class="ct">${t}</p><p>${d}</p></a>`).join("")}</div>`;
 
@@ -1258,6 +1260,7 @@ Sitemap: https://yourdomain.co.uk/sitemap.xml</code></pre>
 <h2>Your rights</h2><p>You can contact us about your data at <a href="mailto:iceworks@f1rst.co.uk">iceworks@f1rst.co.uk</a>, or complain to the Information Commissioner's Office at <a href="https://ico.org.uk/" rel="noopener">ico.org.uk</a>.</p>`,
   },
   ...PRO_PAGES,
+  ...BUNDLE5_PAGES,
   ...MORE_GUIDES,
   ...GUIDES_8,
   ...GUIDES_10,
