@@ -34,7 +34,7 @@ async function peek(res) {
 }
 
 /** Follow one address: { input, hops: [{ url, status, text, location, type, ms }], final, problems } */
-export async function traceRedirects(input, fetchImpl = fetch, agent = "desktop") {
+export async function traceRedirects(input, fetchImpl = fetch, agent = "desktop", withHeaders = false) {
   let u; try { u = normaliseUrl(input); } catch (e) { return { input, error: e.message }; }
   const ua = AGENTS[agent] || AGENTS.desktop, hops = [], seen = new Set();
   let problem = "";
@@ -44,9 +44,10 @@ export async function traceRedirects(input, fetchImpl = fetch, agent = "desktop"
     seen.add(u.href);
     const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), TIMEOUT_MS), t0 = Date.now();
     let r;
-    try { r = await fetchImpl(u.href, { redirect: "manual", signal: ctl.signal, headers: { "user-agent": ua, accept: "text/html,application/xhtml+xml,*/*;q=0.8" } }); }
+    try { r = await fetchImpl(u.href, { redirect: "manual", signal: ctl.signal, headers: { "user-agent": ua, accept: "text/html,application/xhtml+xml,*/*;q=0.8", "accept-encoding": "br, gzip" } }); }
     catch (e) { clearTimeout(t); hops.push({ url: u.href, status: 0, text: e.budget ? "budget" : e.name === "AbortError" ? "Timed out" : "Couldn't connect", ms: Date.now() - t0 }); break; }
     const hop = { url: u.href, status: r.status, text: TEXT[r.status] || "", ms: Date.now() - t0 };
+    if (withHeaders) hop.headers = [...r.headers].slice(0, 80).map(([k, v]) => [k, String(v).slice(0, 1000)]);
     hops.push(hop);
     const loc = r.headers.get("location");
     if (r.status >= 300 && r.status < 400 && loc) {

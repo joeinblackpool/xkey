@@ -1,6 +1,6 @@
 // Checks against the real internet (not part of test/all.mjs, which runs offline):
 //   node test/live.mjs registries   – src/whois.js against real registries (RDAP, and WHOIS on port 43 via node:net)
-//   node test/live.mjs site         – the live xkey.co.uk APIs: backlinks, authority, redirects, whois
+//   node test/live.mjs site         – the live xkey.co.uk APIs: backlinks, authority, redirects, headers, links, whois
 // Run by .github/workflows/live-check.yml. Exits 1 if anything looks wrong.
 import net from "node:net";
 import { whoisApi } from "../src/whois.js";
@@ -45,6 +45,14 @@ if (process.argv.includes("site")) {
   [s, j] = await api("/api/redirects?u=http://github.com&u=https://www.bbc.co.uk/news");
   const rr = j.results || [];
   check("redirects: http to https, and a normal page", s === 200 && rr[0] && rr[0].redirects >= 1 && rr[0].final.startsWith("https://github.com") && rr[1] && rr[1].status === 200, rr.map((r) => r.error || `${r.redirects} -> ${r.status} ${r.final}`).join("; "));
+  [s, j] = await api("/api/headers?url=github.com");
+  const last = j.hops ? j.hops[j.hops.length - 1] : {};
+  check("headers: github.com", s === 200 && last.status === 200 && (last.headers || []).some(([k]) => k === "content-type"), `${s} ${last.status}`);
+  [s, j] = await api("/api/links/page?url=https://www.bbc.co.uk/");
+  check("links: reads a page's links", s === 200 && j.status === 200 && (j.links || []).length > 20, `${s} ${j.status} ${(j.links || []).length} links`);
+  [s, j] = await api("/api/links/check?u=https://www.bbc.co.uk/&u=https://www.bbc.co.uk/this-page-does-not-exist-xkey");
+  const lc = j.results || [];
+  check("links: ok and 404", s === 200 && lc[0] && /ok|redirect/.test(lc[0].verdict) && lc[1] && lc[1].verdict === "broken", lc.map((r) => r.verdict + " " + r.status).join("; "));
   [s, j] = await api("/api/whois?d=bbc.co.uk,github.com,rte.ie,google.de");
   const w = j.results || [];
   for (const r of w) console.log(JSON.stringify(r).slice(0, 300));
