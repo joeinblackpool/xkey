@@ -60,9 +60,11 @@ export function checkerReport(esc, BUSINESS, r) {
   const lb = list.find((k) => k.name === "LocalBusiness markup"), ent = list.find((k) => k.name === "Entity clarity");
   if (lb && ent) { const at = Math.min(list.indexOf(lb), list.indexOf(ent)); list = list.filter((k) => k !== lb && k !== ent); list.splice(at, 0, { ...lb, also: ["Entity clarity"] }); }
   const fixes = list.slice(0, 8);
-  // Where to make each fix on the site's own builder, and which of our free tools does the job (BUSINESS.tools, optional).
-  const help = (k) => { const h = howTo(r.platform, k.name), t = BUSINESS.tools && BUSINESS.tools[k.name];
-    return (h ? `<p class="how"><strong>On ${esc(r.platform)}:</strong> ${esc(h)}</p>` : "") + (t ? `<p class="tool-link noprint"><a href="${t[0]}">${esc(t[1])}</a></p>` : ""); };
+  // Where to make each fix on the site's own builder, which of our free tools does the job (BUSINESS.tools, optional)
+  // and which guide explains it (BUSINESS.learn, optional).
+  const help = (k) => { const h = howTo(r.platform, k.name), t = BUSINESS.tools && BUSINESS.tools[k.name], g = BUSINESS.learn && BUSINESS.learn[k.name];
+    return (h ? `<p class="how"><strong>On ${esc(r.platform)}:</strong> ${esc(h)}</p>` : "") + (t ? `<p class="tool-link noprint"><a href="${t[0]}">${esc(t[1])}</a></p>` : "")
+      + (g ? `<p class="tool-link noprint"><a href="${g[0]}">Read the guide: ${esc(g[1])}</a></p>` : ""); };
   const host = new URL(r.url).hostname;
   return `<div class="wrap hero" style="padding-bottom:20px"><span class="eyebrow">SEO report</span><h1>SEO report for ${esc(new URL(r.url).hostname)}</h1>
 <p class="small" style="overflow-wrap:anywhere">${esc(r.url)} · checked ${esc(new Date().toUTCString().replace(/:\d\d GMT/, " GMT"))}</p>

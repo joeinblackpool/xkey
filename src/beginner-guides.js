@@ -127,4 +127,117 @@ export const BEGINNER_GUIDES = [
 <p>Breaking these can get reviews removed, a warning shown on your profile, or the profile suspended.</p>`,
     faqs: [["How many Google reviews do I need?", "Enough to compare well with the businesses you compete with in the map results, and a steady flow of new ones. Recent reviews matter, so aim for regular reviews rather than a burst."], ["Can I ask customers to change a bad review?", "You can fix the problem and let them know, and some people choose to update their review. Don't pressure them or offer anything in return."], ["Do reviews on other sites help?", "Reviews on Facebook, Trustpilot or trade sites help customers trust you and can appear in search, but Google reviews have the most direct effect on Google Maps."]],
   },
+  {
+    path: "/guides/how-much-does-seo-cost", crumb: "How much does SEO cost?", parent: ["/guides", "Guides"], article: true,
+    title: "How Much Does SEO Cost in the UK? Typical Prices",
+    desc: "What SEO costs in the UK: typical prices for freelancers, agencies and audits, what you should get for the money, and what you can do for free.",
+    h1: "How much does SEO cost in the UK?",
+    lead: "Prices for SEO in the UK run from nothing at all to thousands of pounds a month, and the price tag tells you surprisingly little about the results. Here's what the common options usually cost, what you should get for the money, and which parts you can do yourself.",
+    sections: `<h2>What are typical SEO prices in the UK?</h2>
+<p>There's no official price list, and quotes vary a lot by town, sector and how competitive the searches are. These are the rough ranges small businesses tend to be quoted:</p>
+<ul><li><strong>Doing it yourself:</strong> £0 plus your time. The basics need a few evenings to set up and an hour or two a month after that.</li><li><strong>A one-off audit:</strong> roughly £300 to £1,500 for a written list of problems and fixes on a small site.</li><li><strong>A freelancer on a monthly plan:</strong> often £300 to £1,000 a month.</li><li><strong>A small agency:</strong> commonly £500 to £2,500 a month for a local business, and more for national or ecommerce work.</li><li><strong>Hourly consulting:</strong> usually somewhere around £50 to £150 an hour.</li></ul>
+<p>Treat these as a sense check, not a quote. A plumber in one town needs far less work than an online shop competing nationally.</p>
+<h2>What should a monthly SEO fee pay for?</h2>
+<p>You should be able to name the work. A fair monthly plan for a small business usually includes some of these: fixing technical problems, writing or improving service pages, local work such as your <a href="/guides/google-business-profile">Google Business Profile</a> and reviews, earning links from real websites, and a report showing searches, clicks and enquiries from Google.</p>
+<p>Ask for that report to come from <a href="/guides/google-search-console">Google Search Console</a>, not just a list of rankings. Rankings change by device and location; clicks and enquiries are what pay the bills.</p>
+<h2>Which warning signs mean I'm paying for nothing?</h2>
+<ul><li><strong>A guaranteed number one ranking.</strong> Google says nobody can promise that.</li><li><strong>"Hundreds of backlinks a month".</strong> Bulk links are usually bought or automated, and can get a site penalised.</li><li><strong>No access to your own accounts.</strong> You should own your website, domain, Search Console and Business Profile, and be able to see everything.</li><li><strong>Reports full of jargon and no enquiry numbers.</strong></li><li><strong>Long lock-in contracts</strong> before any work has been shown.</li></ul>
+<h2>What can I do myself for free?</h2>
+<p>A lot of what a small business pays for at the start is the same checklist. Run the <a href="/">free SEO check</a> and fix what it flags, work through the <a href="/guides/on-page-seo-checklist">on-page SEO checklist</a>, set up your Business Profile and ask for reviews. The <a href="/website-audit">website audit</a> checks every page at once. If you then hire help, you'll know which jobs you're paying for and whether they've been done.</p>
+<h2>Is it worth paying for SEO?</h2>
+<p>It can be, when the searches are valuable and you don't have the time. Work out what a new customer is worth, roughly how many enquiries Google could bring each month, and compare that with the fee. Give any plan a fair test – most SEO work takes a few months to show – but expect to see the work itself from the first month.</p>`,
+    faqs: [["Is cheap SEO worth it?", "Sometimes, if the price buys a clear list of real work. Very cheap monthly plans often mean automated links or nothing at all, so ask exactly what will be done."], ["Do I need to pay for SEO tools?", "Not to start. Google Search Console is free, and every XKey tool is free with no sign-up. Paid tools mainly help with competitor research and large sites."], ["How do I know if my SEO is working?", "Watch clicks and the searches you appear for in Google Search Console, and count enquiries that say they found you on Google. Re-run the SEO check to confirm problems stay fixed."]],
+  },
+  {
+    path: "/guides/image-seo", crumb: "Image SEO", parent: ["/guides", "Guides"], article: true,
+    title: "Image SEO: Alt Text, File Size and Names for Beginners",
+    desc: "Image SEO in plain English: how to write alt text, how small images should be, what to name the files, and how heavy images cost you rankings.",
+    h1: "Image SEO: alt text, file size and names",
+    lead: "Images help customers trust you, and Google Images is a real source of visitors for trades, shops and venues. Done badly, they're also the most common reason a small business website is slow. Four habits fix nearly all of it.",
+    sections: `<h2>What is alt text, and how do I write it?</h2>
+<p>Alt text is a short description stored with an image. Screen readers read it aloud to blind visitors, and Google uses it to understand what the picture shows. Describe the picture as you would to someone on the phone:</p>
+<ul><li>Good: <em>"New oak staircase fitted in a Victorian terrace in Lytham"</em></li><li>Too vague: <em>"stairs"</em></li><li>Keyword stuffing: <em>"joiner Lytham joinery staircases Lytham cheap joiner"</em></li></ul>
+<p>Keep it to a sentence. Purely decorative images, such as a background pattern, should have empty alt text (<code>alt=""</code>) so screen readers skip them. Every website builder has an alt text box when you click on an image; the <a href="/">free SEO check</a> lists any images that are missing it.</p>
+<h2>How big should images be?</h2>
+<p>Most photos straight off a phone are 3 to 5 MB – far too heavy. For a normal website, aim for:</p>
+<ul><li><strong>Width:</strong> about 1,600 to 2,000 pixels for full-width banners, and 800 to 1,200 for photos inside the text.</li><li><strong>File size:</strong> ideally under 200 KB for most photos, and well under 500 KB even for a big banner.</li><li><strong>Format:</strong> WebP or AVIF where your site allows it; JPEG for photos otherwise; PNG only for logos and graphics with flat colour.</li></ul>
+<p>Large images are the usual cause of a slow Largest Contentful Paint, one of Google's <a href="/guides/core-web-vitals">Core Web Vitals</a>. Many builders shrink images for you, but they can't fix a 6,000-pixel upload completely, so resize before uploading.</p>
+<h2>Do image file names matter?</h2>
+<p>A little. A name like <em>oak-staircase-lytham.jpg</em> tells Google more than <em>IMG_4821.jpg</em>, and it's no extra effort if you rename photos before uploading. Use lower case words separated by hyphens.</p>
+<h2>What stops images making a page jump around?</h2>
+<p>Give each image its width and height in the code, so the browser keeps space for it before it loads. Without that, text jumps down as pictures appear, which annoys visitors and counts against you in Core Web Vitals. Most builders do this already; the SEO check flags images that don't reserve their space.</p>
+<p>Also let images further down the page load lazily (only when someone scrolls near them), but never the main image at the top, which should load straight away.</p>
+<h2>Should text ever go inside an image?</h2>
+<p>Avoid it for anything important. Prices, phone numbers, opening hours and headings baked into a banner can't be read reliably by Google or AI assistants, don't resize well on phones, and are invisible to screen readers. Put the words in real text over or beside the picture instead.</p>
+<h2>Are my own photos better than stock photos?</h2>
+<p>For a small business, usually yes. Real photos of your work, team and premises build trust with customers, can appear in Google Images for local searches, and show the first-hand experience Google's guidelines value. Stock photos are fine for decoration, but they won't set you apart.</p>`,
+    faqs: [["Does alt text help SEO?", "Yes. It's one of the main ways Google understands an image, it helps you appear in Google Images, and it makes your site usable for blind visitors."], ["How long should alt text be?", "Usually one short sentence, around 125 characters or fewer. Describe what's in the picture, not a list of keywords."], ["Do I need alt text on my logo?", "Yes, usually just your business name. If the logo links to your home page, that name is also the link's text."]],
+  },
+  {
+    path: "/guides/internal-linking", crumb: "Internal linking", parent: ["/guides", "Guides"], article: true,
+    title: "Internal Linking for SEO: A Simple Guide for Small Sites",
+    desc: "Internal linking explained for small business sites: why links between your own pages help them rank, what link text to use, and a simple structure that works.",
+    h1: "Internal linking for SEO",
+    lead: "The links between your own pages are the one kind of link you completely control. They help Google find every page, show which pages matter most, and lead visitors to the page that turns them into a customer.",
+    sections: `<h2>What is an internal link?</h2>
+<p>An internal link goes from one page on your site to another page on the same site: your menu, a "see our prices" button, or a link in a paragraph. Links from other websites to yours are backlinks, covered in <a href="/guides/how-to-get-backlinks">how to get backlinks</a>.</p>
+<h2>Why do internal links help rankings?</h2>
+<ul><li><strong>Discovery.</strong> Google finds pages mainly by following links. A page nothing links to (an "orphan page") may be found late or not at all, even if it's in your sitemap.</li><li><strong>Importance.</strong> Pages with more links pointing to them, especially from your home page, look more important to Google.</li><li><strong>Meaning.</strong> The words you click on tell Google what the destination page is about.</li></ul>
+<h2>What link text should I use?</h2>
+<p>Use words that describe the page you're linking to, the way a customer would say it. "Our <a href="/guides/local-seo-checklist">local SEO checklist</a>" beats "click here" or "read more" – for Google and for anyone using a screen reader, who often skips from link to link.</p>
+<p>Vary the wording naturally. Linking to your boiler page as "boiler repair", "boiler servicing in Preston" and "our boiler engineers" reads normally; using the identical phrase forty times doesn't. The <a href="/anchor-text-checker">anchor text checker</a> lists every link on a page with its wording.</p>
+<h2>What structure works for a small business site?</h2>
+<ol><li><strong>Home page</strong> links to every main service page.</li><li><strong>Each service page</strong> links back up to the home page, across to closely related services, and to your contact or quote page.</li><li><strong>Blog posts and guides</strong> link to the service they relate to. A post about "how often should a boiler be serviced" should link to your boiler servicing page.</li><li><strong>Area pages</strong>, if you have them, link to the services you actually offer in that town.</li></ol>
+<p>Keep every important page within about three clicks of the home page. Breadcrumbs (Home › Services › Boiler repair) help both visitors and Google see where a page sits.</p>
+<h2>How many internal links should a page have?</h2>
+<p>There's no magic number. Link where it genuinely helps the reader take the next step. As a rough guide, a normal page usually has at least a handful of links in its menu and text; a page with several hundred links dilutes them and is hard to use. The <a href="/">free SEO check</a> counts them for you.</p>
+<h2>How do I find broken or missing internal links?</h2>
+<p>Run the <a href="/broken-link-checker">broken link checker</a> to find links that lead nowhere, then fix or redirect them – see <a href="/guides/broken-links-and-redirects">broken links and redirects</a>. To find orphan pages, compare your sitemap with the pages the <a href="/website-audit">website audit</a> reached by following links; anything in the sitemap that wasn't reached needs a link from a related page.</p>`,
+    faqs: [["Do internal links pass ranking value?", "Yes. Links between your own pages help Google judge which pages are most important, as well as helping it find them."], ["Should internal links open in a new tab?", "No. Links to your own pages should open in the same tab; new tabs are best kept for links to other websites, if at all."], ["Should I use nofollow on internal links?", "No. Nofollow on your own links just stops Google following them. Use noindex or robots.txt for pages you really want kept out of search."]],
+  },
+  {
+    path: "/guides/how-to-write-seo-content", crumb: "How to write SEO content", parent: ["/guides", "Guides"], article: true,
+    title: "How to Write SEO Content That Ranks: A Beginner's Guide",
+    desc: "How to write SEO content that ranks and gets quoted by AI: pick one search per page, answer the real question first, use clear headings.",
+    h1: "How to write SEO content that ranks",
+    lead: "Content that ranks isn't written for robots. It answers a real question better than the other pages Google could show, and it's easy to read. That's a skill anyone who knows their trade can learn – here's the process, step by step.",
+    sections: `<h2>How do I choose what to write about?</h2>
+<p>Start from the questions customers already ask you on the phone, by email and on site. "How much does a new boiler cost?", "Do I need planning permission for a garage conversion?", "How long does a kitchen fit take?" Each one is a search somebody types into Google every day.</p>
+<p>Then check the wording people use with the <a href="/keyword-generator">keyword generator</a>, and see how hard the search is with the <a href="/keyword-difficulty-checker">keyword difficulty checker</a>. Our <a href="/guides/keyword-research-for-beginners">keyword research guide</a> covers this in more depth.</p>
+<h2>Why should each page target one search?</h2>
+<p>A page that tries to rank for everything usually ranks for nothing. Give each page one main search and its close variations: one page for "boiler servicing", another for "boiler repair". Two of your own pages chasing the same search compete with each other, so merge them into one stronger page.</p>
+<h2>What should a page say first?</h2>
+<p>Answer the question in the first two or three sentences, then explain. If someone searches "how much does a new boiler cost", give the price range straight away, then cover what changes it. Searchers who get their answer quickly stay, and AI assistants such as ChatGPT and Google's AI Overviews tend to quote pages that answer clearly – see <a href="/guides/ai-search-optimisation">AI search optimisation</a>.</p>
+<h2>How should I structure a page?</h2>
+<ul><li><strong>One main heading (H1)</strong> that says what the page is about.</li><li><strong>Subheadings (H2s) phrased as the questions people ask.</strong> They make the page easy to skim and match how people search.</li><li><strong>Short paragraphs, lists and tables</strong> for prices, steps and comparisons.</li><li><strong>A clear next step</strong> – call, get a quote, book – and links to related pages (see <a href="/guides/internal-linking">internal linking</a>).</li></ul>
+<h2>How long should SEO content be?</h2>
+<p>As long as it takes to answer the question fully, and no longer. Google has no minimum word count. In practice a service page that covers prices, process, areas and common questions often runs to several hundred words, while a quick answer might need less. Padding a page to hit a number makes it worse.</p>
+<h2>How do I make content easy to read?</h2>
+<p>Write the way you'd explain it to a customer: short sentences, everyday words, and jargon explained the first time you use it. The <a href="/word-counter">word counter</a> shows length and reading ease, and the <a href="/">SEO check</a> scores readability for each page.</p>
+<h2>What makes content trustworthy to Google?</h2>
+<p>Show first-hand experience: your own photos, real examples and prices, who wrote it and their qualifications, and when it was last updated. Google's guidelines call this experience, expertise, authoritativeness and trust (E-E-A-T). Never copy text from other sites or a supplier's catalogue – check with the <a href="/plagiarism-checker">plagiarism checker</a> if you've had help writing.</p>
+<h2>Can I use AI to write content?</h2>
+<p>Google doesn't ban AI-assisted writing; it penalises unhelpful pages made mainly to rank, however they're written. If you use AI for a first draft, add what only you know – real prices, local detail, photos and opinions from the job – and check every fact.</p>`,
+    faqs: [["How often should I add new content?", "Regularly enough to keep up with what customers ask, but quality matters more than frequency. Updating and improving existing pages often helps as much as writing new ones."], ["Should I start a blog for SEO?", "A blog helps when it answers questions your customers search for and links to your service pages. Posts that are just company news rarely bring search visitors."], ["How do I write a good title for a page?", "Put the main search first, keep it short enough to show in full, and make it worth clicking. Our title tag guide and title tag checker cover the details."]],
+  },
+  {
+    path: "/guides/technical-seo-checklist", crumb: "Technical SEO checklist", parent: ["/guides", "Guides"], article: true,
+    title: "Technical SEO Checklist for Small Business Websites",
+    desc: "A plain-English technical SEO checklist: indexing, sitemaps, redirects, canonicals, speed, mobile and security, with a free tool for each item.",
+    h1: "Technical SEO checklist for small business websites",
+    lead: "Technical SEO is everything that lets Google find, read and trust your pages before anyone judges the words on them. On a small business website it's a short list, and every item can be checked for free.",
+    sections: `<h2>Can Google crawl and index my pages?</h2>
+<ul><li><strong>robots.txt doesn't block important pages.</strong> Test any address with the <a href="/robots-txt-tester">robots.txt tester</a>.</li><li><strong>No stray noindex.</strong> A noindex tag left over from a site's build is the commonest reason a whole site vanishes – see <a href="/guides/why-is-my-website-not-on-google">why isn't my website on Google?</a></li><li><strong>A sitemap is submitted</strong> in <a href="/guides/google-search-console">Google Search Console</a>. No sitemap? Make one with the <a href="/xml-sitemap-generator">XML sitemap generator</a>.</li><li><strong>Search Console's Pages report</strong> shows which pages are indexed and why others aren't.</li></ul>
+<h2>Does every page have one clear address?</h2>
+<ul><li><strong>One secure version of the site.</strong> http://, https://, with and without www should all end at the same https:// address in one step. Check all four with the <a href="/redirect-checker">redirect checker</a>.</li><li><strong>Canonical tags</strong> point to the main version of each page, so filters, tracking codes and print versions don't count as duplicates.</li><li><strong>Old addresses redirect</strong> with a permanent (301) redirect to the closest new page whenever you move or delete one.</li><li><strong>No broken internal links.</strong> The <a href="/broken-link-checker">broken link checker</a> crawls your whole site.</li></ul>
+<h2>Is the site fast and does it work on phones?</h2>
+<ul><li><strong>Core Web Vitals pass</strong> – loading, responsiveness and visual stability. See <a href="/guides/core-web-vitals">Core Web Vitals explained</a>.</li><li><strong>Images are resized and compressed</strong>, with width and height set – see <a href="/guides/image-seo">image SEO</a>.</li><li><strong>Few third-party scripts.</strong> Chat widgets, trackers and pop-ups add up; remove the ones you don't use.</li><li><strong>Mobile-friendly:</strong> readable text without zooming, buttons big enough to tap, nothing wider than the screen. Google indexes the mobile version of your site.</li></ul>
+<h2>Is the site secure and trustworthy?</h2>
+<ul><li><strong>A valid HTTPS certificate</strong>, with no "not secure" warnings.</li><li><strong>Security headers</strong> such as HSTS. The <a href="/http-header-checker">HTTP header checker</a> lists them and explains each one.</li><li><strong>Domain renewal is safe.</strong> A lapsed domain takes the whole site offline; the <a href="/domain-age-checker">domain age checker</a> shows the expiry date.</li><li><strong>Email records are set up</strong> (SPF and DMARC), so enquiries and quotes aren't marked as spam. The <a href="/dns-lookup">DNS lookup</a> checks them.</li></ul>
+<h2>Can Google understand what the business is?</h2>
+<ul><li><strong>Structured data</strong> (schema markup) describes your business, address and opening hours – make it with the <a href="/schema-generator">schema generator</a> and read the <a href="/guides/schema-markup">schema markup guide</a>.</li><li><strong>A language set</strong> on every page (en-GB for UK sites).</li><li><strong>AI crawlers</strong> are allowed or blocked on purpose, not by accident – see <a href="/guides/block-ai-training-bots">blocking AI training bots</a>.</li></ul>
+<h2>How often should I run a technical check?</h2>
+<p>Run the <a href="/website-audit">website audit</a> after any redesign, new theme, plugin change or move to a new host, because that's when technical problems appear. In between, <a href="/seo-monitoring">weekly monitoring</a> re-checks your key page and tells you if something breaks. For the words on each page, use the <a href="/guides/on-page-seo-checklist">on-page SEO checklist</a> alongside this one.</p>`,
+    faqs: [["What's the difference between technical and on-page SEO?", "Technical SEO is about whether Google can find, load and trust your pages. On-page SEO is about what each page says: titles, headings and content."], ["Do website builders handle technical SEO?", "Wix, Squarespace and Shopify handle most of it, such as HTTPS, sitemaps and mobile layouts. You still need to check redirects, noindex settings and speed after changes."], ["Do I need a developer for technical SEO?", "Not for most small sites. Every item on this list can be checked with a free tool, and most fixes are a setting in your website builder or hosting account."]],
+  },
 ];
