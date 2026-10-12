@@ -176,6 +176,87 @@ export function toolsApp() {
     $("wc-kw").innerHTML = words.length ? '<div class="grid" style="margin-top:8px">' + table(count(1), "Top words") + table(count(2), "Top 2-word phrases") + table(count(3), "Top 3-word phrases") + "</div>" : "";
   });
 
+  // ---- UTM link builder
+  live("ut-form", function () {
+    var lower = $("ut-lower").checked, clean = function (v) { v = v.trim(); return lower ? v.toLowerCase().replace(/\s+/g, "-") : v; };
+    var raw = val("ut-url"), notes = [];
+    if (raw && !/^https?:\/\//i.test(raw)) raw = "https://" + raw;
+    var u; try { u = new URL(raw); } catch (e) { $("ut-out").textContent = ""; $("ut-notes").innerHTML = raw ? '<p class="s-warn">That doesn\'t look like a web address.</p>' : ""; return; }
+    [["utm_source", "ut-source"], ["utm_medium", "ut-medium"], ["utm_campaign", "ut-campaign"], ["utm_term", "ut-term"], ["utm_content", "ut-content"]].forEach(function (p) { var v = clean(val(p[1])); if (v) u.searchParams.set(p[0], v); else u.searchParams.delete(p[0]); });
+    var hash = u.hash; u.hash = ""; var out = u.href + hash;
+    if (!val("ut-source")) notes.push("Add a source – Google Analytics needs it to credit the visit.");
+    if (!val("ut-medium")) notes.push("Add a medium (social, email, cpc…) so the visit lands in the right channel in GA4.");
+    if (/gclid|fbclid/.test(u.search)) notes.push("The address already has an ad click id; don't share it.");
+    if (/^(organic|referral|\(none\))$/i.test(val("ut-medium"))) notes.push("\"" + val("ut-medium") + "\" is a medium GA4 uses for its own channels – pick another.");
+    $("ut-out").textContent = out;
+    $("ut-notes").innerHTML = (notes.length ? '<ul class="small">' + notes.map(function (n) { return "<li>" + esc(n) + "</li>"; }).join("") + "</ul>" : "") + '<p class="small">' + out.length + " characters. Never put UTM tags on links between pages of your own site – they restart the visit in Analytics.</p>";
+  });
+  copyBtn("ut-copy", "ut-out");
+
+  // ---- URL slug generator
+  var SMALL = " a an and the of to in on at for by or with from is are as be it its your our my ";
+  var slugify = function (t, max, drop) {
+    var s = t.normalize("NFKD").replace(/[̀-ͯ]/g, "").replace(/ß/g, "ss").replace(/æ/gi, "ae").replace(/ø/gi, "o").replace(/&/g, " and ").replace(/['’`]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+    var w = s.split(" ").filter(Boolean);
+    if (drop) { var kept = w.filter(function (x, i) { return i === 0 || SMALL.indexOf(" " + x + " ") < 0; }); if (kept.length) w = kept; }
+    var out = w.join("-");
+    if (max && out.length > max) { out = out.slice(0, max + 1); out = out.lastIndexOf("-") > 0 ? out.slice(0, out.lastIndexOf("-")) : out.slice(0, max); }
+    return out;
+  };
+  live("us-form", function () {
+    var max = +$("us-max").value, drop = $("us-stop").checked;
+    $("us-out").textContent = val("us-in").split(/\n/).map(function (l) { return l.trim() ? slugify(l, max, drop) : ""; }).filter(Boolean).join("\n");
+  });
+  copyBtn("us-copy", "us-out");
+
+  // ---- case converter
+  var cc = $("cc-form");
+  if (cc) {
+    var LOWER_T = " a an and as at but by for if in nor of off on or per so the to up via vs with ";
+    var words = function (t) { return t.replace(/([a-z0-9])([A-Z])/g, "$1 $2").split(/[^\p{L}\p{N}]+/u).filter(Boolean); };
+    var conv = {
+      lower: function (t) { return t.toLowerCase(); },
+      upper: function (t) { return t.toUpperCase(); },
+      sentence: function (t) { return t.toLowerCase().replace(/(^\s*|[.!?]\s+|\n\s*)(\p{Ll})/gu, function (m, a, b) { return a + b.toUpperCase(); }).replace(/\bi\b/g, "I"); },
+      capital: function (t) { return t.toLowerCase().replace(/(^|[\s(\["'“‘-])(\p{Ll})/gu, function (m, a, b) { return a + b.toUpperCase(); }); },
+      title: function (t) { return t.split(/\n/).map(function (line) { var ws = line.toLowerCase().split(/(\s+)/), real = ws.filter(function (x) { return x.trim(); }).length, n = 0; return ws.map(function (x) { if (!x.trim()) return x; n++; var first = n === 1, last = n === real; return !first && !last && LOWER_T.indexOf(" " + x.replace(/[^a-z]/g, "") + " ") >= 0 && x.replace(/[^a-z]/g, "") ? x : x.replace(/\p{Ll}/u, function (c) { return c.toUpperCase(); }); }).join(""); }).join("\n"); },
+      alt: function (t) { var i = 0; return t.replace(/\p{L}/gu, function (c) { return i++ % 2 ? c.toUpperCase() : c.toLowerCase(); }); },
+      camel: function (t) { return t.split(/\n/).map(function (l) { return words(l).map(function (w, i) { w = w.toLowerCase(); return i ? w.charAt(0).toUpperCase() + w.slice(1) : w; }).join(""); }).join("\n"); },
+      snake: function (t) { return t.split(/\n/).map(function (l) { return words(l).map(function (w) { return w.toLowerCase(); }).join("_"); }).join("\n"); },
+      kebab: function (t) { return t.split(/\n/).map(function (l) { return words(l).map(function (w) { return w.toLowerCase(); }).join("-"); }).join("\n"); },
+    };
+    var count = function () { var t = $("cc-in").value; $("cc-n").textContent = (t.match(/[\p{L}\p{N}][\p{L}\p{N}'’-]*/gu) || []).length + " words · " + t.length + " characters"; };
+    $("cc-in").addEventListener("input", count); count();
+    $("cc-btns").addEventListener("click", function (ev) { var b = ev.target.closest("button[data-c]"); if (!b) return; $("cc-in").value = conv[b.getAttribute("data-c")]($("cc-in").value); $("cc-hidden").textContent = $("cc-in").value; count(); });
+    cc.addEventListener("submit", function (ev) { ev.preventDefault(); });
+    $("cc-copy").addEventListener("click", function () { $("cc-hidden").textContent = $("cc-in").value; var b = $("cc-copy"); (navigator.clipboard ? navigator.clipboard.writeText($("cc-in").value) : Promise.reject()).then(function () { b.textContent = "Copied"; }, function () { $("cc-in").select(); b.textContent = "Press Ctrl+C to copy"; }); setTimeout(function () { b.textContent = "Copy text"; }, 2000); });
+  }
+
+  // ---- SSL checker (/api/ssl)
+  var sl = $("sl-form");
+  if (sl) {
+    var slq = (location.search.match(/[?&]d=([^&]+)/) || [])[1];
+    if (slq && !$("sl-d").value.trim()) { try { $("sl-d").value = decodeURIComponent(slq.replace(/\+/g, " ")); } catch (e) {} setTimeout(function () { sl.requestSubmit ? sl.requestSubmit() : sl.dispatchEvent(new Event("submit", { cancelable: true })); }, 0); }
+    sl.addEventListener("submit", function (ev) {
+      ev.preventDefault();
+      var d = $("sl-d").value.trim(), out = $("sl-out");
+      if (!d) { $("sl-d").focus(); return; }
+      out.innerHTML = "<p>Checking the certificate…</p>";
+      fetch("/api/ssl?d=" + encodeURIComponent(d)).then(function (r) { return r.json(); }).then(function (j) {
+        if (j.error) { out.innerHTML = '<p class="s-fail">' + esc(j.error) + "</p>"; return; }
+        var lc = { fail: "#cf222e", warn: "#9a6700", ok: "#1a7f37", info: "inherit" }, icon = { fail: "✗", warn: "!", ok: "✓", info: "•" };
+        var bad = j.checks.some(function (c) { return c.level === "fail"; });
+        var h = '<div class="card" style="margin:16px 0"><p class="ct" style="overflow-wrap:anywhere">' + esc(j.name) + '</p><p style="font-size:24px;margin:8px 0;color:' + (bad ? "#cf222e" : "#1a7f37") + '"><b>' + (j.secure ? (bad ? "Secure, with problems" : "Secure") : "Not secure") + "</b></p>" +
+          '<ul style="list-style:none;padding:0;margin:8px 0">' + j.checks.map(function (n) { return '<li style="margin:6px 0;overflow-wrap:anywhere;color:' + lc[n.level] + '"><b>' + icon[n.level] + "</b> " + esc(n.text) + "</li>"; }).join("") + "</ul></div>";
+        if (j.cert) h += '<div class="tablewrap"><table><tbody><tr><th scope="row" style="text-align:left">Issued by</th><td>' + esc(j.cert.issuer) + '</td></tr><tr><th scope="row" style="text-align:left">Valid from</th><td>' + esc(j.cert.from) + '</td></tr><tr><th scope="row" style="text-align:left">Expires</th><td style="color:' + col(j.cert.daysLeft >= 21, j.cert.daysLeft >= 7) + '">' + esc(j.cert.to) + " (" + j.cert.daysLeft + ' days)</td></tr><tr><th scope="row" style="text-align:left;vertical-align:top">Covers</th><td style="overflow-wrap:anywhere">' + j.cert.names.map(esc).join(", ") + "</td></tr></tbody></table></div>";
+        else h += '<p class="small">' + (j.ctError ? "The public certificate logs didn't answer just now, so we can't show the dates – try again in a minute." : "No current certificate for this exact name was found in the public certificate logs.") + "</p>";
+        if (j.mixed.length) h += "<h3>Insecure items on the page</h3><ul>" + j.mixed.slice(0, 30).map(function (m) { return '<li style="overflow-wrap:anywhere">' + (m.active ? "<b>Blocked</b> " : "") + "&lt;" + esc(m.tag) + "&gt; " + esc(m.url) + "</li>"; }).join("") + "</ul><p class=\"small\">Change each address to start with https://, or remove it.</p>";
+        h += '<p class="small">Certificate dates come from public Certificate Transparency logs (crt.sh), which list every certificate issued; the server checks are made live. See all response headers with the <a href="/http-header-checker?url=' + encodeURIComponent("https://" + j.name) + '">HTTP header checker</a>.</p>';
+        out.innerHTML = h;
+      }).catch(function () { out.innerHTML = '<p class="s-fail">Couldn\'t check that site – please try again.</p>'; });
+    });
+  }
+
   // ---- long-tail keyword generator
   live("kw-form", function () {
     var seed = val("kw-seed").toLowerCase().replace(/\s+/g, " "), town = val("kw-town").toLowerCase();
@@ -561,6 +642,160 @@ export function toolsApp() {
         h += '<p class="small">Answers from public DNS (Cloudflare 1.1.1.1, Google as a backup). Recent changes may take up to each record\'s TTL to show. Also check the site\'s <a href="/whois-lookup?d=' + encodeURIComponent(j.name) + '">WHOIS record</a> and <a href="/http-header-checker?url=' + encodeURIComponent(j.name) + '">HTTP headers</a>.</p>';
         out.innerHTML = h;
       }).catch(function () { out.innerHTML = '<p class="s-fail">Couldn\'t look that up – please try again.</p>'; });
+    });
+  }
+
+  // shared: submit a one-box form straight away when its page is opened with ?param=
+  var prefill = function (form, input, param) {
+    var q = (location.search.match(new RegExp("[?&]" + param + "=([^&]+)")) || [])[1];
+    if (q && !$(input).value.trim()) { try { $(input).value = decodeURIComponent(q.replace(/\+/g, " ")); } catch (e) {} setTimeout(function () { form.requestSubmit ? form.requestSubmit() : form.dispatchEvent(new Event("submit", { cancelable: true })); }, 0); }
+  };
+  var noteList = function (notes) {
+    var lc = { fail: "#cf222e", warn: "#9a6700", ok: "#1a7f37", info: "inherit" }, icon = { fail: "✗", warn: "!", ok: "✓", info: "•" };
+    return notes.length ? '<ul style="list-style:none;padding:0;margin:8px 0">' + notes.map(function (n) { return '<li style="margin:6px 0;overflow-wrap:anywhere;color:' + lc[n[0]] + '"><b>' + icon[n[0]] + "</b> " + esc(n[1]) + "</li>"; }).join("") + "</ul>" : "";
+  };
+
+  // ---- website down checker (uses /api/redirects)
+  var ud = $("ud-form");
+  if (ud) {
+    prefill(ud, "ud-url", "url");
+    ud.addEventListener("submit", function (ev) {
+      ev.preventDefault();
+      var u = $("ud-url").value.trim(), out = $("ud-out");
+      if (!u) { $("ud-url").focus(); return; }
+      out.innerHTML = "<p>Checking right now…</p>";
+      fetch("/api/redirects?u=" + encodeURIComponent(u)).then(function (r) { return r.json(); }).then(function (j) {
+        var r = j.results && j.results[0];
+        if (!r || r.error) { out.innerHTML = '<p class="s-fail">' + esc((r && r.error) || j.error || "Couldn't check that address.") + "</p>"; return; }
+        var s = r.status, last = r.hops[r.hops.length - 1], ms = r.hops.reduce(function (t, h) { return t + (h.ms || 0); }, 0);
+        var verdict = s === 0 ? ["fail", "It looks down", "The server didn't respond (" + last.text.toLowerCase() + "). It's down for us too, so it's probably not just you."]
+          : s >= 500 ? ["fail", "It looks down", "The server answered with an error (HTTP " + s + " " + last.text + "). It's down for everyone, not just you."]
+          : s === 401 || s === 403 || s === 429 ? ["warn", "It's up, but refused our check", "The server answered (HTTP " + s + "), so it's running, but it blocks automated checks. If it won't load for you, it may be blocking your connection too."]
+          : s >= 400 ? ["warn", "The site is up, but this page isn't", "The server works but this address returns HTTP " + s + " " + last.text + ". Try the home page."]
+          : ["ok", "It's up", "The site loaded for us (HTTP " + s + "). If it won't load for you, the problem is probably your connection, browser or DNS – see the steps below."];
+        var c = { ok: "#1a7f37", warn: "#9a6700", fail: "#cf222e" }[verdict[0]];
+        out.innerHTML = '<div class="card" style="margin:16px 0"><p class="ct" style="overflow-wrap:anywhere">' + esc(r.start) + '</p><p style="font-size:26px;margin:8px 0;color:' + c + '"><b>' + esc(verdict[1]) + "</b></p><p>" + esc(verdict[2]) + "</p>" +
+          '<p class="small" style="overflow-wrap:anywhere">' + (s ? "Status " + s + " · " : "") + "answered in " + ms + " ms" + (r.redirects ? " · " + r.redirects + " redirect" + (r.redirects > 1 ? "s" : "") + " to " + esc(r.final) : "") + " · checked " + new Date().toLocaleTimeString("en-GB") + "</p>" +
+          (r.problems.length && s ? '<p class="small">' + esc(r.problems[0]) + ' <a href="/redirect-checker">Check the redirects</a></p>' : "") +
+          '<p><button class="btn ghost" type="button" id="ud-again">Check again</button></p></div>';
+        $("ud-again").addEventListener("click", function () { ud.requestSubmit ? ud.requestSubmit() : ud.dispatchEvent(new Event("submit", { cancelable: true })); });
+      }).catch(function () { out.innerHTML = '<p class="s-fail">Couldn\'t run the check – please try again.</p>'; });
+    });
+  }
+
+  // ---- Open Graph checker (/api/meta)
+  var oc = $("oc-form");
+  if (oc) {
+    prefill(oc, "oc-url", "url");
+    oc.addEventListener("submit", function (ev) {
+      ev.preventDefault();
+      var u = $("oc-url").value.trim(), out = $("oc-out");
+      if (!u) { $("oc-url").focus(); return; }
+      out.innerHTML = "<p>Reading the page…</p>";
+      fetch("/api/meta?url=" + encodeURIComponent(u)).then(function (r) { return r.json(); }).then(function (j) {
+        if (!j.metas) { out.innerHTML = '<p class="s-fail">' + esc(j.error || "Couldn't read that page.") + "</p>"; return; }
+        if (j.status !== 200) { out.innerHTML = '<p class="s-fail">' + esc(j.error || "The page answered with HTTP " + j.status + ", so we couldn't read its tags.") + "</p>"; return; }
+        var m = {}; j.metas.forEach(function (x) { if (m[x.key] == null) m[x.key] = x.content; });
+        var canon = (j.links.filter(function (l) { return l.rel === "canonical"; })[0] || {}).href;
+        var title = m["og:title"] || m["twitter:title"] || j.title, desc = m["og:description"] || m["twitter:description"] || m.description || "", img = m["og:image"] || m["og:image:url"] || m["twitter:image"] || "";
+        var host = (m["og:url"] || j.url).replace(/^https?:\/\//, "").split(/[\/?#]/)[0];
+        var n = [];
+        if (!m["og:title"]) n.push(["warn", "No og:title. Platforms will fall back to the page title" + (j.title ? " (\"" + j.title + "\")" : "") + "."]); else n.push(["ok", "og:title is set."]);
+        if (!m["og:description"]) n.push(["warn", "No og:description. Some platforms show no description at all without it."]); else n.push(["ok", "og:description is set."]);
+        if (!img) n.push(["fail", "No og:image. Shares will show no picture, or a random one from the page – the biggest reason links get ignored."]);
+        else if (!/^https:\/\//i.test(img)) n.push(["warn", "og:image should be a full https:// address (it's \"" + img + "\")."]);
+        if (img && !m["og:image:alt"]) n.push(["info", "No og:image:alt – a short description of the image helps people using screen readers."]);
+        if (!m["og:url"]) n.push(["info", "No og:url. Platforms will use the address that was shared."]);
+        else if (canon && m["og:url"].replace(/\/$/, "") !== canon.replace(/\/$/, "")) n.push(["warn", "og:url (" + m["og:url"] + ") doesn't match the canonical address (" + canon + ")."]);
+        if (!m["og:type"]) n.push(["info", "No og:type – \"website\" or \"article\" is assumed."]);
+        if (!m["twitter:card"]) n.push(["info", "No twitter:card. X will show a small card; set it to summary_large_image for the big image."]);
+        var dup = j.metas.filter(function (x) { return x.key === "og:title" || x.key === "og:description"; }).map(function (x) { return x.key; });
+        if (dup.length !== new Set(dup).size) n.push(["warn", "Some og: tags appear twice, often from a theme and a plugin both adding them. Platforms may pick the wrong one."]);
+        var safe = img && /^https?:\/\//i.test(img) ? img.replace(/[()'"\\\s]/g, encodeURIComponent) : "";
+        var card = '<div class="ogc">' + (safe ? '<div class="ogi" style="background-image:url(&quot;' + safe + '&quot;)"></div>' : '<div class="ogi ogn">No image</div>') + '<div class="ogt"><span>' + esc((m["og:site_name"] ? m["og:site_name"] + " · " : "") + host.toUpperCase()) + "</span><b>" + esc(title || "(no title)") + "</b><small>" + esc(desc.slice(0, 160)) + "</small></div></div>";
+        var tags = j.metas.filter(function (x) { return /^(og|twitter|article|fb):/.test(x.key); });
+        out.innerHTML = '<div class="card" style="margin:16px 0"><p class="ct" style="overflow-wrap:anywhere">' + esc(j.url) + "</p>" + card + '<p class="small" id="oc-size"></p>' + noteList(n) + "</div>" +
+          (tags.length ? '<div class="tablewrap"><table><tbody>' + tags.map(function (x) { return '<tr><th scope="row" style="text-align:left;white-space:nowrap;vertical-align:top">' + esc(x.key) + '</th><td style="overflow-wrap:anywhere">' + esc(x.content) + "</td></tr>"; }).join("") + "</tbody></table></div>" : "<p>No Open Graph or Twitter card tags found on this page.</p>") +
+          '<p class="small">Fix them with the <a href="/open-graph-generator">Open Graph generator</a>. Platforms cache cards, so re-share or use their debuggers after a change.</p>';
+        if (safe) { var im = new Image(); im.onload = function () { var el = $("oc-size"); if (el) el.textContent = "Image: " + im.naturalWidth + " × " + im.naturalHeight + " pixels" + (im.naturalWidth < 600 ? " – too small for a large card (aim for 1200 × 630)." : im.naturalWidth < 1200 ? " – fine, but 1200 × 630 looks sharper." : " – a good size."); }; im.onerror = function () { var el = $("oc-size"); if (el) { el.textContent = "The image didn't load in your browser – check the address works."; el.style.color = "#cf222e"; } }; im.src = img; }
+      }).catch(function () { out.innerHTML = '<p class="s-fail">Couldn\'t read that page – please try again.</p>'; });
+    });
+  }
+
+  // ---- hreflang checker (/api/meta, then each alternate page)
+  var hl = $("hl-form");
+  if (hl) {
+    prefill(hl, "hl-url", "url");
+    var LANG = /^(x-default|[a-z]{2,3}(-[a-z]{4})?(-([a-z]{2}|\d{3}))?)$/i;
+    var norm = function (x) { return String(x || "").replace(/#.*$/, "").replace(/\/$/, "").toLowerCase(); };
+    hl.addEventListener("submit", function (ev) {
+      ev.preventDefault();
+      var u = $("hl-url").value.trim(), out = $("hl-out");
+      if (!u) { $("hl-url").focus(); return; }
+      out.innerHTML = "<p>Reading the page…</p>";
+      var meta = function (x) { return fetch("/api/meta?url=" + encodeURIComponent(x)).then(function (r) { return r.json(); }); };
+      meta(u).then(function (j) {
+        if (!j.links) { out.innerHTML = '<p class="s-fail">' + esc(j.error || "Couldn't read that page.") + "</p>"; return; }
+        if (j.status !== 200) { out.innerHTML = '<p class="s-fail">' + esc(j.error || "The page answered with HTTP " + j.status + ".") + "</p>"; return; }
+        var alts = j.links.filter(function (l) { return l.rel.split(/\s+/).indexOf("alternate") >= 0 && l.hreflang; });
+        var n = [], head = '<div class="card" style="margin:16px 0"><p class="ct" style="overflow-wrap:anywhere">' + esc(j.url) + "</p>";
+        if (!alts.length) { out.innerHTML = head + noteList([["info", "No hreflang tags on this page. That's fine for a site in one language for one country; you only need them for translated or regional versions."]]) + (j.lang ? '<p class="small">The page says its language is "' + esc(j.lang) + '" (html lang).</p>' : "") + "</div>"; return; }
+        var seen = {};
+        alts.forEach(function (a) {
+          var c = a.hreflang;
+          if (!LANG.test(c)) n.push(["fail", "\"" + c + "\" isn't a valid hreflang code, so Google ignores it."]);
+          else if (/-uk$/i.test(c)) n.push(["fail", "\"" + c + "\" uses UK, but the country code for the United Kingdom is GB (" + c.replace(/uk$/i, "GB") + ")."]);
+          else if (/^uk$/i.test(c)) n.push(["warn", "\"uk\" means Ukrainian. For British English use en-GB."]);
+          if (seen[c.toLowerCase()] && norm(seen[c.toLowerCase()]) !== norm(a.href)) n.push(["fail", "\"" + c + "\" points to two different pages."]);
+          seen[c.toLowerCase()] = a.href;
+        });
+        if (!alts.some(function (a) { return norm(a.href) === norm(j.url); })) n.push(["warn", "The page doesn't list itself. Each version should include a hreflang tag pointing at its own address."]);
+        if (!seen["x-default"]) n.push(["info", "No x-default. Add one for people whose language or country doesn't match any version."]);
+        var others = alts.filter(function (a) { return norm(a.href) !== norm(j.url); }).slice(0, 20), rows = others.map(function () { return null; });
+        var draw = function () {
+          var done = rows.filter(Boolean).length, bad = rows.filter(function (r) { return r && !r.ok; }).length;
+          out.innerHTML = head + noteList(n.concat(done === others.length ? [bad ? ["fail", bad + " of " + others.length + " alternate pages have a problem – see the table."] : ["ok", others.length ? "All " + others.length + " alternate pages load and link back." : "No other versions listed."]] : [])) + "</div>" +
+            '<div class="tablewrap"><table><thead><tr><th>hreflang</th><th>Address</th><th>Status</th><th>Links back?</th></tr></thead><tbody>' + alts.map(function (a) {
+              var i = others.indexOf(a), r = i >= 0 ? rows[i] : { status: 200, back: "this page", ok: true };
+              return "<tr><td><b>" + esc(a.hreflang) + "</b>" + (a.header ? ' <span class="small">(header)</span>' : "") + '</td><td style="overflow-wrap:anywhere">' + esc(a.href) + "</td>" + (r ? '<td style="color:' + col(r.status === 200, false) + '">' + esc(r.status || "No response") + '</td><td style="color:' + col(r.ok, false) + '">' + esc(r.back) + "</td>" : '<td colspan="2" class="small">Checking…</td>') + "</tr>";
+            }).join("") + "</tbody></table></div>" + (others.length < alts.filter(function (a) { return norm(a.href) !== norm(j.url); }).length ? '<p class="small">Only the first 20 alternate pages are checked.</p>' : "");
+        };
+        draw();
+        var next = 0, work = function () {
+          if (next >= others.length) return;
+          var i = next++, a = others[i];
+          meta(a.href).then(function (k) {
+            var back = (k.links || []).some(function (l) { return l.hreflang && norm(l.href) === norm(j.url); });
+            var redir = k.url && norm(k.url) !== norm(a.href);
+            rows[i] = k.status !== 200 ? { status: k.status, back: "–", ok: false } : redir ? { status: "Redirects", back: "Points to " + k.url, ok: false } : { status: 200, back: back ? "Yes" : "No – add a tag pointing back", ok: back };
+          }).catch(function () { rows[i] = { status: 0, back: "–", ok: false }; }).then(function () { draw(); work(); });
+        };
+        work(); work(); work();
+      }).catch(function () { out.innerHTML = '<p class="s-fail">Couldn\'t read that page – please try again.</p>'; });
+    });
+  }
+
+  // ---- website hosting checker (/api/hosting)
+  var ho = $("ho-form");
+  if (ho) {
+    var hoq = (location.search.match(/[?&]d=([^&]+)/) || [])[1];
+    if (hoq && !$("ho-d").value.trim()) { try { $("ho-d").value = decodeURIComponent(hoq.replace(/\+/g, " ")); } catch (e) {} setTimeout(function () { ho.requestSubmit ? ho.requestSubmit() : ho.dispatchEvent(new Event("submit", { cancelable: true })); }, 0); }
+    ho.addEventListener("submit", function (ev) {
+      ev.preventDefault();
+      var d = $("ho-d").value.trim(), out = $("ho-out");
+      if (!d) { $("ho-d").focus(); return; }
+      out.innerHTML = "<p>Finding the host…</p>";
+      fetch("/api/hosting?d=" + encodeURIComponent(d)).then(function (r) { return r.json(); }).then(function (j) {
+        if (j.error) { out.innerHTML = '<p class="s-fail">' + esc(j.error) + "</p>"; return; }
+        var lc = { fail: "#cf222e", warn: "#9a6700", ok: "#1a7f37", info: "inherit" }, icon = { fail: "✗", warn: "!", ok: "✓", info: "•" };
+        var h = '<div class="card" style="margin:16px 0"><p class="ct" style="overflow-wrap:anywhere">' + esc(j.name) + "</p>";
+        if (j.exists) h += '<p style="font-size:22px;margin:8px 0;overflow-wrap:anywhere"><b>' + (j.provider ? "Hosted by " + esc(j.provider) : "Host hidden") + "</b></p><p>" + esc(j.how) + "</p>" + (j.cdn.length ? '<p class="small">CDN and hosting signs: ' + esc(j.cdn.join(", ")) + "</p>" : "");
+        if (j.notes.length) h += '<ul style="list-style:none;padding:0;margin:8px 0">' + j.notes.map(function (n) { return '<li style="margin:6px 0;color:' + lc[n.level] + '"><b>' + icon[n.level] + "</b> " + esc(n.text) + "</li>"; }).join("") + "</ul>";
+        h += "</div>";
+        if (j.ips.length) h += '<div class="tablewrap"><table><thead><tr><th>IP address</th><th>Network owner</th><th>Country</th><th>Reverse DNS</th></tr></thead><tbody>' + j.ips.map(function (i) { return '<tr><td style="overflow-wrap:anywhere;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px">' + esc(i.ip) + '</td><td style="overflow-wrap:anywhere">' + esc(i.org || "–") + (i.network ? '<br><span class="small">' + esc(i.network) + (i.range ? " · " + esc(i.range) : "") + "</span>" : "") + "</td><td>" + esc(i.country || "–") + '</td><td style="overflow-wrap:anywhere">' + esc(i.ptr || "–") + "</td></tr>"; }).join("") + "</tbody></table></div>";
+        if (j.exists) h += '<p class="small">IP owners from the regional internet registries (RIPE, ARIN and others). See everything the site runs on with the <a href="/website-technology-checker?url=' + encodeURIComponent(j.name) + '">technology checker</a>, or its <a href="/dns-lookup?d=' + encodeURIComponent(j.name) + '">DNS records</a>.</p>';
+        out.innerHTML = h;
+      }).catch(function () { out.innerHTML = '<p class="s-fail">Couldn\'t check that site – please try again.</p>'; });
     });
   }
 

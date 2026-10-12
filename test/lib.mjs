@@ -49,7 +49,7 @@ export async function serve(port = 8789, workerPath = "../src/index.js") {
   }) }) };
   // Backlink index stand-in: the files build.py publishes (format 2), from test/fixtures/backlinks.
   const BL_DATA = blData("backlinks");
-  const env = { STATE, AI, BL_DATA, ...whoisStandIns(), DNS_FETCH: dnsStandIn() };
+  const env = { STATE, AI, BL_DATA, ...whoisStandIns(), DNS_FETCH: dnsStandIn(), CT_FETCH: ctStandIn() };
   const worker = (await import(new URL(workerPath, import.meta.url).href)).default;
   const server = http.createServer(async (req, res) => {
     const chunks = []; for await (const c of req) chunks.push(c);
@@ -85,7 +85,16 @@ export function whoisStandIns() {
     "xkey.co.uk": { events: [{ eventAction: "registration", eventDate: "2016-05-20T00:00:00Z" }, { eventAction: "expiration", eventDate: "2030-05-20T00:00:00Z" }], entities: [{ roles: ["registrar"], vcardArray: ["vcard", [["fn", {}, "text", "Test Registrar"]]] }] },
     "soon.co.uk": { events: [{ eventAction: "registration", eventDate: "2024-01-10T00:00:00Z" }, { eventAction: "expiration", eventDate: day(20) }], entities: [{ roles: ["registrar"], vcardArray: ["vcard", [["fn", {}, "text", "123 Reg"]]] }] },
   };
+  const ipRdap = {
+    "192.0.2.10": { handle: "NET-192-0-2-0-1", name: "KRYSTAL-UK", country: "GB", startAddress: "192.0.2.0", endAddress: "192.0.2.255", entities: [{ roles: ["abuse"], vcardArray: ["vcard", [["fn", {}, "text", "Abuse Desk"]]] }, { roles: ["registrant"], vcardArray: ["vcard", [["fn", {}, "text", "Krystal Hosting Ltd"]]] }] },
+    "192.0.2.30": { handle: "NET-192-0-2-30", name: "CLOUDFLARENET", country: "US", startAddress: "192.0.2.0", endAddress: "192.0.2.255", entities: [{ roles: ["registrant"], vcardArray: ["vcard", [["fn", {}, "text", "Cloudflare, Inc."]]] }] },
+    "2001:db8::10": { handle: "KRYSTAL-V6", name: "KRYSTAL-V6", country: "GB", startAddress: "2001:db8::", endAddress: "2001:db8:ffff:ffff:ffff:ffff:ffff:ffff", entities: [{ roles: ["administrative"], entities: [{ roles: ["registrant"], vcardArray: ["vcard", [["fn", {}, "text", "Krystal Hosting Ltd"]]] }] }] },
+  };
   const WHOIS_FETCH = async (url) => {
+    if (url === "https://data.iana.org/rdap/ipv4.json") return Response.json({ services: [[["192.0.0.0/8"], ["https://rdap.arin.net/registry/"]], [["198.51.0.0/16"], ["https://rdap.db.ripe.net/"]]] });
+    if (url === "https://data.iana.org/rdap/ipv6.json") return Response.json({ services: [[["2001:db8::/32"], ["https://rdap.db.ripe.net/"]]] });
+    const ip = url.split("/ip/")[1];
+    if (ip) return ipRdap[ip] ? Response.json(ipRdap[ip]) : new Response("{}", { status: 404 });
     if (url === "https://data.iana.org/rdap/dns.json") return Response.json({ services: [[["com", "net"], ["https://rdap.verisign.com/com/v1/"]], [["uk"], ["https://rdap.nominet.uk/uk/"]]] });
     const d = url.split("/domain/")[1];
     return rdap[d] ? new Response(JSON.stringify(rdap[d]), { headers: { "content-type": "application/rdap+json" } }) : new Response("{}", { status: 404 });
@@ -102,11 +111,12 @@ export function whoisStandIns() {
 
 /** Stand-in for DNS-over-HTTPS (see src/dns.js): a tiny zone, answered in Cloudflare's JSON format. */
 export function dnsStandIn() {
-  const T = { A: 1, NS: 2, CNAME: 5, SOA: 6, MX: 15, TXT: 16, AAAA: 28, CAA: 257 };
+  const T = { A: 1, NS: 2, CNAME: 5, SOA: 6, PTR: 12, MX: 15, TXT: 16, AAAA: 28, CAA: 257 };
   const zone = {
-    "smithplumbing.co.uk": { A: ["192.0.2.10"], MX: ["10 mail.smithplumbing.co.uk."], TXT: ['"v=spf1 include:_spf.google.com ~all"', '"google-site-verification=abc123"'], NS: ["ns1.host.co.uk."], SOA: ["ns1.host.co.uk. admin.host.co.uk. 2026101201 3600 600 604800 300"] },
+    "smithplumbing.co.uk": { A: ["192.0.2.10"], AAAA: ["2001:db8::10"], MX: ["10 mail.smithplumbing.co.uk."], TXT: ['"v=spf1 include:_spf.google.com ~all"', '"google-site-verification=abc123"'], NS: ["ns1.host.co.uk."], SOA: ["ns1.host.co.uk. admin.host.co.uk. 2026101201 3600 600 604800 300"] },
     "www.smithplumbing.co.uk": { A: ["192.0.2.10"] },
     "_dmarc.smithplumbing.co.uk": { TXT: ['"v=DMARC1; p=none; rua=mailto:d@smithplumbing.co.uk"'] },
+    "10.2.0.192.in-addr.arpa": { PTR: ["server12.krystal.uk."] },
     "xkey.co.uk": { A: ["192.0.2.30"], MX: ["1 smtp.google.com."], NS: ["ada.ns.cloudflare.com.", "bob.ns.cloudflare.com."], TXT: ['"v=spf1 include:_spf.google.com ~all"', '"google-site-verification=xyz789"'] },
     "badmail.co.uk": { A: ["192.0.2.20"], MX: ["10 mx.badmail.co.uk."], TXT: ['"v=spf1 a mx ~all"', '"v=spf1 include:sendgrid.net -all"'] },
   };
@@ -116,4 +126,15 @@ export function dnsStandIn() {
     const data = (zone[name] && zone[name][type]) || [];
     return Response.json({ Status: 0, AD: name.startsWith("smith"), Answer: data.map((d) => ({ name: name + ".", type: T[type], TTL: 300, data: d })) });
   };
+}
+
+/** Stand-in for crt.sh's JSON (see src/ssl.js): a current and an expired certificate for xkey.co.uk,
+ *  a wildcard one for smithplumbing.co.uk that expires in 5 days, and an error for down.co.uk. */
+export function ctStandIn() {
+  const day = (n) => new Date(Date.now() + n * 86_400_000).toISOString().slice(0, 19);
+  const certs = {
+    "xkey.co.uk": [{ id: 2, issuer_name: "C=US, O=Google Trust Services, CN=WE1", name_value: "xkey.co.uk\n*.xkey.co.uk", not_before: day(-30), not_after: day(60) }, { id: 1, issuer_name: "C=US, O=Let's Encrypt, CN=R3", name_value: "xkey.co.uk", not_before: day(-120), not_after: day(-30) }],
+    "smithplumbing.co.uk": [{ id: 3, issuer_name: "C=US, O=Let's Encrypt, CN=R11", name_value: "*.co.uk\nsmithplumbing.co.uk", not_before: day(-85), not_after: day(5) }],
+  };
+  return async (url) => { const q = new URL(url).searchParams.get("q"); if (q === "down.co.uk") return new Response("busy", { status: 502 }); return Response.json(certs[q] || []); };
 }

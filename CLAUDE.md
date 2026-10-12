@@ -40,6 +40,17 @@ Free SEO & AI search checker for UK businesses, made by IceWork (icework.co.uk).
 ## Website technology checker (/website-technology-checker)
 - `src/tech.js`, `GET /api/tech?url=` – fetches one page (≤5 redirects, browser user agent) and matches its HTML, headers and cookies against the `SIGNS` list (CMS/builder, shop, theme, page builder, SEO and WordPress plugins, JS frameworks, analytics, ads pixels, cookie banner, chat, reviews, booking, payments, fonts, CDN/host, server, language); MX/NS/TXT from DNS (`query` in dns.js) give email provider, DNS host, SPF senders and verified accounts. Lists only what leaves a trace. Add a technology by adding one line to `SIGNS` (and a test in test/tools.mjs if it's tricky).
 
+## Website hosting checker (/website-hosting-checker)
+- `src/hosting.js`, `GET /api/hosting?d=` – A/AAAA (≤2 IPv4 + 1 IPv6), each IP's network owner via RDAP (IANA ipv4/ipv6 bootstrap, longest-prefix match), reverse DNS (PTR), plus `getPage` + `detectTech` from tech.js for the platform/CDN. Hosted builders (Shopify, Wix …) and hosts with their own headers (WP Engine, Vercel …) win; behind a CDN (Cloudflare …) the real host is reported as hidden, never guessed. Tests: `ipRdap` in `whoisStandIns()`, PTR in `dnsStandIn()`.
+
+## Website down checker, Open Graph checker, hreflang checker
+- Browser-only logic in tools-client.js. The down checker (/website-down-checker) reuses `/api/redirects`. The Open Graph checker (/open-graph-checker) and hreflang checker (/hreflang-checker) use `src/meta.js`, `GET /api/meta?url=` (title, every head `<meta>`/`<link>`, html lang, hreflang from Link headers; `getPage` from tech.js); the hreflang checker loads up to 20 alternates (3 at a time) to check return links. Browser tests fake `/api/meta` with a scenario's `routes`.
+## SSL checker (/ssl-checker)
+- `src/ssl.js`, `GET /api/ssl?d=` – live: https connection (a failed TLS fetch = not secure), http→https redirect, HSTS, mixed content on the home page (`mixedContent`, active vs passive). Certificate issuer/dates/names from Certificate Transparency (crt.sh JSON, `exclude=expired`, newest covering cert) because Workers can't read the served certificate – the page says so. Tests: `env.CT_FETCH` (`ctStandIn()` in test/lib.mjs).
+
+## Browser-only text tools: UTM builder (/utm-builder), URL slug generator (/url-slug-generator), case converter (/case-converter)
+- All in tools-client.js, nothing sent to the server. Element id prefixes ut-, us-, cc- (sg- is taken by the schema generator).
+
 ## Layout
 - `src/` – XKey pages (`content.js`), shell/styles (`site.js`), routing + APIs (`index.js`), browser tools (`tools-client.js`, served as /assets/tools.js), page parser (`page-parse.js`), OG image (`og.js`).
 - `engine/` – SEO checker engine **shared with icework.co.uk** (repo joeinblackpool/ICEWORK, folder `src/`). `src/page-parse.js` is also copied to ICEWORK `src/` (it powers the competitor topic gap there). Keep the two copies identical: change it here, then copy the same files into ICEWORK `src/` and run its tests (`node test/check.mjs`, `node test/checker-unit.mjs`).

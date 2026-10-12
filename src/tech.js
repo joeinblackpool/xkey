@@ -365,7 +365,7 @@ async function dnsTech(env, host) {
 }
 
 /** Fetch a page (following up to 5 redirects): { url, status, html, H } */
-async function getPage(start, fetchImpl) {
+export async function getPage(start, fetchImpl) {
   let u = start;
   for (let i = 0; ; i++) {
     const ac = new AbortController(), t = setTimeout(() => ac.abort(), TIMEOUT_MS);

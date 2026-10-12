@@ -14,6 +14,9 @@ import { linksPageApi, linksCheckApi } from "./linkcheck.js";
 import { headersApi } from "./headers.js";
 import { dnsApi } from "./dns.js";
 import { techApi } from "./tech.js";
+import { hostingApi } from "./hosting.js";
+import { metaApi } from "./meta.js";
+import { sslApi } from "./ssl.js";
 
 const BY_PATH = Object.fromEntries(PAGES.map((p) => [p.path, p]));
 const GUIDES = PAGES.filter((p) => p.path.startsWith("/guides/"));
@@ -113,6 +116,27 @@ Contact | /contact | Phone, email and opening hours</textarea>
   links: () => `<form class="tool" id="lk-form"><label for="lk-url">Your website</label><input id="lk-url" type="text" inputmode="url" autocomplete="url" placeholder="yourbusiness.co.uk" required>
 <div class="row" style="margin-top:4px"><div style="flex:1 1 200px"><label for="lk-max">Pages to crawl</label><select id="lk-max"><option value="50">Up to 50</option><option value="150" selected>Up to 150</option><option value="300">Up to 300</option></select></div><div style="flex:1 1 200px"><label for="lk-ext">Links to other sites</label><select id="lk-ext"><option value="1" selected>Check them too</option><option value="0">Only my own pages</option></select></div></div>
 <div class="row" style="margin-top:16px"><button class="btn" type="submit">Find broken links</button><button class="btn ghost" type="button" id="lk-stop" style="display:none">Stop</button></div><div id="lk-out" aria-live="polite"></div></form><script src="/assets/tools.js" defer></script>`,
+  updown: () => `<form class="ck-form" id="ud-form"><label for="ud-url" class="sr">Website address</label><input id="ud-url" type="text" inputmode="url" autocomplete="url" placeholder="anywebsite.co.uk" required><button class="btn" type="submit">Is it down?</button></form><div id="ud-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
+  ogcheck: () => `<form class="ck-form" id="oc-form"><label for="oc-url" class="sr">Page address</label><input id="oc-url" type="text" inputmode="url" autocomplete="url" placeholder="yourwebsite.co.uk/page" required><button class="btn" type="submit">Check sharing tags</button></form><div id="oc-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
+  hreflang: () => `<form class="ck-form" id="hl-form"><label for="hl-url" class="sr">Page address</label><input id="hl-url" type="text" inputmode="url" autocomplete="url" placeholder="yourwebsite.com/en-gb/" required><button class="btn" type="submit">Check hreflang</button></form><div id="hl-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
+  hosting: () => `<form class="ck-form" id="ho-form"><label for="ho-d" class="sr">Website address</label><input id="ho-d" type="text" inputmode="url" autocomplete="url" placeholder="anywebsite.co.uk" required><button class="btn" type="submit">Find the host</button></form><div id="ho-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
+  ssl: () => `<form class="ck-form" id="sl-form"><label for="sl-d" class="sr">Website address</label><input id="sl-d" type="text" inputmode="url" autocomplete="url" placeholder="yourbusiness.co.uk" required><button class="btn" type="submit">Check SSL</button></form><div id="sl-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
+  utm: () => `<form class="tool" id="ut-form"><label for="ut-url">Page address</label><input id="ut-url" type="text" inputmode="url" value="https://smithplumbing.co.uk/boiler-service">
+<label for="ut-source">Campaign source (utm_source) – where the link is, e.g. facebook, newsletter</label><input id="ut-source" type="text" value="facebook">
+<label for="ut-medium">Campaign medium (utm_medium) – the type, e.g. social, email, cpc</label><input id="ut-medium" type="text" value="social">
+<label for="ut-campaign">Campaign name (utm_campaign)</label><input id="ut-campaign" type="text" value="winter boiler offer">
+<label for="ut-term">Term (utm_term, optional) – paid keywords</label><input id="ut-term" type="text">
+<label for="ut-content">Content (utm_content, optional) – tells two links in one campaign apart</label><input id="ut-content" type="text">
+<label><input id="ut-lower" type="checkbox" checked style="width:auto;margin-right:8px">Lower case and dashes instead of spaces (recommended)</label>
+<p style="margin:16px 0 6px;font-weight:600">Your tracking link</p><pre class="out" id="ut-out"></pre><button class="btn" type="button" id="ut-copy">Copy</button><div id="ut-notes" aria-live="polite"></div></form><script src="/assets/tools.js" defer></script>`,
+  slug: () => `<form class="tool" id="us-form"><label for="us-in">Titles or phrases – one per line</label><textarea id="us-in" spellcheck="false" style="min-height:140px">10 Best Boiler Brands in the UK (2026 Guide)
+Café &amp; Bistro – Blackpool's Finest!</textarea>
+<label for="us-max">Maximum length</label><select id="us-max"><option value="0">No limit</option><option value="60" selected>60 characters</option><option value="40">40 characters</option></select>
+<label><input id="us-stop" type="checkbox" style="width:auto;margin-right:8px">Remove small words (a, the, and, of…)</label>
+<p style="margin:16px 0 6px;font-weight:600">Your slugs</p><pre class="out" id="us-out"></pre><button class="btn" type="button" id="us-copy">Copy</button></form><script src="/assets/tools.js" defer></script>`,
+  caseconv: () => `<form class="tool" id="cc-form"><label for="cc-in">Your text</label><textarea id="cc-in" style="min-height:160px;font-family:inherit;font-size:16px">the quick brown fox jumps over the lazy dog. it was a sunny day in blackpool.</textarea>
+<div class="row" style="gap:8px;flex-wrap:wrap;margin:12px 0" id="cc-btns"><button class="btn ghost" type="button" data-c="sentence">Sentence case</button><button class="btn ghost" type="button" data-c="lower">lower case</button><button class="btn ghost" type="button" data-c="upper">UPPER CASE</button><button class="btn ghost" type="button" data-c="title">Title Case</button><button class="btn ghost" type="button" data-c="capital">Capitalise Each Word</button><button class="btn ghost" type="button" data-c="alt">aLtErNaTiNg</button><button class="btn ghost" type="button" data-c="camel">camelCase</button><button class="btn ghost" type="button" data-c="snake">snake_case</button><button class="btn ghost" type="button" data-c="kebab">kebab-case</button></div>
+<p class="small" id="cc-n" aria-live="polite"></p><button class="btn" type="button" id="cc-copy">Copy text</button><pre id="cc-hidden" style="display:none"></pre></form><script src="/assets/tools.js" defer></script>`,
   tech: () => `<form class="ck-form" id="tc-form"><label for="tc-url" class="sr">Website address</label><input id="tc-url" type="text" inputmode="url" autocomplete="url" placeholder="anywebsite.co.uk" required><button class="btn" type="submit">Check technology</button></form><div id="tc-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
   dns: () => `<form class="ck-form" id="dn-form"><label for="dn-d" class="sr">Domain name</label><input id="dn-d" type="text" inputmode="url" autocomplete="url" placeholder="yourbusiness.co.uk" required><button class="btn" type="submit">Look up DNS</button></form><div id="dn-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
   headers: () => `<form class="ck-form" id="hd-form"><label for="hd-url" class="sr">Web address</label><input id="hd-url" type="text" inputmode="url" autocomplete="url" placeholder="yourwebsite.co.uk/page" required><button class="btn" type="submit">Check headers</button></form>
@@ -357,6 +381,21 @@ const worker = {
         // 300 batches of up to 10 links = 3,000 links an hour per connection (one full check is up to 2,500)
         if (await rateLimited(request, "linkcheck", 300)) return Response.json({ error: "You've checked a lot of links this hour – please try again later." }, { status: 429 });
         const r = await linksCheckApi(url.searchParams, selfFetch(env, c), c);
+        return Response.json(r.body, { status: r.status, headers: { "cache-control": "no-store" } });
+      }
+      case "/api/meta": {
+        if (await rateLimited(request, "meta", 600)) return Response.json({ error: "You've checked a lot of pages this hour – please try again later." }, { status: 429 });
+        const r = await metaApi(url.searchParams, selfFetch(env, c));
+        return Response.json(r.body, { status: r.status, headers: { "cache-control": "no-store" } });
+      }
+      case "/api/hosting": {
+        if (await rateLimited(request, "hosting", 300)) return Response.json({ error: "You've checked a lot of websites this hour – please try again later." }, { status: 429 });
+        const r = await hostingApi(env || {}, url.searchParams, selfFetch(env, c));
+        return Response.json(r.body, { status: r.status, headers: { "cache-control": "no-store" } });
+      }
+      case "/api/ssl": {
+        if (await rateLimited(request, "ssl", 300)) return Response.json({ error: "You've checked a lot of websites this hour – please try again later." }, { status: 429 });
+        const r = await sslApi(env || {}, url.searchParams, selfFetch(env, c));
         return Response.json(r.body, { status: r.status, headers: { "cache-control": "no-store" } });
       }
       case "/api/tech": {

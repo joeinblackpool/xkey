@@ -5,13 +5,16 @@
 // fails on: a browser error (e.g. a script crashing on load), a missing/empty result, or a result
 // without the expected text. Checks run on xkey.co.uk itself, which the Worker handles
 // in-process, so no internet is needed.
-import { need, serve, blData, whoisStandIns, dnsStandIn } from "./lib.mjs";
+import { need, serve, blData, whoisStandIns, dnsStandIn, ctStandIn } from "./lib.mjs";
 import { whoisApi, whoisDate, parseWhois } from "../src/whois.js";
 import { traceRedirects, metaRefresh, redirectsApi } from "../src/redirects.js";
 import { extractLinks, linkStatus, linksCheckApi } from "../src/linkcheck.js";
 import { headerNotes } from "../src/headers.js";
 import { dnsApi, dnsName } from "../src/dns.js";
 import { techApi, detectTech } from "../src/tech.js";
+import { hostingApi, inCidr, parseIpRdap } from "../src/hosting.js";
+import { headTags, metaApi } from "../src/meta.js";
+import { sslApi, mixedContent, ctLookup } from "../src/ssl.js";
 import { backlinksApi, authorityApi, crc32 } from "../src/backlinks.js";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
@@ -83,6 +86,7 @@ if (!only || only.test("backlink") || only.test("whois") || only.test("redirect"
     "https://smithplumbing.co.uk/": [301, "https://www.smithplumbing.co.uk/"],
     "https://www.smithplumbing.co.uk/": [200, wpPage, { server: "nginx/1.24.0", "x-powered-by": "PHP/8.2.10", "set-cookie": "woocommerce_items_in_cart=0" }],
     "https://shop.example.com/": [200, `<html><head><script>Shopify.theme = {"name":"Dawn","id":1};</script><script src="//cdn.shopify.com/s/files/x.js"></script><script src="https://consent.cookiebot.com/uc.js"></script><script async src="https://www.googletagmanager.com/gtag/js?id=G-ABC123"></script></head><body><div id="___gatsby"></div></body></html>`, { server: "cloudflare", "cf-ray": "1-LHR", "x-shopid": "1" }],
+    "https://xkey.co.uk/": [200, "<html><head><title>x</title></head></html>", { server: "cloudflare", "cf-ray": "3-LHR" }],
     "https://blocked.co.uk/": [403, "<html>Access denied</html>", { server: "cloudflare", "cf-ray": "2-LHR" }],
   };
   const techFetch = async (u) => { const [st, body, h = {}] = techWeb[u] || [404, ""]; return st >= 300 && st < 400 ? new Response(null, { status: st, headers: { location: body } }) : new Response(body, { status: st, headers: { "content-type": "text/html; charset=utf-8", ...h } }); };
@@ -95,6 +99,24 @@ if (!only || only.test("backlink") || only.test("whois") || only.test("redirect"
     ["tech: Shopify with theme, consent banner and CDN; no duplicate hosting or React", async () => { const r = await tq("https://shop.example.com/"); const n = names(r);
       return /shop:Shopify/.test(n) && /theme:Dawn \(Shopify theme\)/.test(n) && /consent:Cookiebot/.test(n) && /cdn:Cloudflare/.test(n) && /analytics:Google Analytics 4/.test(n) && /js:Gatsby/.test(n) && !/Shopify hosting|js:React/.test(n) && !r.notes.some((x) => /cookie banner|No analytics/.test(x.text)); }],
     ["tech: blocked site still shows hosting; bad input", async () => { const r = await tq("blocked.co.uk"); const bad = (await techApi({}, new URLSearchParams({ url: "http://localhost/" }), techFetch)); return r.status === 403 && /bot protection/.test(r.notes[0].text) && /cdn:Cloudflare/.test(names(r)) && bad.status === 400; }],
+    ["hosting: owner from RDAP (IPv4 and nested IPv6), reverse DNS, country", async () => { const r = (await hostingApi({ DNS_FETCH: dnsStandIn(), ...whoisStandIns() }, new URLSearchParams({ d: "https://smithplumbing.co.uk/contact" }), techFetch)).body; const [a, b] = r.ips;
+      return r.exists && r.provider === "Krystal Hosting Ltd" && a.ip === "192.0.2.10" && a.ptr === "server12.krystal.uk" && a.country === "GB" && a.network === "KRYSTAL-UK" && b.version === 6 && b.org === "Krystal Hosting Ltd" && !r.notes.some((n) => /IPv6/.test(n.text)); }],
+    ["hosting: Cloudflare hides the host; missing domain; bad input", async () => { const env = { DNS_FETCH: dnsStandIn(), ...whoisStandIns() }; const r = (await hostingApi(env, new URLSearchParams({ d: "xkey.co.uk" }), techFetch)).body; const n = (await hostingApi(env, new URLSearchParams({ d: "nothing-here.co.uk" }), techFetch)).body; const bad = await hostingApi(env, new URLSearchParams({ d: "not a site" }), techFetch);
+      return r.provider === null && /behind Cloudflare/.test(r.how) && r.ips[0].org === "Cloudflare, Inc." && n.exists === false && bad.status === 400; }],
+    ["hosting: CIDR matching and RDAP parsing", () => inCidr("192.0.2.10", "192.0.0.0/8") && !inCidr("193.0.2.10", "192.0.0.0/8") && inCidr("2001:db8::10", "2001:db8::/32") && !inCidr("2001:db9::1", "2001:db8::/32") && !inCidr("192.0.2.1", "2001:db8::/32") && parseIpRdap({ name: "N", entities: [{ roles: ["technical"], vcardArray: ["vcard", [["fn", {}, "text", "T Ltd"]]] }] }).org === "T Ltd"],
+    ["meta: head tags, hreflang in <head> and Link header, after a redirect", async () => { const t = headTags(`<html lang="en-GB"><head><title>T &amp; Co</title><meta property="og:title" content="OG"><meta name="description" content='D'><link rel="alternate" hreflang="en-GB" href="/en-gb/"><link rel="canonical" href="https://a.co.uk/"><!-- <meta property="og:image" content="x"> --></head><body><meta property="og:image" content="late"></body></html>`, "https://a.co.uk/");
+      const r = (await metaApi(new URLSearchParams({ url: "smithplumbing.co.uk" }), async (u) => u === "https://smithplumbing.co.uk/" ? new Response(null, { status: 301, headers: { location: "https://www.smithplumbing.co.uk/" } }) : new Response("<html><head><title>W</title></head></html>", { headers: { "content-type": "text/html", link: '<https://www.smithplumbing.ie/>; rel="alternate"; hreflang="en-IE"' } }))).body;
+      return t.title === "T & Co" && t.lang === "en-GB" && t.metas.length === 2 && t.metas[0].key === "og:title" && t.links[0].href === "https://a.co.uk/en-gb/" && t.links[0].hreflang === "en-GB" && r.url === "https://www.smithplumbing.co.uk/" && r.title === "W" && r.links.some((l) => l.header && l.hreflang === "en-IE"); }],
+    ["ssl: secure site, http redirect, HSTS, mixed content, certificate expiring soon", async () => {
+      const page = '<html><body><img src="http://cdn.smithplumbing.co.uk/a.jpg"><script src="http://old.example.com/x.js"></script><img src="https://ok/b.png" srcset="http://cdn.x/c.jpg 2x"><a href="http://fine.example.com/">link</a></body></html>';
+      const f = async (u) => u === "http://smithplumbing.co.uk/" ? new Response(null, { status: 301, headers: { location: "https://smithplumbing.co.uk/" } }) : u === "https://smithplumbing.co.uk/" ? new Response(page, { headers: { "content-type": "text/html", "strict-transport-security": "max-age=31536000" } }) : new Response("", { status: 404 });
+      const r = (await sslApi({ CT_FETCH: ctStandIn() }, new URLSearchParams({ d: "https://SmithPlumbing.co.uk/contact" }), f)).body; const t = r.checks.map((c) => c.level + ":" + c.text).join("|");
+      return r.secure && r.hsts === "max-age=31536000" && /ok:http:\/\/smithplumbing\.co\.uk redirects to https/.test(t) && /fail:1 insecure script/.test(t) && /warn:2 insecure image/.test(t) && /fail:.*expires in [45] days/.test(t) && r.cert.issuer === "Let's Encrypt" && r.mixed.length === 3; }],
+    ["ssl: no https, no redirect; CT newest certificate and errors", async () => {
+      const f = async (u) => { if (u.startsWith("https:")) throw new TypeError("TLS handshake failed"); return new Response("<html></html>", { headers: { "content-type": "text/html" } }); };
+      const r = (await sslApi({ CT_FETCH: ctStandIn() }, new URLSearchParams({ d: "down.co.uk" }), f)).body; const t = r.checks.map((c) => c.level + ":" + c.text).join("|");
+      const x = await ctLookup({ CT_FETCH: ctStandIn() }, "xkey.co.uk"), w = await ctLookup({ CT_FETCH: ctStandIn() }, "www.xkey.co.uk"), none = await ctLookup({ CT_FETCH: ctStandIn() }, "nothing.co.uk");
+      return !r.secure && /fail:We couldn't make a secure/.test(t) && /warn:http:\/\/down\.co\.uk doesn't redirect/.test(t) && r.ctError && x.issuer === "Google Trust Services" && x.daysLeft >= 59 && w && w.id === 2 && none === null && mixedContent('<link rel="canonical" href="http://a/">').length === 0; }],
     ["tech: no WordPress plugins without WordPress", () => { const t = detectTech('<div class="wpcf7 wp-block-group"></div>'); return !t.length; }],
   );
   for (let [name, fn] of checks) {
@@ -151,8 +173,27 @@ const S = [
   { name: "Domain authority checker – 25 sites in batches", path: "/domain-authority-checker", fill: [["da-urls", Array.from({ length: 24 }, (_, i) => `site${i}.co.uk`).concat("bbc.co.uk").join("\n")]], click: "#da-form button[type=submit]", expect: ["#da-out", /bbc\.co\.uk[\s\S]*#2[\s\S]*Sort by authority/] },
   { name: "Broken link checker – whole site", path: "/broken-link-checker", fill: [["lk-url", "xkey.co.uk"]], select: [["lk-max", "50"], ["lk-ext", "0"]], click: "#lk-form button[type=submit]", expect: ["#lk-out", /Finished\. Crawled 50 pages[\s\S]*No broken links found/], timeout: 120000 },
   { name: "DNS lookup", path: "/dns-lookup", fill: [["dn-d", "smithplumbing.co.uk"]], click: "#dn-form button[type=submit]", expect: ["#dn-out", /smithplumbing\.co\.uk[\s\S]*DNSSEC signed[\s\S]*SPF is set up[\s\S]*MX[\s\S]*10 mail\.smithplumbing\.co\.uk[\s\S]*_dmarc\.smithplumbing\.co\.uk[\s\S]*v=DMARC1/] },
+  { name: "Website down checker", path: "/website-down-checker", fill: [["ud-url", "xkey.co.uk"]], click: "#ud-form button[type=submit]", expect: ["#ud-out", /It's up[\s\S]*Status 200/] },
+  { name: "Website down checker – a 404 page", path: "/website-down-checker?url=https://xkey.co.uk/no-such-page", expect: ["#ud-out", /this page isn't[\s\S]*404/] },
+  { name: "Open Graph checker", path: "/open-graph-checker", fill: [["oc-url", "xkey.co.uk"]], click: "#oc-form button[type=submit]", expect: ["#oc-out", /XKEY\.CO\.UK[\s\S]*og:title is set[\s\S]*og:title/] },
+  { name: "Open Graph checker – missing tags", path: "/open-graph-checker?url=example.co.uk", routes: [[/\/api\/meta/, () => ({ url: "https://example.co.uk/", status: 200, title: "Example", metas: [{ key: "description", content: "Hi" }], links: [] })]], expect: ["#oc-out", /No og:image[\s\S]*No Open Graph/] },
+  { name: "Hreflang checker – none", path: "/hreflang-checker", fill: [["hl-url", "xkey.co.uk"]], click: "#hl-form button[type=submit]", expect: ["#hl-out", /No hreflang tags/] },
+  { name: "Hreflang checker – codes and return links", path: "/hreflang-checker?url=shop.example.com/en-gb/", timeout: 12000, routes: [[/\/api\/meta/, (u) => {
+      const at = u.searchParams.get("url"), L = (h, x) => ({ rel: "alternate", hreflang: h, href: "https://shop.example.com/" + x });
+      if (/en-gb/.test(at)) return { url: "https://shop.example.com/en-gb/", status: 200, title: "GB", metas: [], links: [L("en-GB", "en-gb/"), L("en-UK", "uk/"), L("fr-FR", "fr/"), L("de", "de/")] };
+      if (/\/fr/.test(at)) return { url: "https://shop.example.com/fr/", status: 200, metas: [], links: [L("fr-FR", "fr/"), L("en-GB", "en-gb/")] };
+      if (/\/de/.test(at)) return { url: "https://shop.example.com/de/", status: 200, metas: [], links: [L("de", "de/")] };
+      return { url: "https://shop.example.com" + new URL("https://" + at).pathname, status: 404, metas: [], links: [] }; }]],
+    expect: ["#hl-out", /UK, but the country code[\s\S]*No x-default[\s\S]*2 of 3 alternate pages[\s\S]*fr-FR[\s\S]*Yes[\s\S]*de[\s\S]*No – add a tag/] },
+  { name: "Website hosting checker", path: "/website-hosting-checker", fill: [["ho-d", "xkey.co.uk"]], click: "#ho-form button[type=submit]", expect: ["#ho-out", /Hosted by Cloudflare[\s\S]*192\.0\.2\.30[\s\S]*CLOUDFLARENET/] },
+  { name: "Website hosting checker – opened from a link", path: "/website-hosting-checker?d=xkey.co.uk", expect: ["#ho-out", /192\.0\.2\.30/] },
   { name: "Website technology checker", path: "/website-technology-checker", fill: [["tc-url", "xkey.co.uk"]], click: "#tc-form button[type=submit]", expect: ["#tc-out", /technolog[\s\S]*Email provider[\s\S]*Google Workspace[\s\S]*DNS provider[\s\S]*Cloudflare[\s\S]*Google Search Console/] },
   { name: "Website technology checker – opened from a link", path: "/website-technology-checker?url=xkey.co.uk", expect: ["#tc-out", /Cloudflare/] },
+  { name: "SSL checker", path: "/ssl-checker", fill: [["sl-d", "xkey.co.uk"]], click: "#sl-form button[type=submit]", expect: ["#sl-out", /Secure[\s\S]*loads over https[\s\S]*Google Trust Services[\s\S]*\*\.xkey\.co\.uk/] },
+  { name: "SSL checker – opened from a link", path: "/ssl-checker?d=xkey.co.uk", expect: ["#sl-out", /Expires/] },
+  { name: "UTM builder", path: "/utm-builder", fill: [["ut-campaign", "Spring Sale 2026"]], expect: ["#ut-out", /^https:\/\/smithplumbing\.co\.uk\/boiler-service\?utm_source=facebook&utm_medium=social&utm_campaign=spring-sale-2026$/] },
+  { name: "URL slug generator", path: "/url-slug-generator", fill: [["us-in", "Café & Bistro – Blackpool's Finest!\nThe 10 Best Boiler Brands in the UK (2026 Guide) for Homes and Small Businesses"]], expect: ["#us-out", /^cafe-and-bistro-blackpools-finest\s+the-10-best-boiler-brands-in-the-uk-2026-guide-for-homes-and$/] },
+  { name: "Case converter", path: "/case-converter", fill: [["cc-in", "the lord of the rings and i"]], click: "#cc-btns button[data-c=title]", expect: ["#cc-hidden", /^The Lord of the Rings and I$/] },
   { name: "DNS lookup – problems, opened from a link", path: "/dns-lookup?d=badmail.co.uk", expect: ["#dn-out", /www\.badmail\.co\.uk doesn't resolve[\s\S]*2 SPF records/] },
   { name: "HTTP header checker", path: "/http-header-checker", fill: [["hd-url", "http://www.xkey.co.uk/about"]], click: "#hd-form button[type=submit]", expect: ["#hd-out", /Step 1: http:\/\/www\.xkey\.co\.uk\/about[\s\S]*301[\s\S]*location[\s\S]*Step 2: https:\/\/xkey\.co\.uk\/about[\s\S]*200[\s\S]*content-type[\s\S]*text\/html/] },
   { name: "HTTP header checker – opened from a link", path: "/http-header-checker?url=xkey.co.uk", expect: ["#hd-out", /https:\/\/xkey\.co\.uk\/[\s\S]*200[\s\S]*content-type/] },
@@ -179,6 +220,8 @@ for (const s of RUN) {
   const timeout = s.timeout || 8000;
   let problem = "";
   try {
+    // routes: [[RegExp, (url) => json]] answers API calls in the browser with fake data (for pages we can't host locally)
+    for (const [re, fn] of s.routes || []) await page.route(re, (r) => r.fulfill({ json: fn(new URL(r.request().url())) }));
     await page.goto(site.url + s.path, { waitUntil: "load" });
     for (const [id, value] of s.fill || []) {
       const el = page.locator(/[\s\[>#.=]/.test(id) ? id : "#" + id).first();
