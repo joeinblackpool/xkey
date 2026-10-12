@@ -1,6 +1,7 @@
 // Pages for the IceWork SEO Checker: the landing page (indexable) and the report (noindex).
 import { runCheck, runVitals, normaliseUrl, crawlStart, crawlBatch, fetchRobots } from "./checker.js";
 import { auditApp } from "./audit-client.js";
+import { howTo } from "./platform.js";
 
 export const AUDIT_JS = `(${auditApp.toString()})();`;
 export const REPORT_JS = `(${reportApp.toString()})();`;
@@ -16,7 +17,7 @@ export const CHECKER_CSS = `.ck-form{display:flex;gap:10px;flex-wrap:wrap;margin
 .bars{display:grid;gap:10px;margin:14px 0}.bar{display:grid;grid-template-columns:minmax(150px,240px) 1fr 44px;gap:12px;align-items:center;font-size:15px}.bar a{color:inherit;text-decoration:none;padding:6px 0}.bar i{display:block;height:10px;border-radius:999px;background:var(--line);overflow:hidden}.bar i span{display:block;height:100%;border-radius:999px}@media(max-width:520px){.bar{grid-template-columns:1fr 44px}.bar i{grid-column:1/3;order:3}}
 .fixes{counter-reset:f;list-style:none;padding:0;display:grid;gap:10px}.fixes li{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px}.fixes li::before{counter-increment:f;content:counter(f);display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--brand);color:var(--brand-ink);font-weight:700;font-size:14px;margin-right:8px}.fixes p{margin:6px 0 0;color:var(--mute)}.fixes p.what{color:var(--fg)}.fixes .also,.fixes .more{font-size:14px}.fixes .more a{display:inline-block;padding:6px 0}
 .imp{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:2px 8px;border-radius:6px;border:1px solid var(--line);color:var(--mute);margin-left:6px;vertical-align:middle}
-.chk{list-style:none;padding:0;margin:0}.chk li{display:grid;grid-template-columns:28px 1fr;gap:6px 10px;padding:14px 0;border-bottom:1px solid var(--line)}.chk .ic{font-weight:800;font-size:18px;line-height:1.4}.chk h4{margin:0;font-size:16px}.chk p{margin:4px 0 0;color:var(--mute);font-size:15px;overflow-wrap:anywhere}.chk .fix{color:var(--fg)}
+.chk{list-style:none;padding:0;margin:0}.chk li{display:grid;grid-template-columns:28px 1fr;gap:6px 10px;padding:14px 0;border-bottom:1px solid var(--line)}.chk .ic{font-weight:800;font-size:18px;line-height:1.4}.chk h4{margin:0;font-size:16px}.chk p{margin:4px 0 0;color:var(--mute);font-size:15px;overflow-wrap:anywhere}.chk .fix{color:var(--fg)}.fixes p.how,.chk p.how{color:var(--fg);border-left:3px solid var(--brand);padding-left:10px}.tool-link{font-size:14px}.tool-link a{display:inline-block;padding:6px 0}
 .catsec{margin-top:34px}.catsec h3{display:flex;justify-content:space-between;gap:12px;font-size:22px;margin:0}.catsec .blurb{color:var(--mute);margin:4px 0 6px}
 .vit{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:12px 0}.vit div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px}.vit b{display:block;font-size:24px}.vit small{color:var(--mute)}
 .cmp-form{align-items:flex-end}.cmp-l{flex:1 1 220px;display:flex;flex-direction:column;gap:4px;font-size:14px;font-weight:600;color:var(--mute)}.cmp-l input{width:100%;flex:none}
@@ -59,17 +60,22 @@ export function checkerReport(esc, BUSINESS, r) {
   const lb = list.find((k) => k.name === "LocalBusiness markup"), ent = list.find((k) => k.name === "Entity clarity");
   if (lb && ent) { const at = Math.min(list.indexOf(lb), list.indexOf(ent)); list = list.filter((k) => k !== lb && k !== ent); list.splice(at, 0, { ...lb, also: ["Entity clarity"] }); }
   const fixes = list.slice(0, 8);
+  // Where to make each fix on the site's own builder, and which of our free tools does the job (BUSINESS.tools, optional).
+  const help = (k) => { const h = howTo(r.platform, k.name), t = BUSINESS.tools && BUSINESS.tools[k.name];
+    return (h ? `<p class="how"><strong>On ${esc(r.platform)}:</strong> ${esc(h)}</p>` : "") + (t ? `<p class="tool-link noprint"><a href="${t[0]}">${esc(t[1])}</a></p>` : ""); };
+  const host = new URL(r.url).hostname;
   return `<div class="wrap hero" style="padding-bottom:20px"><span class="eyebrow">SEO report</span><h1>SEO report for ${esc(new URL(r.url).hostname)}</h1>
 <p class="small" style="overflow-wrap:anywhere">${esc(r.url)} · checked ${esc(new Date().toUTCString().replace(/:\d\d GMT/, " GMT"))}</p>
 <div class="ck-head"><div class="ring" style="--p:${r.score};--c:${colour(r.score)}" role="img" aria-label="Overall score ${r.score} out of 100"><div><span><b>${r.score}</b><small>out of 100</small></span></div></div>
-<div><div class="ck-stats">${["pass", "warn", "fail"].map((s) => `<span class="pill s-${s}">${ICON[s]} ${r.counts[s]} ${LABEL[s]}</span>`).join("")}<span class="pill">AI readiness ${r.aiScore}%</span></div>
+<div><div class="ck-stats">${["pass", "warn", "fail"].map((s) => `<span class="pill s-${s}">${ICON[s]} ${r.counts[s]} ${LABEL[s]}</span>`).join("")}<span class="pill">AI readiness ${r.aiScore}%</span>${r.platform ? `<span class="pill">Built with ${esc(r.platform)}</span>` : ""}</div>
 <div class="bars">${r.categories.filter((c) => !c.info).map((c) => `<div class="bar"><a href="#${slug(c.name)}">${esc(c.name)}</a><i><span style="width:${c.score}%;background:${colour(c.score)}"></span></i><b>${c.score}%</b></div>`).join("")}</div></div></div>
 ${form(esc, r.url)}</div>
-<section style="padding-top:0"><div class="wrap prose"><h2>Fix these first</h2>${fixes.length ? `<ol class="fixes">${fixes.map((k) => `<li><strong>${esc(k.name)}</strong><span class="imp">${k.impact}</span>${k.fix && k.notes[0] ? `<p class="what">${esc(k.notes[0])}</p><p><strong>Fix:</strong> ${esc(k.fix)}</p>` : `<p>${esc(k.fix || k.notes[0] || "")}</p>`}${k.also ? `<p class="also">Also fixes: ${esc(k.also.join(", "))}</p>` : ""}<p class="more noprint"><a href="#chk-${slug(k.name)}">See the details</a></p></li>`).join("")}</ol>` : "<p>Nothing important to fix – excellent work.</p>"}
+<section style="padding-top:0"><div class="wrap prose"><h2>Fix these first</h2>${r.platform && BUSINESS.guides && BUSINESS.guides[r.platform] ? `<p class="noprint">Your site is built with ${esc(r.platform)}. The steps below say where each setting is, and our <a href="${BUSINESS.guides[r.platform]}">${esc(r.platform)} SEO guide</a> walks through the rest.</p>` : ""}${fixes.length ? `<ol class="fixes">${fixes.map((k) => `<li><strong>${esc(k.name)}</strong><span class="imp">${k.impact}</span>${k.fix && k.notes[0] ? `<p class="what">${esc(k.notes[0])}</p><p><strong>Fix:</strong> ${esc(k.fix)}</p>` : `<p>${esc(k.fix || k.notes[0] || "")}</p>`}${help(k)}${k.also ? `<p class="also">Also fixes: ${esc(k.also.join(", "))}</p>` : ""}<p class="more noprint"><a href="#chk-${slug(k.name)}">See the details</a></p></li>`).join("")}</ol>` : "<p>Nothing important to fix – excellent work.</p>"}
 <div class="card noprint" style="margin:24px 0"><p class="ct">Check the whole website</p><p>This report covers one page. The full-site audit crawls up to ${AUDIT_MAX} pages to find broken links, duplicate titles, orphan pages and more.</p><a class="btn" href="/site-audit?url=${encodeURIComponent(r.url)}">Run a full-site audit</a></div>
 <div class="grid noprint" style="margin:0 0 24px"><div class="card"><p class="ct">Monitor this site weekly</p><p>We'll re-check it every week and track the score, with a history graph and a list of anything that breaks.</p><form method="post" action="/api/monitor"><input type="hidden" name="url" value="${esc(r.url)}"><button class="btn" type="submit">Start free monitoring</button></form></div><div class="card"><p class="ct">Compare with competitors</p><p>See how this page scores against up to two competitors, side by side, and where they beat you.</p><a class="btn ghost" href="/seo-compare?u=${encodeURIComponent(r.url)}">Compare sites</a></div></div>
 <div id="vitals" class="catsec" data-url="${esc(r.url)}"><h3>Real-world speed <span class="small">Google PageSpeed</span></h3><p class="blurb">Loading Core Web Vitals from Google… this can take up to 30 seconds.</p></div>
-${r.categories.map((c) => `<div class="catsec" id="${slug(c.name)}"><h3>${esc(c.name)} ${c.info ? '<span class="small">not scored</span>' : `<span style="color:${colour(c.score)}">${c.score}%</span>`}</h3><p class="blurb">${esc(c.blurb)}</p><ul class="chk">${c.checks.map((k) => `<li id="chk-${slug(k.name)}"><span class="ic s-${k.status}" aria-label="${LABEL[k.status]}">${ICON[k.status]}</span><div><h4>${esc(k.name)}<span class="imp">${k.impact}</span></h4>${k.notes.map((n) => `<p>${esc(n)}</p>`).join("")}${k.fix ? `<p class="fix"><strong>Fix:</strong> ${esc(k.fix)}</p>` : ""}</div></li>`).join("")}</ul></div>`).join("")}
+${BUSINESS.offsite ? `<div id="offsite" class="catsec" data-host="${esc(host)}"${BUSINESS.whois ? ' data-whois="1"' : ""}><h3>Authority &amp; backlinks</h3><p class="blurb">Looking up which websites link to ${esc(host.replace(/^www\./, ""))}…</p></div>` : ""}
+${r.categories.map((c) => `<div class="catsec" id="${slug(c.name)}"><h3>${esc(c.name)} ${c.info ? '<span class="small">not scored</span>' : `<span style="color:${colour(c.score)}">${c.score}%</span>`}</h3><p class="blurb">${esc(c.blurb)}</p><ul class="chk">${c.checks.map((k) => `<li id="chk-${slug(k.name)}"><span class="ic s-${k.status}" aria-label="${LABEL[k.status]}">${ICON[k.status]}</span><div><h4>${esc(k.name)}<span class="imp">${k.impact}</span></h4>${k.notes.map((n) => `<p>${esc(n)}</p>`).join("")}${k.fix ? `<p class="fix"><strong>Fix:</strong> ${esc(k.fix)}</p>${help(k)}` : ""}</div></li>`).join("")}</ul></div>`).join("")}
 <p class="small noprint" style="margin-top:28px">This report checks one page. Scores are a guide, not a guarantee of rankings. <a href="/seo-checker">Check another page</a> · <a href="#" id="ck-print">Print or save as PDF</a></p></div></section>
 <script src="/assets/report.js" defer></script>`;
 }
@@ -103,6 +109,42 @@ function reportApp() {
       localStorage.setItem("seo_recent", JSON.stringify(list.slice(0, 12)));
     }
   } catch (e) {}
+  // authority and backlinks (sites that pass BUSINESS.offsite; same link index as the backlink checker)
+  var off = document.getElementById("offsite");
+  if (off) {
+    var oe = function (s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
+    var oh = off.getAttribute("data-host").replace(/^www\./, ""), q = encodeURIComponent(oh);
+    var links = '<p class="noprint"><a class="btn ghost" href="/backlink-checker?d=' + q + '">See every linking website</a> <a class="btn ghost" href="/backlink-checker">Find links your competitors have</a></p>';
+    // domain age comes from /api/whois where the site has it (BUSINESS.whois); a failed lookup just leaves it out
+    var age = off.getAttribute("data-whois") ? fetch("/api/whois?d=" + q).then(function (r) { return r.json(); }).then(function (w) { return w.results && w.results[0]; }, function () { return null; }) : null;
+    var ageHtml = function (w) {
+      if (!w || w.error || !w.registered || !w.created) return ["", ""];
+      var made = new Date(w.created), yrs = (Date.now() - made) / 31557600000, exp = w.expires ? (new Date(w.expires) - Date.now()) / 86400000 : null;
+      var when = made.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+      var tile = "<div><small>Domain age</small><b>" + (yrs >= 1 ? Math.floor(yrs) + " year" + (Math.floor(yrs) === 1 ? "" : "s") : Math.max(0, Math.floor(yrs * 12)) + " months") + "</b><small>since " + oe(when) + "</small></div>";
+      var note = exp != null && exp < 60 ? '<p class="s-fail"><strong>The domain expires in ' + Math.max(0, Math.round(exp)) + " days.</strong> Renew it now: if it lapses, the website and email stop working and the rankings can be lost for good.</p>"
+        : yrs < 1 ? "<p>The domain is less than a year old. New sites usually take a few months to build trust with Google, so steady, useful pages and a few good links matter most right now.</p>" : "";
+      return [tile, note];
+    };
+    Promise.all([fetch("/api/authority?d=" + q).then(function (r) { return r.json(); }), age]).then(function (both) {
+      var j = both[0], ag = ageHtml(both[1]);
+      if (j.error) throw new Error(j.error);
+      var x = j.results && j.results[0];
+      if (!x || x.error) throw new Error((x && x.error) || "No result.");
+      var n = x.found ? x.refDomains : 0, a = x.found ? x.authority : 0, c = a >= 40 ? "s-pass" : a >= 20 ? "s-warn" : "s-fail";
+      var say = !n ? "We found no other websites linking to " + oe(x.domain) + ". That's normal for a new or small site, but links are how Google judges trust, so this is the next thing to work on."
+        : n < 10 ? "Only a handful of websites link to " + oe(x.domain) + ". A few more good local links usually make a real difference for a small business."
+        : n < 100 ? oe(x.domain) + " has a fair base of links. Keep adding relevant ones and check which links your competitors have that you don't."
+        : oe(x.domain) + " has a strong link profile. Focus on the on-page fixes above, and on links from sites in your own field.";
+      var steps = n < 100 ? '<ul><li>Claim your free Google Business Profile and list the same name, address and phone on Bing Places, Apple Business Connect and Yell.</li><li>Ask suppliers, trade bodies and local groups you belong to for a link from their website.</li><li>Write one genuinely useful local guide (prices, a checklist, a “how to choose”) – it gives people a reason to link to you.</li><li>Never buy links: Google can ignore or penalise them.</li></ul>' : "";
+      off.innerHTML = '<h3>Authority &amp; backlinks <span class="' + c + '">' + a + '/100</span></h3><p class="blurb">How much of the web points to ' + oe(x.domain) + ". Search engines treat links from other websites as votes of trust. This covers the whole site, not just this page.</p>" +
+        '<div class="vit"><div><small>Authority</small><b class="' + c + '">' + a + "</b><small>out of 100</small></div><div><small>Websites linking to it</small><b>" + Number(n).toLocaleString("en-GB") + "</b></div>" + (x.rank ? "<div><small>Rank on the web</small><b>#" + Number(x.rank).toLocaleString("en-GB") + "</b><small>of " + Number(j.ranked).toLocaleString("en-GB") + "</small></div>" : "") + ag[0] + "</div>" +
+        ag[1] + "<p>" + say + "</p>" + (x.top && x.top.length ? '<p class="small">Strongest links: ' + x.top.map(oe).join(", ") + ".</p>" : "") + steps + links +
+        '<p class="small">Link data: Common Crawl\'s public web graph, ' + oe(j.months) + ". Some links are missed and the data is refreshed every three months.</p>";
+    }).catch(function (err) {
+      off.innerHTML = '<h3>Authority &amp; backlinks</h3><p class="blurb">The link data couldn\'t be loaded (' + oe(err.message) + "). Reload to try again.</p>" + links;
+    });
+  }
   var box = document.getElementById("vitals"); if (!box) return;
   var e = function (s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
   var cat = { FAST: ["Good", "s-pass"], AVERAGE: ["Needs work", "s-warn"], SLOW: ["Poor", "s-fail"] };

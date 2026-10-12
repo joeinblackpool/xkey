@@ -568,6 +568,16 @@ export function toolsApp() {
       var agent = $("rd-agent").value, res = list.map(function () { return null; }), batches = [], failed = "";
       for (var b = 0; b < list.length; b += 10) batches.push(b);
       var stCol = function (s) { return col(s >= 200 && s < 300, s >= 300 && s < 400); };
+      // several versions of one website (http/https, www/bare): do they all end at one secure address?
+      var rdHost = function (u) { return u.replace(/^[a-z]+:\/\//i, "").split(/[\/?#]/)[0].replace(/^www\./i, "").toLowerCase(); };
+      var rdSame = function (done) {
+        if (done < list.length || list.length < 2 || list.some(function (u) { return rdHost(u) !== rdHost(list[0]); })) return "";
+        var ends = {}, ok = res.every(function (r) { return r && !r.error && r.status === 200 && /^https:/.test(r.final || ""); });
+        res.forEach(function (r) { if (r && !r.error) ends[r.final] = 1; });
+        var e = Object.keys(ends), one = ok && e.length === 1;
+        return '<p class="' + (one ? "s-pass" : "s-fail") + '" style="font-weight:600;overflow-wrap:anywhere">' + (one ? "✓ All " + list.length + " versions of " + esc(rdHost(list[0])) + " end at " + esc(e[0]) + " – exactly right."
+          : "✗ These versions of " + esc(rdHost(list[0])) + " don't all end at one secure address" + (e.length > 1 ? " (they end at " + e.length + " different ones)" : "") + ". Google can treat them as separate sites and split your rankings – redirect them all with a 301 to one https:// address.") + "</p>";
+      };
       var draw = function () {
         var done = res.filter(Boolean).length;
         out.innerHTML = (done < list.length ? '<p class="small">' + done + " of " + list.length + " checked…</p>" : "") + (failed ? '<p class="s-fail">' + esc(failed) + "</p>" : "") + list.map(function (u, i) {
@@ -581,7 +591,7 @@ export function toolsApp() {
             }).join("") + "</ol>" +
             (r.redirects ? '<p style="overflow-wrap:anywhere">Final address: <b>' + esc(r.final) + "</b></p>" : "") +
             (r.problems.length ? '<ul style="margin:8px 0 0">' + r.problems.map(function (p) { return "<li>" + esc(p) + "</li>"; }).join("") + "</ul>" : "") + "</details>";
-        }).join("") +
+        }).join("") + rdSame(done) +
         (done === list.length ? '<div class="row"><button type="button" class="btn ghost" id="rd-csv">Download CSV</button></div><p class="small">Checked as a ' + (agent === "mobile" ? "mobile" : "desktop") + " browser from Cloudflare's network. Sites that block automated visits or redirect by country or with JavaScript may behave differently for you.</p>" : "");
         var c = $("rd-csv"); if (c) c.onclick = function () {
           var cell = function (v) { v = String(v == null ? "" : v); if (/^[=+\-@\t\r]/.test(v)) v = "'" + v; return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };

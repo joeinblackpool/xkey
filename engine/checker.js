@@ -3,6 +3,8 @@
 // AI-search readiness and real Core Web Vitals (via Google PageSpeed Insights, fetched separately).
 // analyse() is pure (testable in Node); runCheck() / runVitals() do the network work.
 
+import { detectPlatform } from "./platform.js";
+
 const MAX_BYTES = 1_000_000;
 const TIMEOUT_MS = 10_000;
 const LINK_SAMPLE = 12;
@@ -391,7 +393,7 @@ export function analyse(f) {
   const fixes = all.filter((k) => k.status !== "pass").sort((a, b) => IMPACT[b.impact] * (b.status === "fail" ? 2 : 1) - IMPACT[a.impact] * (a.status === "fail" ? 2 : 1));
   const counts = { pass: all.filter((k) => k.status === "pass").length, warn: all.filter((k) => k.status === "warn").length, fail: all.filter((k) => k.status === "fail").length };
   const aiScore = cats.find((c) => c.name === "AI search readiness").score;
-  return { url: page.href, score: tally(all), aiScore, counts, categories: cats, fixes,
+  return { url: page.href, score: tally(all), aiScore, counts, categories: cats, fixes, platform: detectPlatform(raw, H),
     facts: { title, desc, h1, status: f.status, ms: f.ms, bytes: f.bytes, words: wc, ogImage: og.i, redirects: f.redirects, internal: inProc } };
 }
 

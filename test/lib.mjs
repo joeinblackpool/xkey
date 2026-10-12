@@ -82,6 +82,7 @@ export function whoisStandIns() {
       nameservers: [{ ldhName: "A.IANA-SERVERS.NET" }, { ldhName: "B.IANA-SERVERS.NET" }], secureDNS: { delegationSigned: true } },
     "smithplumbing.co.uk": { events: [{ eventAction: "registration", eventDate: "2009-03-02T00:00:00Z" }, { eventAction: "expiration", eventDate: "2027-03-02T00:00:00Z" }],
       entities: [{ roles: ["registrant"], entities: [{ roles: ["registrar"], vcardArray: ["vcard", [["fn", {}, "text", "Tucows Inc"]]] }] }], nameservers: [{ ldhName: "ns1.example-host.co.uk" }], status: ["active"] },
+    "xkey.co.uk": { events: [{ eventAction: "registration", eventDate: "2016-05-20T00:00:00Z" }, { eventAction: "expiration", eventDate: "2030-05-20T00:00:00Z" }], entities: [{ roles: ["registrar"], vcardArray: ["vcard", [["fn", {}, "text", "Test Registrar"]]] }] },
     "soon.co.uk": { events: [{ eventAction: "registration", eventDate: "2024-01-10T00:00:00Z" }, { eventAction: "expiration", eventDate: day(20) }], entities: [{ roles: ["registrar"], vcardArray: ["vcard", [["fn", {}, "text", "123 Reg"]]] }] },
   };
   const WHOIS_FETCH = async (url) => {
