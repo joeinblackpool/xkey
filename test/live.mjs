@@ -1,6 +1,6 @@
 // Checks against the real internet (not part of test/all.mjs, which runs offline):
 //   node test/live.mjs registries   – src/whois.js against real registries (RDAP, and WHOIS on port 43 via node:net)
-//   node test/live.mjs site         – the live xkey.co.uk APIs: backlinks, authority, redirects, headers, links, dns, whois
+//   node test/live.mjs site         – the live xkey.co.uk APIs (backlinks … ssl, email, whois) and every sitemap page
 // Run by .github/workflows/live-check.yml. Exits 1 if anything looks wrong.
 import net from "node:net";
 import { whoisApi } from "../src/whois.js";
@@ -64,6 +64,14 @@ if (process.argv.includes("site")) {
   check("meta: bbc.co.uk has Open Graph tags", s === 200 && j.status === 200 && (j.metas || []).some((m) => m.key === "og:title"), `${s} ${j.status} ${j.error || ""}`);
   [s, j] = await api("/api/ssl?d=bbc.co.uk");
   check("ssl: bbc.co.uk is secure and redirects to https", s === 200 && j.secure && (j.checks || []).some((c) => /redirects to https/.test(c.text)), `${s} ${j.error || ""} cert ${j.cert ? j.cert.issuer + " " + j.cert.to : j.ctError ? "CT error" : "none"}`);
+  [s, j] = await api("/api/email?d=bbc.co.uk");
+  check("email: bbc.co.uk MX, SPF and DMARC", s === 200 && j.mx && j.mx.records.length > 0 && j.spf && j.spf.root && !j.spf.root.missing && j.dmarc && !!j.dmarc.record, `${s} ${j.error || ""} mx ${j.mx && j.mx.records.length} dmarc ${j.dmarc && j.dmarc.record}`);
+  // every page in the sitemap loads with a title
+  const sm = await (await fetch("https://xkey.co.uk/sitemap.xml")).text();
+  const urls = [...sm.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
+  const bad = [];
+  for (let i = 0; i < urls.length; i += 8) await Promise.all(urls.slice(i, i + 8).map(async (u) => { const r = await fetch(u, { headers: { "user-agent": "xkey live check" } }).catch(() => null); const h = r ? await r.text() : ""; if (!r || r.status !== 200 || !/<title>[^<]{10,}<\/title>/.test(h)) bad.push(`${u} ${r ? r.status : "no answer"}`); }));
+  check(`pages: all ${urls.length} sitemap pages load with a title`, urls.length > 50 && !bad.length, bad.slice(0, 10).join("; "));
   [s, j] = await api("/api/whois?d=bbc.co.uk,github.com,rte.ie,google.de");
   const w = j.results || [];
   for (const r of w) console.log(JSON.stringify(r).slice(0, 300));
