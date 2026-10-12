@@ -60,6 +60,7 @@ export const toolCards = (except) => `<div class="grid">${TOOLS.filter(([p]) => 
 const toolPage = (path, crumb, title, desc, h1, lead, focus, app, sections, faqs) => ({ path, crumb, title, desc, h1, lead, form: "check", focus, app, parent: ["/seo-tools", "SEO tools"], sections, faqs });
 
 import { MORE_GUIDES } from "./more-guides.js";
+import { GUIDES_8 } from "./guides-8.js";
 
 export const PAGES = [
   {
@@ -1165,4 +1166,5 @@ Sitemap: https://yourdomain.co.uk/sitemap.xml</code></pre>
 <h2>Your rights</h2><p>You can contact us about your data at <a href="mailto:iceworks@f1rst.co.uk">iceworks@f1rst.co.uk</a>, or complain to the Information Commissioner's Office at <a href="https://ico.org.uk/" rel="noopener">ico.org.uk</a>.</p>`,
   },
   ...MORE_GUIDES,
+  ...GUIDES_8,
 ];
