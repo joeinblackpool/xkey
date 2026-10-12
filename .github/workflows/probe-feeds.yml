@@ -1,0 +1,13 @@
+name: Probe feeds
+on:
+  push:
+    branches: [probe-feeds]
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - run: |
+          for u in https://status.search.google.com/incidents.json https://status.search.google.com/en/feed.atom https://status.search.google.com/summary; do echo "== $u"; curl -sSL -m 20 -o /tmp/x -w "%{http_code} %{content_type} %{size_download}\n" "$u"; head -c 1500 /tmp/x; echo; done
