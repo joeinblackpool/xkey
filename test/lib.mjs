@@ -152,7 +152,7 @@ export function dnsStandIn() {
 }
 
 /** Stand-ins for DNS wire format (see src/propagation.js): DOH_FETCH answers RFC 8484 GETs and DNS_TCP the
- *  authoritative name server, both from dnsStandIn()'s zone. Quad9 still has an old A record for xkey.co.uk
+ *  authoritative name server, both from dnsStandIn()'s zone. NextDNS still has an old A record for xkey.co.uk
  *  and AliDNS is down. */
 export function dohStandIn() {
   const json = dnsStandIn(), TYPES = { 1: "A", 2: "NS", 5: "CNAME", 15: "MX", 16: "TXT", 28: "AAAA" };
@@ -170,7 +170,7 @@ export function dohStandIn() {
   const DOH_FETCH = async (url) => {
     const u = new URL(url), q = new Uint8Array(Buffer.from(u.searchParams.get("dns"), "base64url"));
     if (u.hostname === "dns.alidns.com") return new Response("busy", { status: 503 });
-    const old = u.hostname === "dns.quad9.net" ? (name, type, j) => name === "xkey.co.uk" && type === "A" ? ["192.0.2.99"] : (j.Answer || []).map((a) => a.data) : null;
+    const old = u.hostname === "dns.nextdns.io" ? (name, type, j) => name === "xkey.co.uk" && type === "A" ? ["192.0.2.99"] : (j.Answer || []).map((a) => a.data) : null;
     return new Response(await answer(q, false, old), { headers: { "content-type": "application/dns-message" } });
   };
   const DNS_TCP = async (host, q) => { if (host !== "192.0.2.53") throw new Error("unexpected name server " + host); return answer(q, true); };

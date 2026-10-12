@@ -8,13 +8,13 @@ const NAMES = Object.fromEntries(Object.entries(PROP_TYPES).map(([k, v]) => [v, 
 export const RESOLVERS = [
   ["Cloudflare (1.1.1.1)", "United States", "https://cloudflare-dns.com/dns-query"],
   ["Google (8.8.8.8)", "United States", "https://dns.google/dns-query"],
-  ["Quad9 (9.9.9.9)", "Switzerland", "https://dns.quad9.net/dns-query"],
   ["OpenDNS (Cisco)", "United States", "https://doh.opendns.com/dns-query"],
   ["AdGuard DNS", "Cyprus", "https://dns.adguard-dns.com/dns-query"],
-  ["Mullvad DNS", "Sweden", "https://dns.mullvad.net/dns-query"],
-  ["CIRA Canadian Shield", "Canada", "https://private.canadianshield.cira.ca/dns-query"],
+  ["NextDNS", "United States", "https://dns.nextdns.io/dns-query"],
   ["Control D", "Canada", "https://freedns.controld.com/p0"],
   ["DNS.SB", "Germany", "https://doh.dns.sb/dns-query"],
+  ["LibreDNS", "Greece", "https://doh.libredns.gr/dns-query"],
+  ["IIJ Public DNS", "Japan", "https://public.dns.iij.jp/dns-query"],
   ["AliDNS (Alibaba)", "China", "https://dns.alidns.com/dns-query"],
 ];
 
@@ -59,7 +59,7 @@ export function decodeAnswers(buf) {
 }
 
 const b64url = (u8) => btoa(String.fromCharCode(...u8)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-export async function viaDoh(env, url, name, type) {
+async function viaDoh(env, url, name, type) {
   const f = env.DOH_FETCH || fetch, ac = new AbortController(), t = setTimeout(() => ac.abort(), 4000);
   try {
     const r = await f(`${url}?dns=${b64url(encodeQuery(name, type))}`, { headers: { accept: "application/dns-message" }, signal: ac.signal });

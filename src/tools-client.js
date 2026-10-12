@@ -918,7 +918,7 @@ export function toolsApp() {
         };
         var h = '<div class="card" style="margin:16px 0"><p class="ct">' + esc(j.type) + " records for " + esc(j.name) + "</p>" + noteList(n) + "</div>" + '<div class="tablewrap"><table><thead><tr><th>DNS service</th><th>Answer</th><th>Status</th><th>Time</th></tr></thead><tbody>';
         if (j.authority) h += row({ ok: j.authority.ok, key: j.authority.key, error: j.authority.error, ms: j.authority.ms, match: j.authority.ok ? true : null }, "Your name server", j.authority.label + " (the source)");
-        h += j.resolvers.map(function (r) { return row(r, r.label, "Run from " + r.country); }).join("") + "</tbody></table></div>";
+        h += j.resolvers.map(function (r) { return row(r, r.label, "Based in " + r.country); }).join("") + "</tbody></table></div>";
         h += '<p class="small">Big public DNS services answer from the server nearest our checker, so this shows whether the main services have your change, not every broadband provider. See all of ' + esc(j.name) + '\'s records with our <a href="/dns-lookup?d=' + encodeURIComponent(j.name) + '">DNS lookup</a>.</p>';
         out.innerHTML = h;
       }).catch(function () { out.innerHTML = '<p class="s-fail">Couldn\'t check that domain – please try again.</p>'; });

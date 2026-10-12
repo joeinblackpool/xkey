@@ -455,7 +455,7 @@ export const PAGES = [
     sections: `<h2>What the propagation checker does</h2>
 <div class="grid">
 <div class="card"><p class="ct">Your name server</p><p>We ask the domain's own name server directly. That's the source of truth: once your change shows there, it's saved correctly.</p></div>
-<div class="card"><p class="ct">Ten public DNS services</p><p>Cloudflare, Google, Quad9, OpenDNS, AdGuard, Mullvad, CIRA, Control D, DNS.SB and AliDNS, run from the United States, Europe, Canada and China.</p></div>
+<div class="card"><p class="ct">Ten public DNS services</p><p>Cloudflare, Google, OpenDNS, NextDNS, AdGuard, Control D, DNS.SB, LibreDNS, IIJ and AliDNS, run by companies in the United States, Europe, Canada, Japan and China.</p></div>
 <div class="card"><p class="ct">Same or different</p><p>Each answer is compared with your name server, with the time left on saved copies, so you know whether to wait or fix something.</p></div>
 </div>
 <h2>What is DNS propagation?</h2>
