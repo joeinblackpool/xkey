@@ -30,6 +30,9 @@ const TOOLS = [
   ["/utm-builder", "UTM link builder", "Tracking links for Google Analytics: source, medium and campaign, ready to copy."],
   ["/url-slug-generator", "URL slug generator", "Turn titles into short, clean, SEO-friendly page addresses."],
   ["/case-converter", "Case converter", "Sentence case, Title Case, UPPER, lower, camelCase and more in one click."],
+  ["/favicon-generator", "Favicon generator", "favicon.ico, Apple and Android icons from letters or your logo, with the HTML."],
+  ["/hreflang-generator", "Hreflang generator", "Correct hreflang tags for every language and country version, as HTML or a sitemap."],
+  ["/email-header-analyzer", "Email header analyzer", "Paste email headers to check SPF, DKIM and DMARC, trace the route and spot fakes."],
   ["/website-technology-checker", "Website technology checker", "What is a site built with? CMS, theme, plugins, analytics, hosting and email."],
   ["/dns-lookup", "DNS lookup", "A, MX, TXT, NS and other records, plus SPF and DMARC email checks."],
   ["/mx-lookup", "MX lookup", "Which mail servers receive a domain's email, in priority order, and who provides them."],
@@ -497,6 +500,64 @@ export const PAGES = [
 <h2>What it can't check</h2>
 <p>A canonical tag is a strong hint, not an order: Google can still choose a different main address, and only Search Console's URL Inspection shows which one it picked. We don't run JavaScript, so a canonical changed by a script after the page loads isn't seen here. robots.txt rules are checked by our <a href="/robots-txt-tester">robots.txt tester</a>.</p>`,
     faqs: [["Is the canonical checker free?", "Yes. No sign-up, no email and no subscription, with only a fair-use limit to stop bots."], ["Should every page have a canonical tag?", "It's good practice. A canonical pointing to the page's own clean address protects it against copies created by tracking codes, filters and www or http versions."], ["Does a canonical tag pass link value?", "Google treats it as a strong hint to combine the duplicate addresses, including their links, into the chosen main version."], ["What's the difference between a canonical and a 301 redirect?", "A 301 sends visitors and Google to the new address. A canonical leaves both addresses working for visitors and only tells search engines which one to show."]],
+  },
+  {
+    path: "/favicon-generator", crumb: "Favicon generator", parent: ["/seo-tools", "SEO tools"], title: "Favicon Generator | Free ICO, PNG & Apple Icons",
+    desc: "Free favicon generator: make favicon.ico, Apple touch icon and Android icons from letters or your logo, with the HTML to paste. Runs in your browser.",
+    h1: "Favicon generator", eyebrow: "Instant tool · Unlimited", app: "XKey favicon generator", form: "favgen",
+    lead: "Make every favicon file a website needs, from a letter or two or from your logo, and copy the few lines of HTML that tell browsers and Google where to find them.",
+    sections: `<h2>What you get</h2>
+<div class="grid">
+<div class="card"><p class="ct">favicon.ico</p><p>One file holding 16, 32 and 48 pixel icons: the browser tab, bookmarks, and the 48 px minimum Google asks for in search results.</p></div>
+<div class="card"><p class="ct">Phone icons</p><p>A 180 px Apple touch icon for iPhones and iPads, and 192 and 512 px icons for Android home screens, with a site.webmanifest that lists them.</p></div>
+<div class="card"><p class="ct">The HTML</p><p>The link tags to paste into your page's head, plus a sharp SVG icon when you make it from letters.</p></div>
+</div>
+<h2>Why your favicon matters for search</h2>
+<p>Google shows your favicon next to your site name in mobile and desktop results. A clear, recognisable icon makes your listing stand out among the plain ones and tells people they've found the business they were looking for, so more of them click. A missing favicon shows as a grey globe, which looks unfinished. Google only shows a favicon that's square, at least 48 × 48 pixels and on a stable address, and it picks it up the next time it crawls your home page.</p>
+<h2>How to add your favicon</h2>
+<ol><li>Download the files and upload them to the top folder of your website, so favicon.ico lives at yoursite.co.uk/favicon.ico.</li><li>Paste the HTML into the &lt;head&gt; of every page (usually the theme's header file or a "header code" setting).</li><li>On WordPress, you can instead go to Appearance → Customise → Site Identity → Site Icon and upload the 512 px PNG. Shopify, Wix and Squarespace each have a favicon box in their settings.</li><li>Check it worked by opening your site in a new tab. Browsers cache favicons hard, so try a private window if you still see the old one.</li></ol>
+<h2>Tips for a good favicon</h2>
+<ul><li><strong>Keep it simple.</strong> At 16 pixels, a full logo turns into a smudge. One or two letters, or a single shape from your logo, read far better.</li><li><strong>Use strong contrast</strong> between the background and the letters, and check it on both light and dark browser themes.</li><li><strong>Start from a square image</strong> at least 512 × 512. We crop wider images to the middle.</li><li><strong>Match your brand</strong>, so people recognise you in a row of tabs or search results.</li></ul>
+<h2>Privacy</h2>
+<p>Everything happens in your browser: your logo is never uploaded to us. That's also why it's unlimited.</p>`,
+    faqs: [["Is the favicon generator free?", "Yes. No sign-up, no email, no watermark and no limit, because the icons are made in your browser."], ["What size should a favicon be?", "Use favicon.ico with 16, 32 and 48 px icons inside, a 180 × 180 Apple touch icon and 192 and 512 px PNGs. Google needs at least 48 × 48 and a square shape."], ["Why isn't my favicon showing in Google?", "Google picks it up when it next crawls your home page, which can take days or weeks. It must be square, at least 48 px, linked from the home page and not blocked by robots.txt."], ["Do I still need favicon.ico?", "It's still the safest choice: some browsers and tools request /favicon.ico directly, even without a link tag."]],
+  },
+  {
+    path: "/hreflang-generator", crumb: "Hreflang generator", parent: ["/seo-tools", "SEO tools"], title: "Hreflang Tag Generator | Free HTML & XML Sitemap",
+    desc: "Free hreflang tag generator: pick each language and country, add your addresses and x-default, and copy hreflang tags for your HTML, sitemap or headers.",
+    h1: "Hreflang tag generator", eyebrow: "Instant tool · Unlimited", app: "XKey hreflang generator", form: "hreflanggen",
+    lead: "Choose the language and country for each version of a page, add the addresses, and copy correct hreflang tags as HTML, an XML sitemap or an HTTP header.",
+    sections: `<h2>How to use the hreflang generator</h2>
+<ol><li>Add one row for each version of the same page: for example the UK, Irish and French versions of your boiler service page.</li><li>Pick the language, and the country if the version is aimed at one country. "English, any country" (en) and "English, Ireland" (en-IE) are both valid.</li><li>Add an x-default address for everyone else, often your main site or a language picker.</li><li>Choose where the tags will go and copy the result.</li></ol>
+<h2>Which format should I use?</h2>
+<ul><li><strong>HTML link tags</strong> go in the &lt;head&gt; of every version. Easiest for small sites and the format most plugins use.</li><li><strong>XML sitemap</strong> keeps the tags out of your pages, which suits big sites. Each address gets its own entry listing all the versions.</li><li><strong>HTTP header</strong> is for files that have no &lt;head&gt;, such as PDFs. Your developer or host sets it on the server.</li></ul>
+<p>Use one method per page. Mixing them is allowed, but it's easy to let them drift apart.</p>
+<h2>The rules Google checks</h2>
+<ul><li><strong>Every version lists every version</strong>, including itself. If the UK page points to the Irish page, the Irish page must point back, or Google ignores the pair.</li><li><strong>Codes must be real.</strong> Language first (ISO 639-1), then an optional country (ISO 3166-1): en-GB, not en-UK. "uk" on its own means Ukrainian.</li><li><strong>Full addresses only</strong>, starting https://, and each one should load directly with a 200, not redirect.</li><li><strong>Point to the matching page</strong>, not the home page of each version.</li></ul>
+<h2>Do I need hreflang?</h2>
+<p>Only if the same content exists in more than one language, or in versions for different countries, such as prices in pounds and euros. A UK business with one English site doesn't need it: set the right language in your html tag and you're done. Once your tags are live, test them with our <a href="/hreflang-checker">hreflang checker</a>, which loads every version to make sure they link back.</p>`,
+    faqs: [["Is the hreflang generator free?", "Yes. No sign-up, no email and no limit; it runs in your browser."], ["Should I use en or en-GB?", "Use en-GB when you also have versions for other English-speaking countries. Use en alone when one English version serves everyone."], ["What is x-default?", "The address Google shows to people whose language or country doesn't match any of your versions, usually your main site or a language chooser."], ["Does hreflang help rankings?", "It doesn't lift rankings by itself. It makes Google show each searcher the right version, which stops your own pages competing and sends visitors to the page with the right language and prices."]],
+  },
+  {
+    path: "/email-header-analyzer", crumb: "Email header analyzer", parent: ["/seo-tools", "SEO tools"], title: "Email Header Analyzer | Trace & Check Emails Free",
+    desc: "Free email header analyzer: paste the headers to see SPF, DKIM and DMARC results, every server the email passed through, delays and signs of a fake.",
+    h1: "Email header analyzer", eyebrow: "Instant tool · Unlimited · Private", app: "XKey email header analyzer", form: "emailheaders",
+    lead: "Paste an email's headers to see whether it passed SPF, DKIM and DMARC, the route it took from server to server with each delay, and warning signs such as a reply address on another domain.",
+    sections: `<h2>How to copy an email's headers</h2>
+<ul><li><strong>Gmail:</strong> open the email, click the three dots ⋮ → Show original, then Copy to clipboard.</li><li><strong>Outlook (desktop):</strong> open the email, File → Properties, and copy the "Internet headers" box. In Outlook on the web: ⋯ → View → View message details.</li><li><strong>Apple Mail:</strong> View → Message → All Headers.</li><li><strong>Yahoo Mail:</strong> ⋯ → View raw message.</li></ul>
+<h2>What the analyzer shows</h2>
+<div class="grid">
+<div class="card"><p class="ct">Is it genuine?</p><p>The SPF, DKIM and DMARC results the receiving mail server recorded, and what each means in plain English.</p></div>
+<div class="card"><p class="ct">The route</p><p>Every server that handed the email on, oldest first, with the time each hop took, so you can find where a slow email was held up.</p></div>
+<div class="card"><p class="ct">Warning signs</p><p>A reply address on a different domain, a bounce address that doesn't match, failed checks and spam filter scores.</p></div>
+</div>
+<h2>Spotting a fake invoice or phishing email</h2>
+<p>The "From" name and address are easy to fake; the headers are much harder. Be wary when DMARC fails, when replies go to a different domain from the sender (a classic trick in invoice fraud: the email looks like your supplier, but answers go to the scammer), or when the first server in the route has nothing to do with the company. If in doubt, phone the sender on a number you already have, never one in the email. In the UK you can forward suspicious emails to report@phishing.gov.uk.</p>
+<h2>Why your own emails land in spam</h2>
+<p>Send a test email to a Gmail or Outlook address, open the headers and paste them here. If SPF, DKIM or DMARC isn't "pass", fix your domain's records with our <a href="/spf-checker">SPF checker</a>, <a href="/dkim-checker">DKIM checker</a> and <a href="/dmarc-checker">DMARC checker</a>. Since 2024 Gmail and Yahoo expect all three from anyone sending in volume.</p>
+<h2>Privacy</h2>
+<p>Headers can include email addresses and IP addresses, so the analyzer runs entirely in your browser: nothing you paste is sent to us or stored.</p>`,
+    faqs: [["Is the email header analyzer free?", "Yes. No sign-up, no email and no limit, because it runs in your browser."], ["Is it safe to paste email headers here?", "Yes. The headers are read in this browser tab only and never uploaded or stored. Headers don't contain the email's text or attachments."], ["What does DMARC pass mean?", "The email really came from the domain shown in the From address: it passed SPF or DKIM for that same domain. A fail means it couldn't prove that."], ["Why does an email take hours to arrive?", "The route table shows the time between each server. A long gap usually means a spam filter held it, a server was busy, or a sender's queue retried after a temporary refusal."]],
   },
   {
     path: "/case-converter", crumb: "Case converter", parent: ["/seo-tools", "SEO tools"], title: "Case Converter | Sentence, Title, Upper & Lower Case",

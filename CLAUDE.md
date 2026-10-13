@@ -65,6 +65,10 @@ Free SEO & AI search checker for UK businesses, made by IceWork (icework.co.uk).
 ## Browser-only text tools: UTM builder (/utm-builder), URL slug generator (/url-slug-generator), case converter (/case-converter)
 - All in tools-client.js, nothing sent to the server. Element id prefixes ut-, us-, cc- (sg- is taken by the schema generator).
 
+## Browser-only: favicon generator (/favicon-generator), hreflang generator (/hreflang-generator), email header analyzer (/email-header-analyzer)
+- All in tools-client.js, nothing uploaded (ids fg-, hg-, eh-). The favicon generator draws on a canvas and builds favicon.ico itself (16/32/48 PNGs in an ICO container), plus 180/192/512 PNGs, an SVG (letters only) and site.webmanifest. Upload tests use a scenario's `files` and the `png(w, h)` helper in test/tools.mjs.
+- Other threads own the image compressor/WebP converter and redirect map generator ideas – don't build those here.
+
 ## Rank tracker, content editor, backlink audit, ad checker, brand monitoring (src/pro-pages.js, src/pro-client.js)
 - Pages in `src/pro-pages.js` (`PRO_PAGES`, tool cards `PRO_TOOLS`, forms `PRO_FORMS`); browser code `src/pro-client.js` served as /assets/pro.js (loaded only on these pages). Element id prefixes rk-, ce-, ba-, ad-, bm-, an-.
 - /rank-tracker: reads Search Console Performance exports (the ZIP – unzipped in the browser with DecompressionStream – or a pasted table; comparison columns and Filters.csv country are understood). Snapshots per site + region in localStorage `xk-rank`. No Google sign-in, nothing sent to us.

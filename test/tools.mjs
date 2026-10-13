@@ -25,6 +25,16 @@ import { qrMatrix } from "../src/tools-extra.js";
 import { OG_PNG } from "../src/og.js";
 import { indexable } from "../src/site-report.js";
 import { fileURLToPath } from "node:url";
+import zlib from "node:zlib";
+// a w×h RGBA PNG with a simple gradient, for upload tests
+const png = (w, h) => {
+  const crcT = Array.from({ length: 256 }, (_, n) => { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; return c >>> 0; });
+  const crc = (b) => { let c = ~0; for (const x of b) c = crcT[(c ^ x) & 255] ^ (c >>> 8); return ~c >>> 0; };
+  const chunk = (t, d) => { const len = Buffer.alloc(4); len.writeUInt32BE(d.length); const td = Buffer.concat([Buffer.from(t), d]); const c = Buffer.alloc(4); c.writeUInt32BE(crc(td)); return Buffer.concat([len, td, c]); };
+  const raw = Buffer.alloc((w * 4 + 1) * h); for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) raw.set([x * 255 / w, y * 255 / h, 120, 255], y * (w * 4 + 1) + 1 + x * 4);
+  const ihdr = Buffer.alloc(13); ihdr.writeUInt32BE(w, 0); ihdr.writeUInt32BE(h, 4); ihdr.set([8, 6, 0, 0, 0], 8);
+  return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk("IHDR", ihdr), chunk("IDAT", zlib.deflateSync(raw)), chunk("IEND", Buffer.alloc(0))]);
+};
 import path from "node:path";
 import fs from "node:fs";
 import os from "node:os";
@@ -253,6 +263,12 @@ const S = [
   { name: "Alt text checker – problems", path: "/alt-text-checker?url=example.co.uk/p", routes: [[/\/api\/onpage/, () => ({ url: "https://example.co.uk/p", start: "https://example.co.uk/p", status: 200, title: "P", lang: "en", xRobots: "", linkCanonical: "", headings: [], images: [], jsonld: [], microdata: [], rdfa: [], canonicals: [], robots: [], images: [{ src: "https://example.co.uk/a.jpg", alt: null }, { src: "https://example.co.uk/logo.png", alt: null, link: "only" }, { src: "https://example.co.uk/b.jpg", alt: "IMG_0423.jpg" }, { src: "https://example.co.uk/c.jpg", alt: "Image of a van" }, { src: "https://example.co.uk/d.jpg", alt: "Engineer fitting a boiler" }] })]], expect: ["#at-out", /1 image has no alt text[\s\S]*1 linked image[\s\S]*2 images have weak[\s\S]*Looks like a file name[\s\S]*Good/] },
   { name: "Canonical checker", path: "/canonical-checker", fill: [["cn-url", "xkey.co.uk"]], click: "#cn-form button[type=submit]", expect: ["#cn-out", /Indexable[\s\S]*points to this page itself/] },
   { name: "Canonical checker – home page and noindex", path: "/canonical-checker?url=example.co.uk/p", routes: [[/\/api\/onpage/, () => ({ url: "https://example.co.uk/p", start: "https://example.co.uk/p", status: 200, title: "P", lang: "en", xRobots: "", linkCanonical: "", headings: [], images: [], jsonld: [], microdata: [], rdfa: [], canonicals: [], robots: [], canonicals: [{ raw: "https://example.co.uk/", href: "https://example.co.uk/" }], robots: [{ name: "robots", content: "noindex" }] })], [/\/api\/redirects/, () => ({ results: [{ redirects: 1, status: 200, final: "https://www.example.co.uk/" }] })]], expect: ["#cn-out", /Not indexable[\s\S]*noindex found in a meta robots tag[\s\S]*points to the home page[\s\S]*redirects to https:\/\/www\.example\.co\.uk\//] },
+  { name: "Favicon generator – letters", path: "/favicon-generator", fill: [["fg-t", "SP"]], expect: ["#fg-form", /favicon\.ico[\s\S]*apple-touch-icon\.png[\s\S]*favicon\.svg[\s\S]*rel="manifest"/], attr: ["#fg-dl a[download='favicon.ico']", "href", /^blob:/] },
+  { name: "Favicon generator – from a logo", path: "/favicon-generator", before: ["#fg-m-img"], files: [["fg-file", { name: "logo.png", mimeType: "image/png", buffer: png(600, 400) }]], expect: ["#fg-form", /48 px[\s\S]*180 px[\s\S]*icon-512\.png[\s\S]*apple-touch-icon/] },
+  { name: "Hreflang generator", path: "/hreflang-generator", expect: ["#hg-form", /hreflang="en-GB" href="https:\/\/smithplumbing\.co\.uk\/"[\s\S]*hreflang="x-default"[\s\S]*same tags on every version/] },
+  { name: "Hreflang generator – duplicate code, sitemap", path: "/hreflang-generator", select: [["hg-r1", "IE"], ["hg-fmt", "xml"]], expect: ["#hg-form", /<xhtml:link rel="alternate" hreflang="en-IE"[\s\S]*en-IE is used twice/] },
+  { name: "Email header analyzer – example", path: "/email-header-analyzer", click: "#eh-sample", expect: ["#eh-out", /Invoice 2231 due[\s\S]*DMARC pass[\s\S]*Replies go to supplier-payments\.com[\s\S]*Route: 3 hops[\s\S]*crm\.supplier\.co\.uk[\s\S]*2 min/] },
+  { name: "Email header analyzer – not headers", path: "/email-header-analyzer", fill: [["eh-in", "hello there"]], click: "#eh-form button[type=submit]", expect: ["#eh-out", /No headers found/] },
   { name: "Website hosting checker", path: "/website-hosting-checker", fill: [["ho-d", "xkey.co.uk"]], click: "#ho-form button[type=submit]", expect: ["#ho-out", /Hosted by Cloudflare[\s\S]*192\.0\.2\.30[\s\S]*CLOUDFLARENET/] },
   { name: "Website hosting checker – opened from a link", path: "/website-hosting-checker?d=xkey.co.uk", expect: ["#ho-out", /192\.0\.2\.30/] },
   { name: "Accessibility checker", path: "/accessibility-checker", fill: [["a11-url", "xkey.co.uk"]], click: "#a11-form button[type=submit]", expect: ["#a11-out", /out of 100[\s\S]*passed[\s\S]*Page language/] },
@@ -300,6 +316,7 @@ for (const s of RUN) {
     for (const [re, fn] of s.routes || []) await page.route(re, (r) => r.fulfill({ json: fn(new URL(r.request().url())) }));
     await page.goto(site.url + s.path, { waitUntil: "load" });
     for (const sel of s.before || []) await page.locator(sel).first().click(); // e.g. open a <details> before filling it
+    for (const [id, file] of s.files || []) await page.setInputFiles("#" + id, file); // { name, mimeType, buffer }
     for (const [id, value] of s.fill || []) {
       const el = page.locator(/[\s\[>#.=]/.test(id) ? id : "#" + id).first();
       if (!(await el.count())) { problem = `field ${id} not found`; break; }
