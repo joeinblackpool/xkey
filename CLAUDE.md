@@ -104,6 +104,9 @@ Free SEO & AI search checker for UK businesses, made by IceWork (icework.co.uk).
 
 ## Layout
 - `src/` – XKey pages (`content.js`), shell/styles (`site.js`), routing + APIs (`index.js`), browser tools (`tools-client.js`, served as /assets/tools.js), page parser (`page-parse.js`), OG image (`og.js`).
+- `src/related.js` – the "Related guides" block on every tool and guide page: tools list their guides by hand in `TOOL_GUIDES`, guides share topics in `TOPICS`. Add new tools and guides there; unlisted pages still get guides picked automatically. check.mjs fails if a guide is linked from fewer than 2 pages.
+- `src/page-dates.js` – each page's [first published, last changed, content hash], used for sitemap lastmod, Article/WebApplication dates and "Last updated". Written by `node test/dates.mjs` (test/all.mjs runs it first): commit the file when it changes. A page missing from it or changed since counts as changed on `UPDATED`.
+- IndexNow: the 15-minute cron submits only pages that are new or changed since the last submission (per-page hashes in KV `indexnow-pages`). Google doesn't use IndexNow; it reads sitemap.xml (submitted in Search Console).
 - `engine/` – SEO checker engine **shared with icework.co.uk** (repo joeinblackpool/ICEWORK, folder `src/`). `src/page-parse.js` is also copied to ICEWORK `src/` (it powers the competitor topic gap there). Keep the two copies identical: change it here, then copy the same files into ICEWORK `src/` and run its tests (`node test/check.mjs`, `node test/checker-unit.mjs`).
 
 ## Look and feel (src/site.js)
