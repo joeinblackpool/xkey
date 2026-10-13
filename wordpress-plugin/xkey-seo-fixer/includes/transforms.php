@@ -3,13 +3,13 @@
  * Pure string transforms used by XKey SEO Fixer.
  *
  * Nothing in this file depends on WordPress, so it can be tested with plain PHP
- * (see wordpress-plugin/test/run.php). Every function changes only the exact
+ * (see wordpress-plugin/test/run.php, which defines ABSPATH). Every function changes only the exact
  * tag or attribute it targets and leaves the rest of the content byte-for-byte.
  *
  * @package XKey_SEO_Fixer
  */
 
-if ( ! defined( 'ABSPATH' ) && ! defined( 'XKEY_SF_TESTING' ) ) {
+if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
@@ -173,7 +173,7 @@ function xkey_sf_h1_texts( $content ) {
 	preg_match_all( '/<h1(?=[\s>\/])[^>]*>(.*?)<\/h1\s*>/is', $content, $m );
 	return array_map(
 		function ( $html ) {
-			return trim( html_entity_decode( strip_tags( $html ), ENT_QUOTES, 'UTF-8' ) );
+			return trim( html_entity_decode( wp_strip_all_tags( $html ), ENT_QUOTES, 'UTF-8' ) );
 		},
 		$m[1]
 	);
@@ -205,12 +205,12 @@ function xkey_sf_text_from_html( $html ) {
 	$s = preg_replace( '/<(script|style)\b[^>]*>.*?<\/\1\s*>/is', ' ', $s );
 	$s = preg_replace( '/\[\/?[a-zA-Z][\w-]*(?:\s[^\]]*)?\/?\]/', ' ', $s );
 	$s = preg_replace( '/<(?:br|\/(?:p|h[1-6]|li|div|td|th|blockquote|figcaption))\b[^>]*>/i', '$0 ', $s );
-	$s = html_entity_decode( strip_tags( $s ), ENT_QUOTES, 'UTF-8' );
+	$s = html_entity_decode( wp_strip_all_tags( $s ), ENT_QUOTES, 'UTF-8' );
 	return trim( preg_replace( '/[\s\x{00A0}]+/u', ' ', $s ) );
 }
 
 /**
- * Builds a meta description: whole sentences up to $max characters, or the
+ * Builds a meta description from the text outside headings: whole sentences up to $max characters, or the
  * text cut at a word boundary with an ellipsis.
  *
  * @param string $html Excerpt or post content.
@@ -218,7 +218,11 @@ function xkey_sf_text_from_html( $html ) {
  * @return string
  */
 function xkey_sf_make_description( $html, $max = 155 ) {
-	$text = xkey_sf_text_from_html( $html );
+	// Headings read badly in a search snippet ("Our services Our new kitchen…"), so use the body text when there is any.
+	$text = xkey_sf_text_from_html( preg_replace( '/<h([1-6])\b[^>]*>.*?<\/h\1\s*>/is', ' ', (string) $html ) );
+	if ( '' === $text ) {
+		$text = xkey_sf_text_from_html( $html );
+	}
 	if ( xkey_sf_strlen( $text ) <= $max ) {
 		return $text;
 	}
@@ -279,7 +283,7 @@ function xkey_sf_is_internal_url( $href, $host ) {
 	if ( 0 === strpos( $href, '//' ) ) {
 		$href = 'http:' . $href;
 	}
-	$parts = parse_url( $href );
+	$parts = wp_parse_url( $href );
 	if ( empty( $parts['host'] ) || empty( $parts['scheme'] ) || ! in_array( strtolower( $parts['scheme'] ), array( 'http', 'https' ), true ) ) {
 		return false;
 	}
