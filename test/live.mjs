@@ -1,6 +1,6 @@
 // Checks against the real internet (not part of test/all.mjs, which runs offline):
 //   node test/live.mjs registries   – src/whois.js against real registries (RDAP, and WHOIS on port 43 via node:net)
-//   node test/live.mjs dns          – src/propagation.js and src/ptr.js against real DNS services and name servers
+//   node test/live.mjs dns          – src/propagation.js and src/ptr.js against real DNS services and name servers (also run by "registries")
 //   node test/live.mjs site         – the live xkey.co.uk APIs (backlinks … ssl, email, whois) and every sitemap page
 // Run by .github/workflows/live-check.yml. Exits 1 if anything looks wrong.
 import net from "node:net";
@@ -36,7 +36,7 @@ if (process.argv.includes("registries")) {
   check("most lookups answered", rows.filter((r) => !r.error).length >= rows.length - 3, rows.filter((r) => r.error).map((r) => r.domain + ": " + r.error).join("; "));
 }
 
-if (process.argv.includes("dns")) {
+if (process.argv.includes("dns") || process.argv.includes("registries")) { // the live check runs "registries"
   // DNS over TCP the way cloudflare:sockets does it on Workers
   const DNS_TCP = (host, q) => new Promise((ok, no) => {
     let got = Buffer.alloc(0); const s = net.connect(53, host, () => s.write(Buffer.concat([Buffer.from([q.length >> 8, q.length & 255]), Buffer.from(q)])));
