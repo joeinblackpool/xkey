@@ -28,7 +28,7 @@ jobs:
           node-version: 22
       - run: node test/live.mjs registries
   site:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
