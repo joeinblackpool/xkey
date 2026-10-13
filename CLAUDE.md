@@ -23,6 +23,14 @@ Free SEO & AI search checker for UK businesses, made by IceWork (icework.co.uk).
 ## Domain authority checker (/domain-authority-checker)
 - Same index as the backlink checker. `GET /api/authority?d=a.com,b.co.uk` (≤10 sites; the page sends up to 100 in batches). Authority = 100 × (1 − ln(hc_rank) / ln(ranked)), min 1; falls back to link strength when a release has no ranks. Ranks are optional in the build: if the ranks file is missing, the build still runs with every rank 0.
 
+## Website reports (/website-report hub, /site/<domain>)
+- `src/site-report.js`: one server-rendered page per domain – authority, global rank, referring domains and the 50 strongest linkers (`siteLinks` in backlinks.js), registration via `lookupDomain` (whois.js, 4 s cap). Hosting and technology load only when the visitor presses the button (`/api/hosting`, `/api/tech`), so the page stays fast. `/site?d=` and non-canonical forms (www, capitals, subdomains) redirect to `/site/<registered domain>`.
+- **Indexing gate** (`indexable`): index,follow only for rank 1–1,000,000 with ≥ 50 referring domains; everything else is noindex,follow. No links + not registered = 404. Rendered pages are cached a day (`VERSION` in the cache key – bump it after template changes). Reports link to each linker's report, and the hub lists popular UK sites, so Google finds them without a sitemap.
+- check.mjs skips `/site/` links (they need the link index); tools.mjs covers them with the fixtures.
+
+## Email deliverability guides
+- `src/email-guides.js`: Gmail/Yahoo/Microsoft sender rules and DMARC rollout (p=none → reject). The spam-causes and SPF/DKIM/DMARC setup guides live in guides-11.js – don't duplicate them.
+
 ## Domain age checker (/domain-age-checker) and WHOIS lookup (/whois-lookup)
 - `src/whois.js`, `GET /api/whois?d=a.com,b.co.uk` (≤10; the age page sends up to 100 in batches; raw WHOIS text only for single lookups). Registry data via RDAP, base URL per ending from IANA's bootstrap (data.iana.org/rdap/dns.json, cached a day). Endings without RDAP (.de, .eu, .it, .ie …) fall back to WHOIS on port 43 (`cloudflare:sockets`, server from whois.iana.org). Results cached 12 h (not registered: 1 h).
 - Tests use stand-ins `env.WHOIS_FETCH` / `env.WHOIS_TCP` (`whoisStandIns()` in test/lib.mjs). Real-world check: `node test/live.mjs registries` (real registries) and `node test/live.mjs site` (live xkey.co.uk APIs), run by `.github/workflows/live-check.yml` on pushes, after deploys to main and weekly.
@@ -53,6 +61,39 @@ Free SEO & AI search checker for UK businesses, made by IceWork (icework.co.uk).
 
 ## Browser-only text tools: UTM builder (/utm-builder), URL slug generator (/url-slug-generator), case converter (/case-converter)
 - All in tools-client.js, nothing sent to the server. Element id prefixes ut-, us-, cc- (sg- is taken by the schema generator).
+
+## Rank tracker, content editor, backlink audit, ad checker, brand monitoring (src/pro-pages.js, src/pro-client.js)
+- Pages in `src/pro-pages.js` (`PRO_PAGES`, tool cards `PRO_TOOLS`, forms `PRO_FORMS`); browser code `src/pro-client.js` served as /assets/pro.js (loaded only on these pages). Element id prefixes rk-, ce-, ba-, ad-, bm-, an-.
+- /rank-tracker: reads Search Console Performance exports (the ZIP – unzipped in the browser with DecompressionStream – or a pasted table; comparison columns and Filters.csv country are understood). Snapshots per site + region in localStorage `xk-rank`. No Google sign-in, nothing sent to us.
+- /seo-content-editor: live score; competing pages (≤5) are read through `/api/page` for target length, shared terms and questions. Draft kept in localStorage `xk-editor`.
+- /toxic-backlink-checker: `/api/backlinks` linkers graded by name/strength heuristics, anchor text read from the strongest 15 linkers' home pages via `/api/page`, disavow.txt builder. Honest limit: home pages only, 50 strongest linkers.
+- /competitor-ads-checker: ad tags from `/api/tech` plus links into the Google Ads Transparency Centre, Meta, LinkedIn and TikTok ad libraries. No spend figures (not public).
+- /brand-monitoring: search links (run in the visitor's browser – never scrape Google), a Google Alerts link, and an unlinked-mention check via `/api/page`.
+
+## Uptime monitor (/uptime-monitor, src/uptime.js)
+- `POST /api/uptime` (url, optional alert: ntfy topic or Slack/Discord/Teams webhook – other hosts refused) → private dashboard /uptime/<id> (noindex, robots-disallowed). Checked by the 15-minute cron (`runUptime`, oldest-checked first, `UPTIME_PER_RUN` default 30 per run, failures re-checked before alerting). Down = 5xx/404/timeout/connection error or an error page (database, WordPress critical error, PHP fatal…); slow = over 4 s.
+- KV: everything in one key `up:all`, written once per cron run; new monitors wait in `up:new:<id>` and stops in `up:del:<id>` until the next run. Max 200 monitors.
+
+## Website analytics (/website-analytics, src/analytics.js)
+- D1 database `xkey-analytics` (binding `ANALYTICS`). `POST /api/analytics` → /analytics/<secret> dashboard (noindex). Sites add `<script defer data-site="KEY" src="https://xkey.co.uk/a.js">` (<1 kB, no cookies); beacons go to `POST /api/a` (always 204). Aggregated rows only; visitors = daily-salted SHA-256 (salt in KV `an:salt:<day>`). Caps: 100 sites, 5,000 pageviews per site per day. Hashes pruned after 31 days, totals after 400 (cron, 03:00 UTC).
+- Tests: `d1StandIn()` in test/lib.mjs (Node's built-in SQLite); `node test/pro.mjs`.
+
+## WordPress plugin (wordpress-plugin/xkey-seo-fixer, /wordpress-seo-plugin)
+- PHP plugin (Tools → XKey SEO Fixer): alt text, meta descriptions (Yoast/Rank Math/SEOPress fields, else its own tag), H1→H2 in content, broken internal links. Pure transforms in `includes/transforms.php`, tested by `php wordpress-plugin/test/run.php`.
+- Served as /downloads/xkey-seo-fixer.zip, zipped by the Worker from `src/wp-plugin-files.js`. After changing the plugin run `node wordpress-plugin/bundle.mjs` (test/pro.mjs fails if the bundle is stale).
+## Browser-only tools in tools-extra.js: QR code generator, Google review link generator, image compressor, privacy policy generator
+- `src/tools-extra.js` (served as /assets/extra.js: `qrMatrix` + `extraApp` via toString, so no imports or bundler helpers), pages and forms in `src/extra-pages.js`. Element id prefixes qr-, rv-, ic-, pp-. Nothing is sent to the server.
+- `qrMatrix(text, ecl)` is a full QR encoder (byte mode, versions 1–40, all four error levels, best mask). Static codes only: the link is in the code, no redirect. Verified by decoding with OpenCV; tools.mjs checks structure and the pages.
+## Comparison and reference pages
+- `src/compare-pages.js`: /seo-glossary (A–Z from the `TERMS` list – add a term as one line, with an optional tool or guide link), free Ahrefs and Semrush alternatives, DA vs DR vs other scores, best website builder for SEO, Webflow and GoDaddy builder guides. Keep claims about other companies' products to what they publish themselves.
+
+## UK business directories, redirect map generator, SEO ROI calculator
+- `src/directories-page.js`: /uk-business-directories – `GROUPS` list (name, domain, link, best for); the page fills each authority from /api/authority after load.
+- `src/tools-more.js` (served as /assets/more.js: `redirectPairs`, `redirectRules` and `moreApp` via toString) with pages in `src/more-pages.js`. Element id prefixes rm-, roi-. Browser-only.
+## Accessibility checker (/accessibility-checker), Google updates tracker (/google-algorithm-updates), SEO course (/learn-seo)
+- Pages in `src/bundle5-pages.js`. Accessibility: `src/a11y.js` (`a11yCheck(html)` pure WCAG 2.2 checks from HTML; `GET /api/a11y?url=` via `getPage`), browser code `src/a11y-client.js` served as /assets/a11y.js (ids a11-). Says plainly it can't test contrast, keyboard or screen-reader flow.
+- Google updates: `src/google-updates.js` reads Google's public Search Status Dashboard feed (status.search.google.com/incidents.json), cached 1 h; index.js swaps the `<!--gsd-->` marker on the page. If the feed fails the page says so – never add unconfirmed updates. Tests: `env.GSD_FETCH` (`gsdStandIn()` in test/lib.mjs).
+- Course: 10 lessons linking to existing guides and tools; task ticks in localStorage `xk-course`.
 
 ## Layout
 - `src/` – XKey pages (`content.js`), shell/styles (`site.js`), routing + APIs (`index.js`), browser tools (`tools-client.js`, served as /assets/tools.js), page parser (`page-parse.js`), OG image (`og.js`).

@@ -1,0 +1,118 @@
+// Bundle of guides: questions beginners search before and during SEO work (timescales, sitemaps,
+// robots.txt, online shops, hiring help), plus a sector guide written around how its customers search.
+
+export const GUIDES_10 = [
+  {
+    path: "/guides/how-long-does-seo-take", crumb: "How long does SEO take?", parent: ["/guides", "Guides"], article: true,
+    title: "How Long Does SEO Take? Realistic Timescales for Small Firms",
+    desc: "How long SEO takes for a small business: what can change in weeks, what takes months, and why new sites and busy markets take longer to rank.",
+    h1: "How long does SEO take to work?",
+    lead: "SEO takes longer than most small firms hope and less time than many agencies suggest. Fixes to a site Google already trusts can show within weeks; ranking a brand-new site in a busy market can take a year. Here are realistic timescales and what speeds things up.",
+    sections: `<h2>What can change within a few weeks?</h2>
+<ul><li><strong>Technical fixes</strong> on pages Google already knows about, such as a page accidentally set to noindex or blocked in robots.txt. Once fixed, they can return as soon as Google recrawls them.</li><li><strong>Better titles and descriptions</strong> can lift clicks quickly, because the page is already ranking and more people choose it.</li><li><strong>Google Business Profile</strong> updates, new photos and fresh reviews often show in the map results within days or weeks.</li></ul>
+<h2>What takes a few months?</h2>
+<p>New service pages, improved content and new links usually take <strong>three to six months</strong> to settle into steady rankings. Google has to find the page, test it against other results and build trust in it. Positions often jump around in the first weeks; that's normal, so judge progress month by month.</p>
+<h2>Why do some sites take a year or more?</h2>
+<ul><li><strong>Brand-new domains</strong> have no history or links, so they start from zero. See <a href="/guides/seo-for-new-websites">SEO for new websites</a>.</li><li><strong>Busy markets</strong> – national searches, or cities with dozens of strong competitors – need more content and more links to break through.</li><li><strong>Big problems</strong> to unwind, such as duplicate pages, a messy redesign or spammy links bought in the past.</li></ul>
+<h2>How can I speed SEO up?</h2>
+<ol><li>Fix the basics first: run a <a href="/">free SEO check</a> and clear anything marked critical.</li><li>Target realistic searches – local and specific ("boiler repair Lytham") before broad ones ("plumber"). Check them with the <a href="/keyword-difficulty-checker">keyword difficulty checker</a>.</li><li>Submit your sitemap in <a href="/guides/google-search-console">Google Search Console</a> and request indexing of new pages.</li><li>Earn a few genuine local links and reviews. See <a href="/guides/how-to-get-backlinks">how to get backlinks</a>.</li><li>Keep going. SEO compounds: pages that rank keep bringing visitors without paying per click.</li></ol>
+<h2>How do I know if SEO is working?</h2>
+<p>Look for more pages appearing in Search Console, more impressions, then more clicks and enquiries. Rankings for your main searches are the last thing to move. Compare each month with the same month last year to allow for busy and quiet seasons.</p>`,
+    faqs: [["Can anyone guarantee first place on Google?", "No. Nobody controls Google's results, and Google itself warns against companies that promise guaranteed rankings."], ["Is SEO worth it if it takes months?", "For most small businesses, yes. Ads stop the day you stop paying; a page that ranks keeps bringing visitors for years. Many businesses use ads while SEO builds up – see SEO vs Google Ads."], ["Why did my rankings drop after a change?", "Rankings often wobble for a week or two after changes while Google re-assesses pages. If they stay down, check the change didn't remove content, break links or alter page addresses without redirects."]],
+  },
+  {
+    path: "/guides/xml-sitemaps", crumb: "XML sitemaps", parent: ["/guides", "Guides"], article: true,
+    title: "What Is an XML Sitemap? How to Create and Submit One",
+    desc: "What an XML sitemap is, which pages belong in it, how to create one in WordPress, Wix, Squarespace or Shopify, and how to submit it to Google and Bing.",
+    h1: "What is an XML sitemap and do you need one?",
+    lead: "An XML sitemap is a file that lists the pages on your website you want search engines to find. It doesn't make pages rank by itself, but it helps Google discover new and changed pages faster, and it's one of the first things to fix on a new site.",
+    sections: `<h2>Does a small website need an XML sitemap?</h2>
+<p>Google can find pages by following links, so a small, well-linked site will usually be found without one. A sitemap still helps: new pages get discovered sooner, Search Console reports which listed pages are indexed, and pages with few links pointing to them aren't missed. It costs nothing, so every site should have one.</p>
+<h2>Which pages belong in a sitemap?</h2>
+<ul><li><strong>Include</strong> every page you want in Google: home page, service and product pages, location pages, guides and blog posts.</li><li><strong>Leave out</strong> pages set to noindex, redirected addresses, broken pages, duplicate versions (with tracking codes or filters) and private pages such as baskets and account areas.</li><li>Use the full, final address of each page – the same https and www (or non-www) version as your canonical tags.</li><li>Add accurate <strong>lastmod</strong> dates, changed only when the page really changes, so search engines know what to recrawl.</li></ul>
+<h2>How do I create an XML sitemap?</h2>
+<ul><li><strong>WordPress:</strong> WordPress makes one at /wp-sitemap.xml; SEO plugins such as Yoast or Rank Math replace it with /sitemap_index.xml.</li><li><strong>Wix, Squarespace and Shopify</strong> create one automatically at /sitemap.xml.</li><li><strong>Hand-built sites:</strong> use our <a href="/xml-sitemap-generator">XML sitemap generator</a>, then upload the file to your site's root folder.</li></ul>
+<h2>How do I submit a sitemap to Google?</h2>
+<ol><li>Open <a href="/guides/google-search-console">Google Search Console</a> and choose Sitemaps.</li><li>Enter the sitemap address and press Submit.</li><li>Add a line to your robots.txt file, such as <code>Sitemap: https://www.example.co.uk/sitemap.xml</code>, so every search engine can find it. See the <a href="/guides/robots-txt">robots.txt guide</a>.</li><li>Do the same in Bing Webmaster Tools – see <a href="/guides/bing-places-and-bing-seo">Bing Places and Bing SEO</a>.</li></ol>
+<h2>Why are pages in my sitemap not indexed?</h2>
+<p>Being listed is an invitation, not a guarantee. Google may skip pages that are thin, too similar to others or poorly linked. Check the Pages report in Search Console for the reason, and read <a href="/guides/why-is-my-website-not-on-google">why isn't my website on Google?</a>. Our <a href="/">free SEO check</a> tests whether your sitemap exists, is declared in robots.txt and lists the page you checked.</p>`,
+    faqs: [["What's the difference between an XML sitemap and an HTML sitemap?", "An XML sitemap is a file for search engines. An HTML sitemap is a normal web page listing your pages for visitors. Small sites don't need an HTML one if the menu is clear."], ["How many pages can one sitemap hold?", "Up to 50,000 addresses or 50 MB. Larger sites split them into several files listed in a sitemap index."], ["Do I need to resubmit my sitemap after every change?", "No. Once submitted, Google rechecks it regularly. Just keep it up to date, which builders and plugins do automatically."]],
+  },
+  {
+    path: "/guides/robots-txt", crumb: "Robots.txt explained", parent: ["/guides", "Guides"], article: true,
+    title: "Robots.txt Explained: What to Allow, What to Block",
+    desc: "What robots.txt does, what a safe file looks like for a small business, the mistakes that hide whole sites from Google, and how to test yours free.",
+    h1: "Robots.txt explained for small business websites",
+    lead: "Robots.txt is a small text file at the root of your website that tells search engine crawlers which parts of the site they may visit. Get it right and nobody notices. Get it wrong and one line can remove your whole site from Google.",
+    sections: `<h2>What does robots.txt actually do?</h2>
+<p>Before crawling a site, well-behaved bots read <code>/robots.txt</code> and follow its rules. Each group starts with <code>User-agent:</code> (which bot the rules are for, or <code>*</code> for all) followed by <code>Disallow:</code> and <code>Allow:</code> lines naming folders or pages. It controls <strong>crawling</strong>, not indexing: a blocked page can still appear in Google with no description if other sites link to it. To keep a page out of Google, use a noindex tag and let Google crawl it.</p>
+<h2>What should a small business robots.txt look like?</h2>
+<p>For most small sites, a short file is best:</p>
+<pre><code>User-agent: *
+Disallow: /basket/
+Disallow: /my-account/
+
+Sitemap: https://www.example.co.uk/sitemap.xml</code></pre>
+<p>Block only private or useless areas such as baskets, checkouts, account pages and internal search results. Everything you want to rank must stay open, including the CSS, JavaScript and images Google needs to see your pages properly. Build one with the <a href="/robots-txt-generator">robots.txt generator</a>.</p>
+<h2>Which robots.txt mistakes hurt SEO?</h2>
+<ul><li><strong><code>Disallow: /</code> under <code>User-agent: *</code></strong> – blocks the whole site. It's often left behind when a site moves from a test address to live.</li><li><strong>WordPress "Discourage search engines" ticked</strong> under Settings → Reading.</li><li>Blocking folders that hold CSS, scripts or images, so Google sees a broken page.</li><li>Using robots.txt to hide duplicate pages instead of canonical tags. See <a href="/guides/duplicate-content">duplicate content</a>.</li><li>A robots.txt that returns a server error: Google may pause crawling the whole site until it's fixed.</li></ul>
+<h2>Can robots.txt block AI bots?</h2>
+<p>Yes. You can disallow AI training crawlers such as GPTBot or Google-Extended while still allowing Googlebot and the bots that power AI search answers. Our guide to <a href="/guides/block-ai-training-bots">blocking AI training bots</a> explains which are which, so you don't vanish from AI search by accident.</p>
+<h2>How do I test my robots.txt?</h2>
+<p>Paste any page address into the <a href="/robots-txt-tester">robots.txt tester</a> to see whether Googlebot and other crawlers may visit it and which rule decides. Our <a href="/">free SEO check</a> also flags a missing, broken or blocking robots.txt on the page you check.</p>`,
+    faqs: [["Does every website need a robots.txt file?", "No – without one, bots assume they can crawl everything, which is fine for many small sites. Adding one is still useful to point bots to your sitemap."], ["Is robots.txt a security measure?", "No. It's public and only polite bots follow it. Protect private pages with a login, not robots.txt."], ["How quickly does Google notice robots.txt changes?", "Google usually caches robots.txt for up to a day, so changes take effect within about 24 hours."]],
+  },
+  {
+    path: "/guides/ecommerce-seo", crumb: "Ecommerce SEO", parent: ["/guides", "Guides"], article: true,
+    title: "Ecommerce SEO for Small Online Shops: A Practical Guide",
+    desc: "Ecommerce SEO for small UK online shops: category pages that rank, filters that don't create duplicates, out-of-stock items, and product schema.",
+    h1: "Ecommerce SEO for small online shops",
+    lead: "Small online shops can't outspend Amazon, but they can out-specialise it. Ecommerce SEO is about making category and product pages that answer exactly what shoppers search for, and keeping the shop's structure clean so Google can crawl it.",
+    sections: `<h2>Which pages should an online shop try to rank?</h2>
+<ul><li><strong>Category pages</strong> usually win the most valuable searches – "women's walking boots", "oak dining tables" – because shoppers want to compare options. Give each one a clear title, a short helpful introduction and a buying guide or FAQs below the products.</li><li><strong>Product pages</strong> catch specific searches: brand, model, size or colour. See <a href="/guides/product-page-seo">product page SEO</a> for writing them.</li><li><strong>Guides and comparisons</strong> catch shoppers earlier – "how to choose a mattress" – and link through to the right category.</li></ul>
+<h2>How do I structure an online shop for SEO?</h2>
+<p>Keep every product within three or four clicks of the home page: home → category → sub-category → product. Use breadcrumbs, link related categories to each other and avoid putting one product in a dozen categories that each create a new address. See <a href="/guides/internal-linking">internal linking</a>.</p>
+<h2>Do filters and sorting cause duplicate content?</h2>
+<p>They can. Filters for size, colour, price and sort order can create thousands of near-identical addresses. Point each filtered page's canonical tag to the main category, keep filter links out of your sitemap and only create indexable pages for filters people genuinely search for, such as "black leather sofas". Read more in <a href="/guides/duplicate-content">duplicate content</a>.</p>
+<h2>What should I do with out-of-stock products?</h2>
+<ul><li><strong>Temporarily out of stock:</strong> keep the page live, show when it's back and offer alternatives.</li><li><strong>Gone for good, with a close replacement:</strong> redirect (301) the page to the replacement or the category. Check with the <a href="/redirect-checker">redirect checker</a>.</li><li><strong>Gone for good, nothing similar:</strong> let it return 404 or 410 and remove it from internal links.</li></ul>
+<h2>Which technical checks matter most for shops?</h2>
+<ul><li>Product schema with price, availability and reviews, so Google can show rich results. See <a href="/guides/schema-markup">schema markup</a>.</li><li>Fast pages on mobile, especially with lots of product photos. See <a href="/guides/core-web-vitals">Core Web Vitals</a> and <a href="/guides/image-seo">image SEO</a>.</li><li>No basket, checkout or account pages in Google's index.</li><li>Unique titles on every category and product. Run the <a href="/website-crawler">website crawler</a> to find duplicates and missing details across the whole shop.</li></ul>`,
+    faqs: [["Should I use the manufacturer's product descriptions?", "Write your own for the products that matter most. Hundreds of shops use the same supplier text, so Google has little reason to rank yours over theirs."], ["Is Shopify good for SEO?", "Shopify covers the technical basics well. See our Shopify SEO guide for the settings worth checking."], ["Should I list products on Google Shopping?", "Yes. Free product listings in Google Merchant Center can show your products in the Shopping tab without paying for ads."]],
+  },
+  {
+    path: "/guides/how-to-choose-an-seo-company", crumb: "How to choose an SEO company", parent: ["/guides", "Guides"], article: true,
+    title: "How to Choose an SEO Company: Questions to Ask First",
+    desc: "How to choose an SEO company or freelancer: the questions to ask, red flags such as guaranteed rankings and how to check their results yourself.",
+    h1: "How to choose an SEO company you can trust",
+    lead: "Hiring the wrong SEO company wastes money at best and gets your site penalised at worst. A few questions before you sign will tell you whether an agency or freelancer knows their stuff and will be honest with you.",
+    sections: `<h2>Should I hire an SEO company or do it myself?</h2>
+<p>Many small businesses can handle the basics themselves: a <a href="/guides/google-business-profile">Google Business Profile</a>, clear service pages, reviews and fixing the issues our <a href="/">free SEO check</a> finds. Hiring help makes sense when you're in a competitive market, have a large or technical site, or simply don't have the time. See <a href="/guides/how-much-does-seo-cost">how much SEO costs</a> for typical UK prices.</p>
+<h2>What questions should I ask an SEO company?</h2>
+<ol><li><strong>What will you do in the first three months?</strong> Expect a specific plan – fixes, pages, links – not vague "optimisation".</li><li><strong>How will you get links?</strong> Good answers involve content, PR, local partnerships. Bad answers involve networks, packages or "500 links a month".</li><li><strong>Which searches will you target, and why?</strong> They should talk about searches that bring customers, not just traffic.</li><li><strong>What will you report each month?</strong> Search Console clicks, enquiries and rankings for agreed searches, explained in plain English.</li><li><strong>Can I see results for similar businesses?</strong> Ask to speak to a client, not just see a screenshot.</li><li><strong>Who owns the work?</strong> Your website, content, Google accounts and analytics should stay in your name.</li></ol>
+<h2>What are the red flags?</h2>
+<ul><li>Guaranteed first place on Google, or rankings promised by a date.</li><li>Cold emails saying your site has "serious errors" with no specifics.</li><li>Secret methods they won't explain.</li><li>Bought links, private blog networks or mass directory submissions – these break Google's spam policies.</li><li>Long contracts with no way out if nothing improves.</li><li>Reports full of rankings for searches nobody makes.</li></ul>
+<h2>How can I check an SEO company's work?</h2>
+<p>Run their own website through our <a href="/">SEO checker</a> and <a href="/backlink-checker">backlink checker</a> – a company that can't look after its own site is unlikely to look after yours. Compare a couple of their client sites with the <a href="/seo-comparison">SEO comparison tool</a>. Once you've hired someone, track progress yourself in <a href="/guides/google-search-console">Google Search Console</a> and with free <a href="/seo-monitoring">SEO monitoring</a>.</p>`,
+    faqs: [["How long should an SEO contract be?", "A rolling monthly contract, or an initial three to six months with a clear plan, is reasonable. Be wary of 12-month lock-ins with no break clause."], ["Is a freelancer or an agency better?", "Either can be good. Freelancers are often cheaper and more personal; agencies have more people for content, development and PR. Judge the person doing the work."], ["What should I do if an SEO company bought links for my site?", "Ask them to remove the links, and stop the work. In serious cases, Search Console's disavow tool can tell Google to ignore links you can't get removed."]],
+  },
+  {
+    path: "/guides/seo-for-care-homes", crumb: "SEO for care homes", parent: ["/guides", "Guides"], article: true,
+    title: "SEO for Care Homes: Reach Families Searching Locally",
+    desc: "SEO for UK care homes and home care agencies: rank for local care searches, answer families' questions, show CQC ratings and fees, and attract care staff.",
+    h1: "SEO for care homes and home care providers",
+    lead: "Families looking for care are often searching in a hurry, worried and comparing several homes or agencies in one evening. A care website that ranks locally and answers their questions plainly wins the phone call – and the same site can help you recruit care staff.",
+    sections: `<h2>How do families search for care?</h2>
+<ul><li><strong>By type and place:</strong> "dementia care home Blackpool", "nursing home Lytham St Annes", "respite care Fylde".</li><li><strong>Home care:</strong> "home carers Preston", "live-in care Lancashire", "elderly care at home near me".</li><li><strong>Questions:</strong> "how much does a care home cost", "residential vs nursing care", "how to choose a care home".</li></ul>
+<p>Build pages around these: one for each type of care you provide (residential, nursing, dementia, respite, end-of-life, home care), each naming the towns you serve. Use the <a href="/keyword-generator">keyword generator</a> to find more.</p>
+<h2>What information do families want on a care website?</h2>
+<ul><li>Your latest <strong>CQC rating</strong> (or Care Inspectorate in Scotland, CIW in Wales), with a link to the report.</li><li><strong>Fees</strong>, or at least a starting price and what's included. Many homes hide prices; showing them builds trust and answers a very common search.</li><li>Real photos of rooms, gardens and shared spaces, with descriptive alt text. See <a href="/guides/image-seo">image SEO</a>.</li><li>Activities, menus, visiting arrangements and the manager's name and photo.</li><li>Clear contact details and how to arrange a visit.</li></ul>
+<h2>How do care homes rank in local search?</h2>
+<p>Each home needs its own <a href="/guides/google-business-profile">Google Business Profile</a> with the correct category, photos and opening hours for visits. Reviews matter a great deal: ask families who are happy with the care to leave one on Google or on care review sites, and reply to every review politely without sharing personal details. See <a href="/guides/how-to-get-google-reviews">how to get Google reviews</a>. Groups with several homes should follow <a href="/guides/seo-for-multiple-locations">SEO for multiple locations</a>.</p>
+<h2>Can SEO help recruit care staff?</h2>
+<p>Yes. People search for "care assistant jobs Blackpool" and "night carer jobs near me". A careers page per role, with pay, shifts, training and how to apply, can rank for these searches and cut agency and job board costs. Adding JobPosting markup can show your vacancies in Google's job listings – see <a href="/guides/schema-markup">schema markup</a>.</p>
+<h2>Which links help care providers?</h2>
+<p>Listings on care directories, your local council's care directory, the CQC site, local community groups, hospital discharge teams' resources and local press covering events at the home. Read <a href="/guides/how-to-get-backlinks">how to get backlinks</a> for more ideas.</p>`,
+    faqs: [["Should care homes publish their fees?", "It helps. Fees are one of the most searched questions about care, and families often shortlist homes that are open about them. A starting price with what's included is enough."], ["Do care home reviews on Google matter?", "Yes. They affect how high you appear in the map results and whether families call. Reply to all of them professionally and never share residents' details."], ["Is it worth blogging for a care home?", "Posts that answer families' questions – paying for care, choosing a home, what to bring – can rank and build trust. Event news is better shared on social media."]],
+  },
+];
