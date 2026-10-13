@@ -173,7 +173,7 @@ export function uptimeDashboard(esc, id, m) {
   const c = m.last || {}, st = m.state || "up", label = { up: "Up", slow: "Slow", down: "Down" }[st];
   const alert = m.alert ? { ntfy: `push notifications to ntfy topic <code>${esc(m.alert.to)}</code>`, slack: "Slack", discord: "Discord", teams: "Microsoft Teams" }[m.alert.type] : null;
   return `<style>${UPTIME_CSS}</style><div class="wrap hero"><h1>Uptime: ${esc(new URL(m.url).hostname)}</h1><p class="lead">Watching <a href="${esc(m.url)}" rel="nofollow noopener">${esc(m.url)}</a> every 15 minutes. Bookmark this page – it's your private dashboard.</p></div>
-<section style="padding-top:0"><div class="wrap prose">
+<section class="pt0"><div class="wrap prose">
 <p class="ubig u${st === "up" ? "up" : st === "down" ? "down" : "slow"}">${label}</p>
 <p>${c.t ? `Last checked ${esc(when(c.t))}: ${c.ok ? `answered in ${c.ms} ms (HTTP ${c.status})` : esc(c.why)}${c.ok && c.why ? ` – ${esc(c.why)}` : ""}.` : "Not checked yet."}</p>
 <div class="tablewrap"><table class="mtable"><thead><tr><th>Uptime</th><th>Today</th><th>7 days</th><th>30 days</th></tr></thead><tbody><tr><td>Up</td><td>${pct(d1[1], d1[0])}</td><td>${pct(d7[1], d7[0])}</td><td>${pct(d30[1], d30[0])}</td></tr><tr><td>Average response</td><td>${d1[1] ? Math.round(d1[2] / d1[1]) + " ms" : "–"}</td><td>${d7[1] ? Math.round(d7[2] / d7[1]) + " ms" : "–"}</td><td>${d30[1] ? Math.round(d30[2] / d30[1]) + " ms" : "–"}</td></tr></tbody></table></div>

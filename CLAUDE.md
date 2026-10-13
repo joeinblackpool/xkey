@@ -121,6 +121,7 @@ Free SEO & AI search checker for UK businesses, made by IceWork (icework.co.uk).
 - `test/mobile.mjs` – every page on iPhone 13 and Pixel 7: no sideways scroll, tap targets ≥44px.
 - `crawler/test_crawler.py` – the Python crawler against fake local sites (products first, redirect loops, bot-protection blocks, 20,000-product sitemap list, web-app flow).
 - `test/lib.mjs` runs the Worker locally with stand-ins for Cache, KV and Workers AI; checks of xkey.co.uk run in-process, so no internet is needed. Tests need Playwright + esbuild (`npm i -g playwright esbuild && npx playwright install chromium`).
+- Tool scripts are linked as `/assets/<name>.js?v=<hash>` (`layout()` adds the hash from `ASSET_V`), served with a one-year immutable cache when the hash matches. Every www/http/trailing-slash/old-address redirect is a single hop (top of `worker.fetch`). The contact email is written as HTML character codes (`EMAIL_HTML`) and `\u0040` in JSON-LD, so spam bots don't harvest it. No inline `style=` on the shared templates – use classes in site.js CSS.
 - Browser scripts are served from Function#toString: never rely on bundler helpers in them (wrangler.jsonc sets `keep_names: false`; src/index.js adds a `__name` shim as a safety net).
 
 ## Rules

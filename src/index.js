@@ -1,6 +1,6 @@
 // XKey (xkey.co.uk): free SEO & AI search check. Uses the same engine as IceWork's checker.
 import { PAGES, toolCards } from "./content.js";
-import { BRAND, SITE, UPDATED, esc, layout, send, FAVICON, SITE_JS, SITE_JS_PATH, pageDates, pageHash } from "./site.js";
+import { BRAND, SITE, UPDATED, esc, layout, send, FAVICON, SITE_JS, SITE_JS_PATH, pageDates, pageHash, ASSET_V, assetHash } from "./site.js";
 import { relatedGuides } from "./related.js";
 import { toolsApp } from "./tools-client.js";
 import { OG_PNG } from "./og.js";
@@ -53,6 +53,8 @@ const EXTRA_JS = `var qrMatrix=${qrMatrix.toString()};(${extraApp.toString()})()
 const TOOLS_JS = `var W=${JSON.stringify(W)};(${toolsApp.toString()})();`;
 const PRO_JS = `(${proApp.toString()})();`;
 const A11Y_JS = `(${a11yApp.toString()})();`;
+const ASSETS = Object.fromEntries(Object.entries({ audit: AUDIT_JS, compare: COMPARE_JS, report: REPORT_JS, tools: TOOLS_JS, more: MORE_JS, pro: PRO_JS, a11y: A11Y_JS, extra: EXTRA_JS }).map(([n, js]) => [n, NAME_SHIM + js]));
+for (const [n, js] of Object.entries(ASSETS)) ASSET_V[n] = assetHash(js);
 
 // ---------- forms
 const input = (id, name, ph, extra = "") => `<label for="${id}" class="sr">Website address</label><input id="${id}" name="${name}" type="text" inputmode="url" autocomplete="url" placeholder="${ph}" required${extra}>`;
@@ -242,8 +244,8 @@ function render(p) {
   const dates = pageDates(p);
   const form = p.form ? FORMS[p.form](p) : "";
   const isTool = !p.article && p.path !== "/about" && p.path !== "/contact" && p.path !== "/privacy";
-  const body = `<div class="wrap hero"${p.form ? "" : ' style="padding-bottom:24px"'}>${p.eyebrow ? `<span class="eyebrow">${esc(p.eyebrow)}</span>` : ""}<h1>${esc(p.h1)}</h1><p class="lead">${esc(p.lead)}</p>${form}${p.form ? freeStrip(p.form) : ""}</div>
-<section style="padding-top:0"><div class="wrap prose">${p.article ? `<p class="small">Last updated <time datetime="${dates.modified}">${new Date(dates.modified).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" })}</time> · By the XKey team</p>` : ""}${p.sections || ""}${faqs(p.faqs)}</div>
+  const body = `<div class="wrap hero${p.form ? "" : " pb24"}">${p.eyebrow ? `<span class="eyebrow">${esc(p.eyebrow)}</span>` : ""}<h1>${esc(p.h1)}</h1><p class="lead">${esc(p.lead)}</p>${form}${p.form ? freeStrip(p.form) : ""}</div>
+<section class="pt0"><div class="wrap prose">${p.article ? `<p class="small">Last updated <time datetime="${dates.modified}">${new Date(dates.modified).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" })}</time> · By the XKey team</p>` : ""}${p.sections || ""}${faqs(p.faqs)}</div>
 ${related(p)}${p.tools ? `<div class="wrap">${toolCards()}</div>` : ""}${p.guides ? `<div class="wrap">${guideCards()}</div>` : ""}
 ${isTool && !p.tools && !p.guides ? `<div class="wrap"><h2>More free SEO tools</h2>${toolCards(p.path)}</div>` : ""}
 <div class="wrap">${p.form === "check" ? "" : CTA}${p.path === "/contact" || p.path === "/privacy" ? "" : MAKER}</div></section>`;
@@ -330,10 +332,18 @@ Reply with JSON only, exactly in this shape: {"titles":["...","...","..."],"desc
 
 const JS = "text/javascript; charset=utf-8", TXT = "text/plain; charset=utf-8", HTMLT = "text/html; charset=utf-8";
 
+// Bare engine tool addresses belong to our landing pages (the query is dropped, as it has nothing to check).
+const has = (url, k) => url.searchParams.has(k) && url.searchParams.get(k).trim();
+const movedTo = (path, url) => path === "/seo-checker" && !has(url, "url") ? "/" : path === "/site-audit" && !has(url, "url") ? "/website-audit"
+  : path === "/seo-compare" && !url.searchParams.getAll("u").some((v) => v.trim()) ? "/seo-comparison" : null;
+
 const worker = {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
-    if (url.hostname === `www.${BRAND.domain}` || (url.hostname === BRAND.domain && url.protocol === "http:")) return Response.redirect(`${SITE}${url.pathname}${url.search}`, 301);
+    // One hop to the final address: www, http, trailing slashes and /index.html are all fixed in the same redirect.
+    const tidy = url.pathname === "/index.html" ? "/" : url.pathname.length > 1 ? url.pathname.replace(/\/+$/, "") || "/" : url.pathname;
+    const moved = request.method === "GET" || request.method === "HEAD" ? movedTo(tidy, url) : null;
+    if (url.hostname === `www.${BRAND.domain}` || (url.hostname === BRAND.domain && url.protocol === "http:")) return Response.redirect(moved ? SITE + moved : `${SITE}${tidy}${url.search}`, 301);
     const c = ctx || { waitUntil() {} };
 
     if (request.method === "POST") {
@@ -392,26 +402,21 @@ const worker = {
     if (request.method !== "GET" && request.method !== "HEAD") return send("Method not allowed", TXT, 405);
 
     const path = url.pathname;
-    if (path.length > 1 && path.endsWith("/")) return Response.redirect(`${url.origin}${path.replace(/\/+$/, "")}${url.search}`, 301);
-    if (path === "/index.html") return Response.redirect(`${url.origin}/`, 301);
+    if (moved) return Response.redirect(`${url.origin}${moved}`, 301);
+    if (path !== tidy) return Response.redirect(`${url.origin}${tidy}${url.search}`, 301);
     if (FONT_BYTES[path]) return send(FONT_BYTES[path], "font/woff2", 200, "public, max-age=31536000, immutable");
     if (path === SITE_JS_PATH) return send(SITE_JS, JS, 200, "public, max-age=31536000, immutable");
+    const asset = path.match(/^\/assets\/([a-z0-9]+)\.js$/);
+    // A link carrying the current hash can be cached for a year; old or bare links get an hour.
+    if (asset && ASSETS[asset[1]]) return send(ASSETS[asset[1]], JS, 200, url.searchParams.get("v") === ASSET_V[asset[1]] ? "public, max-age=31536000, immutable" : "public, max-age=3600");
 
     switch (path) {
       case "/sitemap.xml": return send(SITEMAP, "application/xml; charset=utf-8");
       case "/robots.txt": return send(ROBOTS, TXT);
       case "/llms.txt": return send(LLMS, TXT);
       case "/site.webmanifest": return send(MANIFEST, "application/manifest+json");
-      case "/assets/audit.js": return send(NAME_SHIM + AUDIT_JS, JS, 200, "public, max-age=3600");
-      case "/assets/compare.js": return send(NAME_SHIM + COMPARE_JS, JS, 200, "public, max-age=3600");
-      case "/assets/report.js": return send(NAME_SHIM + REPORT_JS, JS, 200, "public, max-age=3600");
-      case "/assets/tools.js": return send(NAME_SHIM + TOOLS_JS, JS, 200, "public, max-age=3600");
-      case "/assets/more.js": return send(NAME_SHIM + MORE_JS, JS, 200, "public, max-age=3600");
-      case "/assets/pro.js": return send(NAME_SHIM + PRO_JS, JS, 200, "public, max-age=3600");
-      case "/assets/a11y.js": return send(NAME_SHIM + A11Y_JS, JS, 200, "public, max-age=3600");
       case "/a.js": return new Response(TRACKER_JS, { headers: { "content-type": JS, "cache-control": "public, max-age=86400", "access-control-allow-origin": "*" } });
       case "/downloads/xkey-seo-fixer.zip": return new Response(pluginZip(), { headers: { "content-type": "application/zip", "content-disposition": 'attachment; filename="xkey-seo-fixer.zip"', "cache-control": "public, max-age=3600", "x-robots-tag": "noindex" } });
-      case "/assets/extra.js": return send(NAME_SHIM + EXTRA_JS, JS, 200, "public, max-age=3600");
       case "/favicon.svg": return send(FAVICON, "image/svg+xml", 200, "public, max-age=31536000, immutable");
       case "/favicon.ico": return Response.redirect(`${url.origin}/favicon.svg`, 301);
       case "/og.png": return send(OG_BYTES, "image/png", 200, "public, max-age=86400");
@@ -533,10 +538,6 @@ const worker = {
     }
 
     // engine routes (reports and APIs); the bare tool URLs belong to our landing pages
-    const has = (k) => url.searchParams.has(k) && url.searchParams.get(k).trim();
-    if (path === "/seo-checker" && !has("url")) return Response.redirect(`${url.origin}/`, 301);
-    if (path === "/site-audit" && !has("url")) return Response.redirect(`${url.origin}/website-audit`, 301);
-    if (path === "/seo-compare" && !url.searchParams.getAll("u").some((v) => v.trim())) return Response.redirect(`${url.origin}/seo-comparison`, 301);
     if (path === "/seo-checker" || path === "/site-audit" || path === "/seo-compare" || path === "/api/vitals" || path === "/api/check" || path.startsWith("/api/audit/")) {
       const r = await handleChecker(request, env, c, { layout, esc, BUSINESS: BRAND, page: enginePage, send, fetchImpl: selfFetch(env, c) });
       if (r) return r;
@@ -556,7 +557,7 @@ const worker = {
       if (site) {
         const tag = `<script defer data-site="${site.key}" src="${SITE}/a.js"></script>`;
         return send(layout({ path, crumb: "Analytics dashboard", parent: ["/website-analytics", "Website analytics"], title: `Analytics: ${site.host}`, desc: "Private website analytics dashboard.", noindex: true, body: `<div class="wrap hero"><h1>Analytics: ${esc(site.host)}</h1><p class="lead">Your private dashboard – bookmark this page and keep the link to yourself. It updates every 30 seconds.</p></div>
-<section style="padding-top:0"><div class="wrap prose"><div id="an-dash" data-secret="${esc(site.secret)}"><p>Loading…</p></div>
+<section class="pt0"><div class="wrap prose"><div id="an-dash" data-secret="${esc(site.secret)}"><p>Loading…</p></div>
 <h2>Your tracking code</h2><p>Paste this just before <code>&lt;/head&gt;</code> on every page of ${esc(site.host)}:</p><pre style="white-space:pre-wrap;overflow-wrap:anywhere"><code>${esc(tag)}</code></pre>
 <p class="small">Phone and email clicks count as conversions automatically. To count a button or form as a goal, add <code>data-xkey-goal="Quote form"</code> to it. No cookies are used, so no cookie banner is needed for this script.</p></div></section><script src="/assets/pro.js" defer></script>` }), HTMLT, 200, "no-store");
       }
