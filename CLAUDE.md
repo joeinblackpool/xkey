@@ -59,6 +59,9 @@ Free SEO & AI search checker for UK businesses, made by IceWork (icework.co.uk).
 ## SSL checker (/ssl-checker)
 - `src/ssl.js`, `GET /api/ssl?d=` – live: https connection (a failed TLS fetch = not secure), http→https redirect, HSTS, mixed content on the home page (`mixedContent`, active vs passive). Certificate issuer/dates/names from Certificate Transparency (crt.sh JSON, `exclude=expired`, newest covering cert; Cert Spotter API if crt.sh fails; cached 6 h) because Workers can't read the served certificate – the page says so. Tests: `env.CT_FETCH` (`ctStandIn()` in test/lib.mjs).
 
+## Schema checker (/schema-checker), heading checker, alt text checker, canonical checker
+- `src/onpage.js`, `GET /api/onpage?url=` – one page's headings (H1–H6, hidden flag), images (src, alt null = missing, link "only"/"text"), JSON-LD blocks (parsed, or error + raw), microdata/RDFa types, canonical tags (inBody flag), robots metas, X-Robots-Tag and Link-header canonical (`getPage` from tech.js). All checking is browser-side in tools-client.js (ids sv-, hc-, at-, cn-). The schema checker's `SCHEMA` table holds Google's required/recommended properties per rich result type; pasted code is checked in the browser only. The canonical checker tests the canonical address with `/api/redirects`. Browser tests fake `/api/onpage` with `routes`; scenarios can open a `<details>` first with `before`.
+
 ## Browser-only text tools: UTM builder (/utm-builder), URL slug generator (/url-slug-generator), case converter (/case-converter)
 - All in tools-client.js, nothing sent to the server. Element id prefixes ut-, us-, cc- (sg- is taken by the schema generator).
 
