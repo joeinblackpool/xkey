@@ -463,7 +463,7 @@ export function toolsApp() {
     };
     var summary = function (r, label) {
       if (!r.found) return '<div class="card" style="margin:16px 0"><p class="ct">' + esc(label) + ": " + esc(r.domain) + '</p><p>No links to this site were found in the data. That\'s common for new or small sites – Common Crawl doesn\'t visit every page on the web, so some links may be missing.</p></div>';
-      return '<div class="card" style="margin:16px 0"><p class="ct">' + esc(label) + ": " + esc(r.domain) + '</p><div class="row" style="gap:28px"><div><b style="font-size:30px">' + r.refDomains.toLocaleString("en-GB") + '</b><br><span class="small">websites link to it</span></div><div><b style="font-size:30px;color:' + col(r.strength >= 40, r.strength >= 20) + '">' + r.strength + '</b><br><span class="small">link strength (0–100)</span></div></div></div>';
+      return '<div class="card" style="margin:16px 0"><p class="ct">' + esc(label) + ": " + esc(r.domain) + '</p><div class="row" style="gap:28px"><div><b style="font-size:30px">' + r.refDomains.toLocaleString("en-GB") + '</b><br><span class="small">websites link to it</span></div><div><b style="font-size:30px;color:' + col(r.strength >= 40, r.strength >= 20) + '">' + r.strength + '</b><br><span class="small">link strength (0–100)</span></div></div><p class="small" style="margin-top:10px"><a href="/site/' + encodeURIComponent(r.domain) + '">Full website report for ' + esc(r.domain) + '</a></p></div>';
     };
     var qd = (location.search.match(/[?&]d=([^&]+)/) || [])[1];
     if (qd && !val("bl-d")) { try { $("bl-d").value = decodeURIComponent(qd.replace(/\+/g, " ")); } catch (e) {} setTimeout(function () { bl.requestSubmit ? bl.requestSubmit() : bl.dispatchEvent(new Event("submit", { cancelable: true })); }, 0); }
@@ -887,6 +887,242 @@ export function toolsApp() {
       }).catch(function () { out.innerHTML = '<p class="s-fail">Couldn\'t check that site – please try again.</p>'; });
     });
   }
+
+  // shared: one page's headings, images, structured data and indexing tags (/api/onpage)
+  var onPage = function (u, out, then) {
+    out.innerHTML = "<p>Reading the page…</p>";
+    fetch("/api/onpage?url=" + encodeURIComponent(u)).then(function (r) { return r.json(); }).then(function (j) {
+      if (!j.headings) { out.innerHTML = '<p class="s-fail">' + esc(j.error || "Couldn't read that page.") + "</p>"; return; }
+      if (j.status !== 200) { out.innerHTML = '<p class="s-fail">' + esc(j.error || "The page answered with HTTP " + j.status + ", so we couldn't read it.") + "</p>"; return; }
+      then(j);
+    }).catch(function () { out.innerHTML = '<p class="s-fail">Couldn\'t check that page – please try again.</p>'; });
+  };
+  var pageHead = function (j) { return '<p class="ct" style="overflow-wrap:anywhere">' + esc(j.url) + "</p>" + (j.start && j.start.replace(/\/$/, "") !== j.url.replace(/\/$/, "") ? '<p class="small">Redirected from ' + esc(j.start) + ".</p>" : ""); };
+  var oneBox = function (formId, inputId, run) {
+    var f = $(formId); if (!f) return;
+    prefill(f, inputId, "url");
+    f.addEventListener("submit", function (ev) { ev.preventDefault(); var u = $(inputId).value.trim(); if (!u) { $(inputId).focus(); return; } run(u); });
+  };
+
+  // ---- schema markup validator (a page via /api/onpage, or pasted JSON-LD checked in the browser)
+  var LOCAL = /^(LocalBusiness|ProfessionalService|HomeAndConstructionBusiness|Plumber|Electrician|HVACBusiness|RoofingContractor|GeneralContractor|HousePainter|Locksmith|MovingCompany|Dentist|Physician|MedicalClinic|MedicalBusiness|Optician|Pharmacy|VeterinaryCare|Restaurant|CafeOrCoffeeShop|BarOrPub|Bakery|FoodEstablishment|FastFoodRestaurant|Hotel|BedAndBreakfast|LodgingBusiness|Store|[A-Za-z]+Store|AutoRepair|AutoDealer|AutomotiveBusiness|HairSalon|BeautySalon|NailSalon|DaySpa|HealthAndBeautyBusiness|ExerciseGym|SportsActivityLocation|LegalService|Attorney|AccountingService|FinancialService|RealEstateAgent|InsuranceAgency|TravelAgency|ChildCare|EmergencyService|AnimalShelter|SelfStorage|EntertainmentBusiness|TattooParlor|Florist|EmploymentAgency|Notary|DryCleaningOrLaundry)$/;
+  var SCHEMA = {
+    Article: { rec: ["headline", "image", "datePublished", "dateModified", "author"] },
+    Product: { req: ["name"], any: ["offers", "review", "aggregateRating"], rec: ["image", "description", "brand", "sku"] },
+    LocalBusiness: { req: ["name", "address"], rec: ["telephone", "url", "openingHoursSpecification|openingHours", "image", "geo", "priceRange"] },
+    Organization: { rec: ["name", "url", "logo", "sameAs"] },
+    BreadcrumbList: { req: ["itemListElement"] },
+    FAQPage: { req: ["mainEntity"] },
+    Event: { req: ["name", "startDate", "location"], rec: ["endDate", "eventStatus", "image", "description", "offers", "organizer"] },
+    Recipe: { req: ["name", "image"], rec: ["author", "datePublished", "description", "recipeIngredient", "recipeInstructions", "totalTime", "aggregateRating"] },
+    Review: { req: ["itemReviewed", "author", "reviewRating"], rec: ["datePublished"] },
+    AggregateRating: { req: ["itemReviewed", "ratingValue", "ratingCount|reviewCount"] },
+    JobPosting: { req: ["title", "description", "datePosted", "hiringOrganization", "jobLocation|jobLocationType"], rec: ["validThrough", "employmentType", "baseSalary"] },
+    VideoObject: { req: ["name", "thumbnailUrl", "uploadDate"], rec: ["description", "duration", "contentUrl|embedUrl"] },
+    WebSite: { rec: ["name", "url"] },
+    Course: { req: ["name", "description"], rec: ["provider"] },
+    SoftwareApplication: { req: ["name"], any: ["aggregateRating", "review"], anyLevel: "warn", rec: ["offers", "applicationCategory", "operatingSystem"] },
+    Person: { rec: ["name"] },
+    HowTo: { rec: ["name", "step"] }
+  };
+  var ruleFor = function (t) { return /^(NewsArticle|BlogPosting|TechArticle|Report)$/.test(t) ? "Article" : LOCAL.test(t) ? "LocalBusiness" : /^(Corporation|NGO|EducationalOrganization|OnlineStore|NewsMediaOrganization)$/.test(t) ? "Organization" : /^(MobileApplication|WebApplication|VideoGame)$/.test(t) ? "SoftwareApplication" : SCHEMA[t] ? t : null; };
+  var has = function (o, k) { return k.split("|").some(function (p) { var v = o[p]; return v != null && v !== "" && !(Array.isArray(v) && !v.length); }); };
+  var schemaItems = function (blocks) {
+    var items = [];
+    blocks.forEach(function (b, bi) {
+      if (b.error) return;
+      var ctx = null;
+      var walk = function (o) {
+        if (Array.isArray(o)) { o.forEach(walk); return; }
+        if (!o || typeof o !== "object") return;
+        if (o["@context"]) ctx = o["@context"];
+        if (o["@graph"]) { walk(o["@graph"]); if (!o["@type"]) return; }
+        if (o["@type"]) items.push({ o: o, block: bi + 1, ctx: o["@context"] || ctx });
+      };
+      walk(b.data);
+    });
+    return items;
+  };
+  var checkItem = function (it) {
+    var o = it.o, types = [].concat(o["@type"]).map(String), n = [];
+    var ctx = typeof it.ctx === "string" ? it.ctx : it.ctx && JSON.stringify(it.ctx);
+    if (!ctx) n.push(["fail", "No @context. Add \"@context\": \"https://schema.org\" or search engines can't tell which vocabulary this is."]);
+    else if (!/schema\.org/i.test(ctx)) n.push(["warn", "@context isn't schema.org (" + ctx.slice(0, 80) + ")."]);
+    var rule = null, rn = "";
+    types.some(function (t) { var r = ruleFor(t.replace(/^https?:\/\/schema\.org\//i, "")); if (r) { rule = SCHEMA[r]; rn = r; return true; } return false; });
+    if (!rule) { n.push(["info", "Google has no rich result for " + types.join(", ") + ", but search engines and AI tools can still read it."]); return n; }
+    (rule.req || []).forEach(function (k) { if (!has(o, k)) n.push(["fail", "Missing " + k.split("|").join(" or ") + " – Google requires it for " + rn + " rich results."]); });
+    if (rule.any && !rule.any.some(function (k) { return has(o, k); })) n.push([rule.anyLevel || "fail", "Needs at least one of " + rule.any.join(", ") + " to show as a rich result."]);
+    var miss = (rule.rec || []).filter(function (k) { return !has(o, k); });
+    if (miss.length) n.push(["warn", "Recommended but missing: " + miss.map(function (k) { return k.split("|").join(" or "); }).join(", ") + "."]);
+    if (rn === "Product" && o.offers) [].concat(o.offers).forEach(function (f) { if (f && typeof f === "object" && !has(f, "price") && !has(f, "lowPrice")) n.push(["fail", "An offer has no price."]); else if (f && typeof f === "object" && !has(f, "priceCurrency")) n.push(["warn", "An offer has no priceCurrency (GBP for pounds)."]); if (f && typeof f === "object" && f.price != null && isNaN(parseFloat(String(f.price).replace(/,/g, "")))) n.push(["fail", "price should be a number such as 24.99, without the £ sign."]); });
+    if (rn === "BreadcrumbList" && Array.isArray(o.itemListElement)) o.itemListElement.forEach(function (li, i) { if (!li || !has(li, "position") || !has(li, "name") && !(li.item && li.item.name)) n.push(["fail", "Breadcrumb " + (i + 1) + " needs a position and a name."]); else if (i < o.itemListElement.length - 1 && !has(li, "item")) n.push(["warn", "Breadcrumb " + (i + 1) + " has no item (address); only the last one may leave it out."]); });
+    if (rn === "FAQPage") { [].concat(o.mainEntity || []).forEach(function (q, i) { if (!q || !has(q, "name") || !q.acceptedAnswer || !has(q.acceptedAnswer, "text")) n.push(["fail", "Question " + (i + 1) + " needs a name and an acceptedAnswer with text."]); }); n.push(["info", "Since 2023 Google shows FAQ rich results only for well-known government and health sites, but the markup still helps search engines and AI tools understand the page."]); }
+    if (rn === "HowTo") n.push(["info", "Google stopped showing HowTo rich results in 2023. The markup is harmless but won't change how the page looks in search."]);
+    var rating = rn === "AggregateRating" ? o : o.aggregateRating;
+    if (rating && typeof rating === "object") { var rv = parseFloat(rating.ratingValue); if (isNaN(rv)) n.push(["fail", "aggregateRating needs a numeric ratingValue."]); else if (!has(rating, "ratingCount") && !has(rating, "reviewCount")) n.push(["fail", "aggregateRating needs ratingCount or reviewCount."]); if (rn === "LocalBusiness" || rn === "Organization") n.push(["warn", "Google doesn't show review stars for a business's reviews of itself (on its own site), so this rating won't appear as stars."]); }
+    if (rn === "LocalBusiness" && o.address && typeof o.address === "object" && !Array.isArray(o.address)) { var miss2 = ["streetAddress", "addressLocality", "postalCode"].filter(function (k) { return !has(o.address, k); }); if (miss2.length) n.push(["warn", "The address is missing " + miss2.join(", ") + "."]); }
+    if (!n.some(function (x) { return x[0] === "fail"; })) n.unshift(["ok", "Has the properties Google requires for " + rn + "."]);
+    return n;
+  };
+  var showSchema = function (out, head, blocks, microdata, rdfa) {
+    var items = schemaItems(blocks), broken = blocks.filter(function (b) { return b.error; });
+    var h = '<div class="card" style="margin:16px 0">' + head;
+    var n = [];
+    if (!blocks.length) n.push([microdata.length || rdfa.length ? "info" : "warn", "No JSON-LD structured data found." + (microdata.length || rdfa.length ? " The page uses microdata or RDFa instead (listed below)." : " Google recommends JSON-LD; our schema generator writes it for you.")]);
+    else n.push(["info", blocks.length + " JSON-LD block" + (blocks.length > 1 ? "s" : "") + ", " + items.length + " item" + (items.length === 1 ? "" : "s") + ": " + (items.map(function (it) { return [].concat(it.o["@type"]).join("/"); }).join(", ") || "none") + "."]);
+    broken.forEach(function (b) { n.push(["fail", "A JSON-LD block is broken, so search engines ignore all of it: " + b.error]); });
+    var seen = {};
+    items.forEach(function (it) { var t = [].concat(it.o["@type"]).join("/"); if (/^(Organization|WebSite|LocalBusiness|BreadcrumbList|FAQPage)$/.test(t) || LOCAL.test(t)) { seen[t] = (seen[t] || 0) + 1; } });
+    Object.keys(seen).forEach(function (t) { if (seen[t] > 1) n.push(["warn", seen[t] + " separate " + t + " items. Often a theme and a plugin both add one; keep one, with the right details."]); });
+    h += noteList(n) + "</div>";
+    items.slice(0, 40).forEach(function (it) {
+      var o = it.o, name = o.name || o.headline || o.title || "";
+      h += '<div class="card" style="margin:12px 0"><p class="ct" style="overflow-wrap:anywhere">' + esc([].concat(o["@type"]).join(" / ")) + (name && typeof name === "string" ? ' <span class="small">· ' + esc(name.slice(0, 80)) + "</span>" : "") + "</p>" + noteList(checkItem(it)) +
+        '<details><summary class="small" style="cursor:pointer;padding:10px 0">Properties (' + Object.keys(o).length + ")</summary><pre class=\"out\" style=\"max-height:300px;overflow:auto\">" + esc(JSON.stringify(o, null, 2).slice(0, 6000)) + "</pre></details></div>";
+    });
+    broken.forEach(function (b) { if (b.raw) h += '<div class="card" style="margin:12px 0"><p class="ct s-fail">Broken JSON-LD</p><pre class="out" style="max-height:300px;overflow:auto">' + esc(b.raw) + "</pre></div>"; });
+    if (microdata.length || rdfa.length) h += '<p class="small">Also on the page: ' + esc(microdata.concat(rdfa).join(", ")) + " (" + (microdata.length ? "microdata" : "RDFa") + "). These are listed only; JSON-LD is checked in full.</p>";
+    h += '<p class="small">Build a clean LocalBusiness block with our <a href="/schema-generator">schema generator</a>. Google\'s rules change from time to time; its Rich Results Test is the final word on what it shows.</p>';
+    out.innerHTML = h;
+  };
+  oneBox("sv-form", "sv-url", function (u) {
+    var out = $("sv-out");
+    onPage(u, out, function (j) { showSchema(out, pageHead(j), j.jsonld, j.microdata || [], j.rdfa || []); });
+  });
+  if ($("sv-check")) $("sv-check").addEventListener("click", function () {
+    var code = $("sv-code").value.trim(), out = $("sv-out");
+    if (!code) { $("sv-code").focus(); return; }
+    var parts = /<script\b/i.test(code) ? (code.match(/<script\b[^>]*>([\s\S]*?)<\/script>/gi) || []).map(function (s) { return s.replace(/^<script\b[^>]*>|<\/script>$/gi, ""); }) : [code];
+    var blocks = parts.map(function (p) { try { return { data: JSON.parse(p.trim()) }; } catch (e) { return { error: e.message, raw: p.trim().slice(0, 2000) }; } });
+    showSchema(out, '<p class="ct">Your code</p>', blocks, [], []);
+  });
+
+  // ---- heading checker (/api/onpage)
+  oneBox("hc-form", "hc-url", function (u) {
+    var out = $("hc-out");
+    onPage(u, out, function (j) {
+      var hs = j.headings, h1 = hs.filter(function (x) { return x.l === 1; }), n = [], count = [0, 0, 0, 0, 0, 0];
+      hs.forEach(function (x) { count[x.l - 1]++; });
+      if (!h1.length) n.push(["fail", "No H1. Give the page one main heading that says what it's about."]);
+      else if (h1.length > 1) n.push(["warn", h1.length + " H1s. One clear H1 is best; make the others H2s."]);
+      else if (!h1[0].t) n.push(["fail", "The H1 is empty (or only an image with no alt text)."]);
+      else n.push(["ok", "One H1: \"" + h1[0].t + "\"."]);
+      if (h1.some(function (x) { return x.hidden; })) n.push(["warn", "The H1 is hidden from visitors. Google may give hidden text less weight; show it on the page."]);
+      if (h1.length && h1[0].t.length > 70) n.push(["info", "The H1 is " + h1[0].t.length + " characters. Shorter headings are easier to scan; put the key words first."]);
+      if (h1.length && j.title && h1[0].t && h1[0].t.toLowerCase() === j.title.toLowerCase()) n.push(["info", "The H1 is the same as the page title. That's fine; some sites write a friendlier H1."]);
+      if (hs.length && hs[0].l !== 1 && h1.length) n.push(["info", "The first heading is an H" + hs[0].l + ", before the H1. Often a theme puts headings in the header or top bar."]);
+      var skips = [];
+      hs.forEach(function (x, i) { if (i && x.l > hs[i - 1].l + 1) skips.push("H" + hs[i - 1].l + " → H" + x.l + (x.t ? " (\"" + x.t.slice(0, 40) + "\")" : "")); });
+      if (skips.length) n.push(["warn", skips.length + " skipped level" + (skips.length > 1 ? "s" : "") + ", e.g. " + skips.slice(0, 2).join("; ") + ". Use the next level down and change the size with styling."]);
+      var empty = hs.filter(function (x) { return !x.t; }).length;
+      if (empty) n.push(["warn", empty + " empty heading" + (empty > 1 ? "s" : "") + ". Remove them or give them words."]);
+      if (!count[1] && hs.length) n.push(["info", "No H2s. Longer pages read better broken into sections, each with an H2."]);
+      var dupe = {}, dups = [];
+      hs.forEach(function (x) { var k = x.l + x.t.toLowerCase(); if (x.t) { dupe[k] = (dupe[k] || 0) + 1; if (dupe[k] === 2) dups.push(x.t); } });
+      if (dups.length) n.push(["info", "Repeated headings: " + dups.slice(0, 3).map(function (t) { return "\"" + t.slice(0, 40) + "\""; }).join(", ") + "."]);
+      var h = '<div class="card" style="margin:16px 0">' + pageHead(j) + '<p class="small">' + hs.length + " heading" + (hs.length === 1 ? "" : "s") + ": " + count.map(function (c, i) { return "H" + (i + 1) + " " + c; }).join(" · ") + "</p>" + noteList(n) + "</div>";
+      if (hs.length) h += '<h3>Heading outline</h3><ol style="list-style:none;padding:0;margin:8px 0">' + hs.map(function (x) {
+        return '<li style="margin:4px 0;padding-left:' + (x.l - 1) * 18 + 'px;overflow-wrap:anywhere"><b style="display:inline-block;min-width:32px;color:' + (x.l === 1 ? "#1a7f37" : "inherit") + '">H' + x.l + "</b> " + (x.t ? esc(x.t) : '<span class="s-fail">(empty)</span>') + (x.hidden ? ' <span class="small">(hidden)</span>' : "") + "</li>";
+      }).join("") + "</ol>";
+      h += '<p class="small">Next, check the page\'s <a href="/title-tag-checker">title and description</a> and its <a href="/alt-text-checker?url=' + encodeURIComponent(j.url) + '">image alt text</a>.</p>';
+      out.innerHTML = h;
+    });
+  });
+
+  // ---- alt text checker (/api/onpage)
+  oneBox("at-form", "at-url", function (u) {
+    var out = $("at-out");
+    onPage(u, out, function (j) {
+      var imgs = j.images, alts = {}, rows = [], c = { missing: 0, link: 0, weak: 0, deco: 0, ok: 0 };
+      imgs.forEach(function (x) { if (x.alt) alts[x.alt.toLowerCase()] = (alts[x.alt.toLowerCase()] || 0) + 1; });
+      imgs.forEach(function (x) {
+        var a = x.alt, v;
+        var deco = x.role === "presentation" || x.role === "none" || x.hidden;
+        if (a == null && x.link === "only") { v = ["fail", "Missing – this image is the whole link, so the link has no words"]; c.link++; }
+        else if (a == null && deco) { v = ["info", "No alt, but marked decorative – add alt=\"\" to be safe"]; c.deco++; }
+        else if (a == null) { v = ["fail", "Missing"]; c.missing++; }
+        else if (!a && x.link === "only") { v = ["fail", "Empty, but this image is the whole link – describe where it goes"]; c.link++; }
+        else if (!a) { v = ["info", "Empty – fine if the image is decorative"]; c.deco++; }
+        else if (/\.(jpe?g|png|gif|webp|svg|avif)$/i.test(a) || /^(img|dsc|image|photo|pxl|screenshot)[-_ ]?\d+/i.test(a)) { v = ["warn", "Looks like a file name"]; c.weak++; }
+        else if (/^(image|picture|photo|graphic) of\b/i.test(a)) { v = ["warn", "Drop \"" + a.split(" ").slice(0, 2).join(" ") + "\" – screen readers already say it's an image"]; c.weak++; }
+        else if (a.length > 125) { v = ["warn", "Long (" + a.length + " characters) – some screen readers cut it off"]; c.weak++; }
+        else if (alts[a.toLowerCase()] > 2 && !x.link) { v = ["warn", "Same alt text on " + alts[a.toLowerCase()] + " images"]; c.weak++; }
+        else { v = ["ok", "Good"]; c.ok++; }
+        rows.push([x, v]);
+      });
+      var n = [];
+      if (!imgs.length) n.push(["info", "No images found in the page's HTML. Images added later by JavaScript or as CSS backgrounds aren't listed."]);
+      if (c.missing) n.push(["fail", c.missing + " image" + (c.missing > 1 ? "s have" : " has") + " no alt text at all."]);
+      if (c.link) n.push(["fail", c.link + " linked image" + (c.link > 1 ? "s have" : " has") + " no alt text, so the link has no anchor text."]);
+      if (c.weak) n.push(["warn", c.weak + " image" + (c.weak > 1 ? "s have" : " has") + " weak alt text: a file name, \"image of\", repeated or too long."]);
+      if (c.deco) n.push(["info", c.deco + " image" + (c.deco > 1 ? "s are" : " is") + " marked decorative (empty alt). Check each one really adds nothing for a blind visitor."]);
+      if (imgs.length && !c.missing && !c.link && !c.weak) n.push(["ok", "Every image has alt text or is marked decorative."]);
+      var file = function (s) { if (!s) return "(no address)"; if (s === "data:") return "(embedded image)"; var p = s.split(/[?#]/)[0].split("/"); return decodeURIComponent(p[p.length - 1] || p[p.length - 2] || s).slice(0, 60); };
+      var lc = { fail: "#cf222e", warn: "#9a6700", ok: "#1a7f37", info: "inherit" };
+      var h = '<div class="card" style="margin:16px 0">' + pageHead(j) + '<p class="small">' + imgs.length + " image" + (imgs.length === 1 ? "" : "s") + (imgs.length >= 400 ? " (the first 400)" : "") + ": " + c.ok + " good, " + (c.missing + c.link) + " missing, " + c.weak + " weak, " + c.deco + " decorative.</p>" + noteList(n) + "</div>";
+      rows.sort(function (a, b) { var o = { fail: 0, warn: 1, info: 2, ok: 3 }; return o[a[1][0]] - o[b[1][0]]; });
+      if (rows.length) h += '<div class="tablewrap"><table><thead><tr><th>Image</th><th>Alt text</th><th>Verdict</th></tr></thead><tbody>' + rows.slice(0, 300).map(function (r) {
+        var x = r[0];
+        return '<tr><td style="overflow-wrap:anywhere">' + (/^https?:/.test(x.src) ? '<a href="' + esc(x.src) + '" rel="nofollow noopener" target="_blank">' + esc(file(x.src)) + "</a>" : esc(file(x.src))) + (x.link ? ' <span class="small">(link)</span>' : "") + '</td><td style="overflow-wrap:anywhere">' + (x.alt == null ? '<span class="small">none</span>' : x.alt ? esc(x.alt) : '<span class="small">alt=""</span>') + '</td><td style="color:' + lc[r[1][0]] + '">' + esc(r[1][1]) + "</td></tr>";
+      }).join("") + "</tbody></table></div>";
+      out.innerHTML = h;
+    });
+  });
+
+  // ---- canonical checker (/api/onpage, then /api/redirects for the canonical address)
+  oneBox("cn-form", "cn-url", function (u) {
+    var out = $("cn-out");
+    onPage(u, out, function (j) {
+      var norm = function (s) { return String(s || "").replace(/#.*$/, "").replace(/\/$/, ""); };
+      var tags = j.canonicals.filter(function (c) { return c.href; }), list = tags.map(function (c) { return c.href; });
+      var distinct = list.filter(function (x, i) { return list.map(norm).indexOf(norm(x)) === i; });
+      var canon = distinct[0] || j.linkCanonical || "";
+      var robots = j.robots.map(function (r) { return r.content.toLowerCase(); }).join(",") + "," + String(j.xRobots || "").toLowerCase();
+      var noindex = /\b(noindex|none)\b/.test(robots), self = canon && norm(canon) === norm(j.url);
+      var n = [];
+      if (noindex) n.push(["fail", "noindex found" + (j.robots.some(function (r) { return /noindex|none/i.test(r.content); }) ? " in a meta robots tag" : "") + (/noindex|none/i.test(j.xRobots || "") ? " in the X-Robots-Tag header" : "") + ". Google won't show this page in search."]);
+      if (!canon) n.push(["warn", "No canonical tag. Add one pointing to the page's own clean address so tracking codes and www/http copies don't split its ranking."]);
+      if (distinct.length > 1) n.push(["fail", distinct.length + " different canonical tags (" + distinct.join(", ") + "). Google ignores them all when they disagree."]);
+      else if (tags.length > 1) n.push(["info", "The canonical tag appears " + tags.length + " times with the same address. Harmless, but usually a theme and a plugin both adding it."]);
+      if (j.canonicals.some(function (c) { return c.inBody; })) n.push(["fail", "A canonical tag is outside the <head>. Google ignores canonical tags in the page body."]);
+      if (j.canonicals.some(function (c) { return !c.href; })) n.push(["fail", "A canonical tag has no usable address."]);
+      if (j.canonicals.some(function (c) { return c.raw && !/^https?:\/\//i.test(c.raw); })) n.push(["info", "The canonical address is relative (" + j.canonicals[0].raw + "). It works, but a full https:// address is safer."]);
+      if (j.linkCanonical && canon && norm(j.linkCanonical) !== norm(canon)) n.push(["warn", "The Link header says the canonical is " + j.linkCanonical + ", but the tag says " + canon + "."]);
+      if (j.robots.some(function (r) { return r.inBody; })) n.push(["warn", "A robots meta tag is in the page body, not the <head>."]);
+      if (/\bnofollow\b/.test(robots)) n.push(["info", "nofollow is set: Google won't follow the links on this page."]);
+      var cu = null; try { cu = canon ? new URL(canon) : null; } catch (e) {}
+      if (cu) {
+        var pu = new URL(j.url);
+        if (self) n.push(["ok", "The canonical points to this page itself."]);
+        else {
+          if (cu.protocol === "http:" && pu.protocol === "https:") n.push(["warn", "The canonical uses http:// on an https site."]);
+          if (cu.hostname.replace(/^www\./, "") !== pu.hostname.replace(/^www\./, "")) n.push(["warn", "The canonical points to another website (" + cu.hostname + "). Google will usually show that site's page instead of this one."]);
+          else if (cu.hostname !== pu.hostname) n.push(["warn", "The canonical uses " + cu.hostname + " but the page is on " + pu.hostname + ". Pick one version of your domain."]);
+          if (cu.pathname === "/" && pu.pathname !== "/") n.push(["fail", "The canonical points to the home page. Google will treat this page as a copy of your home page and drop it from search."]);
+          else n.push(["info", "The canonical points to a different address, so Google will usually show that one instead of this page." + (noindex ? " With noindex as well, the signals are mixed; use one or the other." : "")]);
+          if (/[?&](utm_|gclid|fbclid)/i.test(cu.search)) n.push(["warn", "The canonical address contains tracking codes."]);
+        }
+      }
+      var verdict = noindex ? ["s-fail", "Not indexable"] : !cu || self ? ["s-pass", "Indexable"] : ["s-warn", "Points to another page"];
+      var draw = function (target) {
+        var h = '<div class="card" style="margin:16px 0">' + pageHead(j) + '<p style="font-size:20px"><strong class="' + verdict[0] + '">' + verdict[1] + "</strong></p>" +
+          '<p style="overflow-wrap:anywhere">Canonical: ' + (canon ? "<b>" + esc(canon) + "</b>" : "none") + "</p>" + noteList(n.concat(target || [])) + "</div>" +
+          '<div class="tablewrap"><table><tbody><tr><th>Meta robots</th><td style="overflow-wrap:anywhere">' + (j.robots.length ? j.robots.map(function (r) { return esc(r.name + ": " + r.content); }).join("<br>") : '<span class="small">none (indexable by default)</span>') + '</td></tr><tr><th>X-Robots-Tag</th><td style="overflow-wrap:anywhere">' + (j.xRobots ? esc(j.xRobots) : '<span class="small">none</span>') + '</td></tr><tr><th>HTTP status</th><td>' + esc(j.status) + "</td></tr></tbody></table></div>" +
+          '<p class="small">Only Google Search Console\'s URL Inspection shows which address Google actually chose. Check redirects with our <a href="/redirect-checker">redirect checker</a>.</p>';
+        out.innerHTML = h;
+      };
+      if (!cu || self) { draw(); return; }
+      draw([["info", "Checking the canonical address…"]]);
+      fetch("/api/redirects?u=" + encodeURIComponent(canon)).then(function (r) { return r.json(); }).then(function (k) {
+        var r = (k.results || [])[0] || {};
+        if (r.error || !r.status) draw([["warn", "The canonical address didn't answer: " + (r.error || "no response") + "."]]);
+        else if (r.redirects) draw([["warn", "The canonical address redirects to " + r.final + ". Point the canonical straight at the final address."]]);
+        else if (r.status !== 200) draw([["fail", "The canonical address answers HTTP " + r.status + ". A canonical must point to a working page."]]);
+        else draw([["ok", "The canonical address loads directly (HTTP 200)."]]);
+      }).catch(function () { draw([["info", "Couldn't test the canonical address."]]); });
+    });
+  });
 
   // ---- HTTP header checker (/api/headers)
   var hd = $("hd-form");

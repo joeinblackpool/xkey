@@ -16,15 +16,24 @@ import { dnsApi } from "./dns.js";
 import { techApi } from "./tech.js";
 import { hostingApi } from "./hosting.js";
 import { metaApi } from "./meta.js";
+import { onPageApi } from "./onpage.js";
 import { sslApi } from "./ssl.js";
 import { emailApi } from "./email.js";
 import { MORE_FORMS, MORE_INSTANT } from "./more-pages.js";
 import { moreApp, redirectPairs, redirectRules } from "./tools-more.js";
 import { PRO_FORMS, PRO_INSTANT } from "./pro-pages.js";
 import { proApp } from "./pro-client.js";
+import { A11Y_FORMS } from "./bundle5-pages.js";
+import { a11yApp } from "./a11y-client.js";
+import { a11yApi } from "./a11y.js";
+import { googleUpdatesSection, GSD_MARK } from "./google-updates.js";
 import { createUptime, getUptime, stopUptime, runUptime, uptimeDashboard, validUptimeId } from "./uptime.js";
 import { createSite, siteBySecret, statsApi, beacon, pruneAnalytics, validSecret, TRACKER_JS } from "./analytics.js";
 import { pluginZip } from "./wp-plugin.js";
+import { EXTRA_FORMS, EXTRA_INSTANT } from "./extra-pages.js";
+import { extraApp, qrMatrix } from "./tools-extra.js";
+import { siteReport } from "./site-report.js";
+import { siteDomain } from "./backlinks.js";
 
 const BY_PATH = Object.fromEntries(PAGES.map((p) => [p.path, p]));
 const GUIDES = PAGES.filter((p) => p.path.startsWith("/guides/"));
@@ -38,8 +47,10 @@ for (const c of "–—£€’‘“”…·•é") W[c] = pixelWidth(c, 2048);
 // off; this shim keeps the scripts working even if that setting is ever lost.
 const NAME_SHIM = "var __name=function(f){return f};";
 const MORE_JS = `var redirectPairs=${redirectPairs.toString()};var redirectRules=${redirectRules.toString()};(${moreApp.toString()})();`;
+const EXTRA_JS = `var qrMatrix=${qrMatrix.toString()};(${extraApp.toString()})();`;
 const TOOLS_JS = `var W=${JSON.stringify(W)};(${toolsApp.toString()})();`;
 const PRO_JS = `(${proApp.toString()})();`;
+const A11Y_JS = `(${a11yApp.toString()})();`;
 
 // ---------- forms
 const input = (id, name, ph, extra = "") => `<label for="${id}" class="sr">Website address</label><input id="${id}" name="${name}" type="text" inputmode="url" autocomplete="url" placeholder="${ph}" required${extra}>`;
@@ -129,6 +140,10 @@ Contact | /contact | Phone, email and opening hours</textarea>
   updown: () => `<form class="ck-form" id="ud-form"><label for="ud-url" class="sr">Website address</label><input id="ud-url" type="text" inputmode="url" autocomplete="url" placeholder="anywebsite.co.uk" required><button class="btn" type="submit">Is it down?</button></form><div id="ud-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
   ogcheck: () => `<form class="ck-form" id="oc-form"><label for="oc-url" class="sr">Page address</label><input id="oc-url" type="text" inputmode="url" autocomplete="url" placeholder="yourwebsite.co.uk/page" required><button class="btn" type="submit">Check sharing tags</button></form><div id="oc-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
   hreflang: () => `<form class="ck-form" id="hl-form"><label for="hl-url" class="sr">Page address</label><input id="hl-url" type="text" inputmode="url" autocomplete="url" placeholder="yourwebsite.com/en-gb/" required><button class="btn" type="submit">Check hreflang</button></form><div id="hl-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
+  headings: () => `<form class="ck-form" id="hc-form"><label for="hc-url" class="sr">Page address</label><input id="hc-url" type="text" inputmode="url" autocomplete="url" placeholder="yourwebsite.co.uk/page" required><button class="btn" type="submit">Check headings</button></form><div id="hc-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
+  alttext: () => `<form class="ck-form" id="at-form"><label for="at-url" class="sr">Page address</label><input id="at-url" type="text" inputmode="url" autocomplete="url" placeholder="yourwebsite.co.uk/page" required><button class="btn" type="submit">Check alt text</button></form><div id="at-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
+  canonical: () => `<form class="ck-form" id="cn-form"><label for="cn-url" class="sr">Page address</label><input id="cn-url" type="text" inputmode="url" autocomplete="url" placeholder="yourwebsite.co.uk/page" required><button class="btn" type="submit">Check canonical</button></form><div id="cn-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
+  schemacheck: () => `<form class="ck-form" id="sv-form"><label for="sv-url" class="sr">Page address</label><input id="sv-url" type="text" inputmode="url" autocomplete="url" placeholder="yourwebsite.co.uk/page"><button class="btn" type="submit">Validate schema</button></form><details class="tool" style="margin-top:12px"><summary style="cursor:pointer;font-weight:600;padding:10px 0">Or paste your code instead</summary><label for="sv-code" class="sr">JSON-LD code</label><textarea id="sv-code" rows="8" spellcheck="false" placeholder='&lt;script type="application/ld+json"&gt;{ "@context": "https://schema.org", "@type": "LocalBusiness", … }&lt;/script&gt;'></textarea><button class="btn" type="button" id="sv-check" style="margin-top:12px">Validate code</button></details><div id="sv-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
   hosting: () => `<form class="ck-form" id="ho-form"><label for="ho-d" class="sr">Website address</label><input id="ho-d" type="text" inputmode="url" autocomplete="url" placeholder="anywebsite.co.uk" required><button class="btn" type="submit">Find the host</button></form><div id="ho-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
   email: (p) => `<form class="ck-form" id="em-form" data-t="${p.emailType}"><label for="em-d" class="sr">Domain name</label><input id="em-d" type="text" inputmode="url" autocomplete="url" placeholder="yourbusiness.co.uk" required>${p.emailType === "dkim" ? `<label for="em-s" class="sr">DKIM selector (optional)</label><input id="em-s" type="text" autocomplete="off" placeholder="Selector (optional)">` : ""}<button class="btn" type="submit">${{ mx: "Look up MX", spf: "Check SPF", dmarc: "Check DMARC", dkim: "Check DKIM" }[p.emailType]}</button></form><div id="em-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
   ssl: () => `<form class="ck-form" id="sl-form"><label for="sl-d" class="sr">Website address</label><input id="sl-d" type="text" inputmode="url" autocomplete="url" placeholder="yourbusiness.co.uk" required><button class="btn" type="submit">Check SSL</button></form><div id="sl-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
@@ -157,6 +172,7 @@ Café &amp; Bistro – Blackpool's Finest!</textarea>
 <div class="row" style="margin-top:16px"><button class="btn" type="submit">Check redirects</button><button class="btn ghost" type="button" id="rd-four">Test http, https, www versions</button></div><div id="rd-out" aria-live="polite"></div></form><script src="/assets/tools.js" defer></script>`,
   domainage: () => `<form class="tool" id="dg-form"><label for="dg-urls">Domains – one per line, up to 100</label><textarea id="dg-urls" spellcheck="false" placeholder="yourbusiness.co.uk&#10;competitor.com&#10;bbc.co.uk"></textarea>
 <p style="margin:16px 0 0"><button class="btn" type="submit">Check domain age</button></p><div id="dg-out" aria-live="polite"></div></form><script src="/assets/tools.js" defer></script>`,
+  sitereport: () => `<form class="ck-form" action="/site" method="get"><label for="sr-d" class="sr">Website</label><input id="sr-d" name="d" type="text" inputmode="url" autocomplete="url" placeholder="yourbusiness.co.uk" required><button class="btn" type="submit">See report</button></form>`,
   whois: () => `<form class="ck-form" id="wh-form"><label for="wh-d" class="sr">Domain name</label><input id="wh-d" type="text" inputmode="url" autocomplete="url" placeholder="yourbusiness.co.uk" required><button class="btn" type="submit">Look up</button></form><div id="wh-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
   difficulty: () => `<form class="tool" id="kd-form"><label for="kd-kw">Keyword</label><input id="kd-kw" type="text" placeholder="boiler repair blackpool" required>
 <p style="margin:12px 0 0"><strong>Step 1:</strong> <a class="btn ghost" id="kd-google" href="https://www.google.co.uk/search" target="_blank" rel="noopener">Search Google</a></p>
@@ -172,6 +188,7 @@ Café &amp; Bistro – Blackpool's Finest!</textarea>
 <p style="margin:16px 0 0"><button class="btn" type="submit">Check them all</button></p><div id="bk-out" aria-live="polite"></div></form><script src="/assets/tools.js" defer></script>`,
   badge: () => `<form class="tool" id="bd-form"><label for="bd-site">Your website</label><input id="bd-site" type="text" inputmode="url" placeholder="yoursite.co.uk">
 <p style="margin:16px 0 6px;font-weight:600">Preview</p><div id="bd-prev"></div><p style="margin:16px 0 6px;font-weight:600">Code to paste into your site</p><pre class="out" id="bd-code"></pre><button class="btn" type="button" id="bd-copy">Copy</button></form><script src="/assets/tools.js" defer></script>`,
+  ...EXTRA_FORMS,
 };
 
 // crawlers offered by the robots tester: [token(s) in fallback order, label, purpose]
@@ -202,7 +219,8 @@ const MAKER = `<div class="maker"><p><strong>Want the fixes done for you?</stron
 
 Object.assign(FORMS, PRO_FORMS);
 Object.assign(FORMS, MORE_FORMS);
-const INSTANT = new Set([...PRO_INSTANT, ...MORE_INSTANT, "title", "robots", "llms", "meta", "og", "sitemap", "words", "keywords", "titles", "robotsgen", "schemagen", "localserp"]);
+const INSTANT = new Set([...PRO_INSTANT, ...MORE_INSTANT, ...EXTRA_INSTANT, "title", "robots", "llms", "meta", "og", "sitemap", "words", "keywords", "titles", "robotsgen", "schemagen", "localserp"]);
+Object.assign(FORMS, PRO_FORMS, A11Y_FORMS);
 const freeStrip = (f) => `<ul class="free" aria-label="What free means here"><li>No cost</li><li>No sign-up</li><li>No email</li><li>No Google sign-in</li><li>No subscription</li><li>${INSTANT.has(f) ? "Unlimited – runs in your browser" : "No limits for normal use"}</li></ul>`;
 function render(p) {
   const form = p.form ? FORMS[p.form](p) : "";
@@ -363,8 +381,10 @@ const worker = {
       case "/assets/tools.js": return send(NAME_SHIM + TOOLS_JS, JS, 200, "public, max-age=3600");
       case "/assets/more.js": return send(NAME_SHIM + MORE_JS, JS, 200, "public, max-age=3600");
       case "/assets/pro.js": return send(NAME_SHIM + PRO_JS, JS, 200, "public, max-age=3600");
+      case "/assets/a11y.js": return send(NAME_SHIM + A11Y_JS, JS, 200, "public, max-age=3600");
       case "/a.js": return new Response(TRACKER_JS, { headers: { "content-type": JS, "cache-control": "public, max-age=86400", "access-control-allow-origin": "*" } });
       case "/downloads/xkey-seo-fixer.zip": return new Response(pluginZip(), { headers: { "content-type": "application/zip", "content-disposition": 'attachment; filename="xkey-seo-fixer.zip"', "cache-control": "public, max-age=3600", "x-robots-tag": "noindex" } });
+      case "/assets/extra.js": return send(NAME_SHIM + EXTRA_JS, JS, 200, "public, max-age=3600");
       case "/favicon.svg": return send(FAVICON, "image/svg+xml", 200, "public, max-age=31536000, immutable");
       case "/favicon.ico": return Response.redirect(`${url.origin}/favicon.svg`, 301);
       case "/og.png": return send(OG_BYTES, "image/png", 200, "public, max-age=86400");
@@ -426,6 +446,11 @@ const worker = {
         const r = await metaApi(url.searchParams, selfFetch(env, c));
         return Response.json(r.body, { status: r.status, headers: { "cache-control": "no-store" } });
       }
+      case "/api/onpage": {
+        if (await rateLimited(request, "onpage", 600)) return Response.json({ error: "You've checked a lot of pages this hour – please try again later." }, { status: 429 });
+        const r = await onPageApi(url.searchParams, selfFetch(env, c));
+        return Response.json(r.body, { status: r.status, headers: { "cache-control": "no-store" } });
+      }
       case "/api/hosting": {
         if (await rateLimited(request, "hosting", 300)) return Response.json({ error: "You've checked a lot of websites this hour – please try again later." }, { status: 429 });
         const r = await hostingApi(env || {}, url.searchParams, selfFetch(env, c));
@@ -439,6 +464,11 @@ const worker = {
       case "/api/ssl": {
         if (await rateLimited(request, "ssl", 300)) return Response.json({ error: "You've checked a lot of websites this hour – please try again later." }, { status: 429 });
         const r = await sslApi(env || {}, url.searchParams, selfFetch(env, c));
+        return Response.json(r.body, { status: r.status, headers: { "cache-control": "no-store" } });
+      }
+      case "/api/a11y": {
+        if (await rateLimited(request, "a11y", 300)) return Response.json({ error: "You've checked a lot of pages this hour – please try again later." }, { status: 429 });
+        const r = await a11yApi(url.searchParams, selfFetch(env, c));
         return Response.json(r.body, { status: r.status, headers: { "cache-control": "no-store" } });
       }
       case "/api/tech": {
@@ -508,6 +538,13 @@ const worker = {
       const m = await getMonitor(env, path.slice(9));
       if (m) return send(layout({ path, crumb: "SEO monitor", parent: ["/seo-monitoring", "SEO monitoring"], title: `SEO monitor: ${m.host}`, desc: "Weekly SEO monitoring dashboard.", noindex: true, body: dashboard(esc, m) }), HTMLT, 200, "no-store");
     }
+    if (path === "/google-algorithm-updates") return send(HTML[path].replace(GSD_MARK, await googleUpdatesSection(env || {}, c)), HTMLT);
+    if (path === "/site") {
+      let d = null; try { d = siteDomain(url.searchParams.get("d")).domain; } catch {}
+      return Response.redirect(d ? `${SITE}/site/${d}` : `${SITE}/website-report`, d ? 302 : 301);
+    }
+    const sr = path.match(/^\/site\/([^/]+)$/);
+    if (sr) { const r = await siteReport(request, env, c, sr[1], () => rateLimited(request, "site", 1200)); if (r) return r; }
     if (HTML[path]) return send(HTML[path], HTMLT);
     return send(NOT_FOUND, HTMLT, 404);
   },

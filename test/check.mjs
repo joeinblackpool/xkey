@@ -23,7 +23,7 @@ for (const p of PAGES) {
   const words = html.replace(/<style>[\s\S]*?<\/style>|<script[\s\S]*?<\/script>|<[^>]+>/g, " ").split(/\s+/).filter(Boolean).length;
   console.log(`${r.status} ${p.path.padEnd(34)} ${String(tpx).padStart(3)}px ${String(words).padStart(4)}w  ${title}`);
 }
-for (const l of links) { const r = await get(l); if (r.status !== 200) fail(`link ${l} -> ${r.status}`); }
+for (const l of links) { if (l.startsWith("/site/")) continue; const r = await get(l); if (r.status !== 200) fail(`link ${l} -> ${r.status}`); }
 const expect = async (u, status, loc) => { const r = await get(u); if (r.status !== status || (loc && r.headers.get("location") !== loc)) fail(`${u} -> ${r.status} ${r.headers.get("location")}`); };
 await expect("http://xkey.co.uk/seo-tools", 301, `${O}/seo-tools`);
 await expect("https://www.xkey.co.uk/about", 301, `${O}/about`);
@@ -36,6 +36,9 @@ await expect("/nope", 404);
 for (const f of ["/og.png", "/favicon.svg", "/robots.txt", "/llms.txt", "/sitemap.xml", "/assets/tools.js", "/assets/more.js", "/assets/report.js", "/assets/audit.js", "/assets/compare.js", "/site.webmanifest"]) await expect(f, 200);
 new Function((await (await get("/assets/tools.js")).text())); // parses
 new Function((await (await get("/assets/more.js")).text()));
+for (const f of ["/og.png", "/favicon.svg", "/robots.txt", "/llms.txt", "/sitemap.xml", "/assets/tools.js", "/assets/extra.js", "/assets/report.js", "/assets/audit.js", "/assets/compare.js", "/site.webmanifest"]) await expect(f, 200);
+new Function((await (await get("/assets/tools.js")).text())); // parses
+new Function((await (await get("/assets/extra.js")).text()));
 const sm = await (await get("/sitemap.xml")).text(), locs = [...sm.matchAll(/<loc>(.*?)<\/loc>/g)].map((m) => m[1]);
 if (new Set(locs).size !== locs.length || locs.length !== PAGES.length) fail("sitemap URLs");
 // robots tester

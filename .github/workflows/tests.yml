@@ -1,27 +1,48 @@
 # Runs every XKey test (test/all.mjs, the same as before a push) plus the WordPress plugin tests
 # on each pull request. Auto-merge (auto-merge.yml) only merges a Claude PR once this has passed.
-# auto-merge.yml also starts it by hand on a PR branch that has fallen behind main: that run tests
-# the branch with the newest main merged in, the same as a pull request run does.
+# auto-merge.yml also starts it by hand, from main, for a PR whose branch has fallen behind main
+# (inputs pr + sha): that run tests the PR's commit with the newest main merged in, the same as a
+# pull request run does, and reports the result as the "test" check on that commit. It runs from
+# main so that this file's newest version is used, not the older copy on the PR's branch.
 name: Tests
 on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      pr:
+        description: "PR number to re-test (with the newest main merged in)"
+        required: false
+      sha:
+        description: "That PR's latest commit"
+        required: false
 permissions:
   contents: read
+  checks: write
 concurrency:
-  group: tests-${{ github.event.pull_request.number || github.ref }}
+  group: tests-${{ github.event.pull_request.number || inputs.pr || github.ref }}
   cancel-in-progress: true
 jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
+      - name: Report the re-test as running on the PR's commit
+        id: check
+        if: inputs.sha != ''
+        run: |
+          id=$(gh api -X POST "repos/${{ github.repository }}/check-runs" -f name=test -f head_sha="${{ inputs.sha }}" \
+            -f status=in_progress -f details_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            -f "output[title]=Re-test of #${{ inputs.pr }} with the newest main" -f "output[summary]=Started by auto-merge." --jq .id)
+          echo "id=$id" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # full history, so a by-hand run can merge origin/main below
-      - name: Merge the newest main in (by-hand runs on a branch)
-        if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main'
+          ref: ${{ inputs.sha }}
+          fetch-depth: 0 # full history, so a re-test can merge origin/main below
+      - name: Merge the newest main in (re-tests only)
+        if: inputs.sha != ''
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -41,3 +62,10 @@ jobs:
         run: node test/all.mjs
       - name: WordPress plugin
         run: php wordpress-plugin/test/run.php
+      - name: Report the re-test result on the PR's commit
+        if: always() && steps.check.outputs.id != ''
+        run: |
+          case "${{ job.status }}" in success) c=success ;; cancelled) c=cancelled ;; *) c=failure ;; esac
+          gh api -X PATCH "repos/${{ github.repository }}/check-runs/${{ steps.check.outputs.id }}" \
+            -f status=completed -f conclusion="$c" -f "output[title]=Re-test of #${{ inputs.pr }} with the newest main: $c" \
+            -f "output[summary]=See the run for details." >/dev/null
