@@ -101,6 +101,9 @@ Free SEO & AI search checker for UK businesses, made by IceWork (icework.co.uk).
 - Pages in `src/bundle5-pages.js`. Accessibility: `src/a11y.js` (`a11yCheck(html)` pure WCAG 2.2 checks from HTML; `GET /api/a11y?url=` via `getPage`), browser code `src/a11y-client.js` served as /assets/a11y.js (ids a11-). Says plainly it can't test contrast, keyboard or screen-reader flow.
 - Google updates: `src/google-updates.js` reads Google's public Search Status Dashboard feed (status.search.google.com/incidents.json), cached 1 h; index.js swaps the `<!--gsd-->` marker on the page. If the feed fails the page says so – never add unconfirmed updates. Tests: `env.GSD_FETCH` (`gsdStandIn()` in test/lib.mjs).
 - Course: 10 lessons linking to existing guides and tools; task ticks in localStorage `xk-course`.
+## State of UK websites study (/uk-website-study)
+- `study/run.mjs` picks the 500 most-linked .uk domains and a seeded sample of 1,000 ranked 500k–5M (Common Crawl ranks), runs XKey's check on each home page (own UA `XKeyResearch`, robots.txt obeyed), plus SPF/DMARC/MX, AI-crawler robots rules and the platform. Writes aggregates to `src/study-data.js`; per-site rows only as a 90-day run artifact – never publish results for individual sites.
+- Re-run with the "UK website study" Actions workflow (`.github/workflows/uk-study.yml`, run by hand on the branch to update; it commits only study-data.js). `src/study-page.js` reads every number from study-data.js.
 
 ## Layout
 - `src/` – XKey pages (`content.js`), shell/styles (`site.js`), routing + APIs (`index.js`), browser tools (`tools-client.js`, served as /assets/tools.js), page parser (`page-parse.js`), OG image (`og.js`).
