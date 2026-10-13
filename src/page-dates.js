@@ -164,6 +164,7 @@ export const DATES = {
   "/title-tag-checker": ["2026-10-06","2026-10-10","2c3d4175"],
   "/toxic-backlink-checker": ["2026-10-12","2026-10-12","a22d7814"],
   "/uk-business-directories": ["2026-10-12","2026-10-12","baf74ee0"],
+  "/uk-website-study": ["2026-10-13","2026-10-13","746cbef9"],
   "/uptime-monitor": ["2026-10-12","2026-10-12","ad1439a9"],
   "/url-slug-generator": ["2026-10-12","2026-10-12","8ed9bade"],
   "/utm-builder": ["2026-10-12","2026-10-12","1c2b43de"],
