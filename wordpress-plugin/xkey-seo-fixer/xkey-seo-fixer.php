@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name:       XKey SEO Fixer
- * Plugin URI:        https://xkey.co.uk/
+ * Plugin URI:        https://xkey.co.uk/wordpress-seo-plugin
  * Description:       Finds common on-site SEO problems (missing alt text, missing meta descriptions, extra H1 headings, broken internal links) and fixes them when you click. Nothing changes without a click.
  * Version:           1.0.0
  * Requires at least: 6.0

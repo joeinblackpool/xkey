@@ -118,7 +118,7 @@ class XKey_SEO_Fixer {
 	 * @return array
 	 */
 	private static function scan( $batch, $only = '' ) {
-		$posts = new WP_Query(
+		$posts  = new WP_Query(
 			array(
 				'post_type'              => self::post_types(),
 				'post_status'            => 'publish',
@@ -134,7 +134,7 @@ class XKey_SEO_Fixer {
 		$pages  = (int) $posts->max_num_pages;
 
 		if ( ! $only || 'images' === $only ) {
-			$atts = new WP_Query(
+			$atts             = new WP_Query(
 				array(
 					'post_type'      => 'attachment',
 					'post_status'    => 'inherit',
@@ -250,7 +250,16 @@ class XKey_SEO_Fixer {
 				}
 				/* translators: %s: image file name */
 				$problem = sprintf( __( 'Image in content with no alt text: %s', 'xkey-seo-fixer' ), wp_basename( (string) xkey_sf_get_attr( $tag, 'src' ) ) );
-				$out[]   = self::issue( 'img:' . $post->ID . ':' . md5( $tag ), $post, $problem, $alt, array( 'tag' => $tag, 'alt' => $alt ) );
+				$out[]   = self::issue(
+					'img:' . $post->ID . ':' . md5( $tag ),
+					$post,
+					$problem,
+					$alt,
+					array(
+						'tag' => $tag,
+						'alt' => $alt,
+					)
+				);
 			}
 		}
 		return $out;
@@ -322,7 +331,16 @@ class XKey_SEO_Fixer {
 				}
 				/* translators: %s: link address */
 				$problem = sprintf( __( 'Broken internal link: %s', 'xkey-seo-fixer' ), $href );
-				$out[]   = self::issue( 'link:' . $post->ID . ':' . md5( $href ), $post, $problem, $result, array( 'href' => $href, 'new' => $result ) );
+				$out[]   = self::issue(
+					'link:' . $post->ID . ':' . md5( $href ),
+					$post,
+					$problem,
+					$result,
+					array(
+						'href' => $href,
+						'new'  => $result,
+					)
+				);
 			}
 		}
 		return $out;
@@ -401,7 +419,12 @@ class XKey_SEO_Fixer {
 		if ( 2 === count( $segments ) && $author_base === $segments[0] && get_user_by( 'slug', $segments[1] ) ) {
 			return true;
 		}
-		foreach ( get_post_types( array( 'public' => true, '_builtin' => false ) ) as $type ) {
+		foreach ( get_post_types(
+			array(
+				'public'   => true,
+				'_builtin' => false,
+			)
+		) as $type ) {
 			$link = get_post_type_archive_link( $type );
 			if ( $link && untrailingslashit( (string) wp_parse_url( $link, PHP_URL_PATH ) ) === untrailingslashit( $path ) ) {
 				return true;

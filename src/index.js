@@ -16,6 +16,7 @@ import { dnsApi } from "./dns.js";
 import { techApi } from "./tech.js";
 import { hostingApi } from "./hosting.js";
 import { metaApi } from "./meta.js";
+import { onPageApi } from "./onpage.js";
 import { sslApi } from "./ssl.js";
 import { emailApi } from "./email.js";
 import { propagationApi } from "./propagation.js";
@@ -144,6 +145,10 @@ Contact | /contact | Phone, email and opening hours</textarea>
   propagation: () => `<form class="ck-form" id="dp-form"><label for="dp-d" class="sr">Domain name</label><input id="dp-d" type="text" inputmode="url" autocomplete="url" placeholder="yourbusiness.co.uk" required><label for="dp-t" class="sr">Record type</label><select id="dp-t" style="flex:0 0 auto;min-height:52px;font:inherit;font-size:18px;padding:0 12px;border:2px solid var(--line);border-radius:14px;background:var(--card);color:var(--fg)"><option>A</option><option>AAAA</option><option>CNAME</option><option>MX</option><option>NS</option><option>TXT</option></select><button class="btn" type="submit">Check propagation</button></form><div id="dp-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
   ptr: () => `<form class="ck-form" id="pt-form"><label for="pt-q" class="sr">IP addresses or domain</label><input id="pt-q" type="text" autocomplete="off" placeholder="192.0.2.10 or yourbusiness.co.uk" required><button class="btn" type="submit">Look up</button></form><div id="pt-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
   metacheck: () => `<form class="ck-form" id="mc-form"><label for="mc-url" class="sr">Page address</label><input id="mc-url" type="text" inputmode="url" autocomplete="url" placeholder="yourwebsite.co.uk/page" required><button class="btn" type="submit">Check meta tags</button></form><div id="mc-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
+  headings: () => `<form class="ck-form" id="hc-form"><label for="hc-url" class="sr">Page address</label><input id="hc-url" type="text" inputmode="url" autocomplete="url" placeholder="yourwebsite.co.uk/page" required><button class="btn" type="submit">Check headings</button></form><div id="hc-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
+  alttext: () => `<form class="ck-form" id="at-form"><label for="at-url" class="sr">Page address</label><input id="at-url" type="text" inputmode="url" autocomplete="url" placeholder="yourwebsite.co.uk/page" required><button class="btn" type="submit">Check alt text</button></form><div id="at-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
+  canonical: () => `<form class="ck-form" id="cn-form"><label for="cn-url" class="sr">Page address</label><input id="cn-url" type="text" inputmode="url" autocomplete="url" placeholder="yourwebsite.co.uk/page" required><button class="btn" type="submit">Check canonical</button></form><div id="cn-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
+  schemacheck: () => `<form class="ck-form" id="sv-form"><label for="sv-url" class="sr">Page address</label><input id="sv-url" type="text" inputmode="url" autocomplete="url" placeholder="yourwebsite.co.uk/page"><button class="btn" type="submit">Validate schema</button></form><details class="tool" style="margin-top:12px"><summary style="cursor:pointer;font-weight:600;padding:10px 0">Or paste your code instead</summary><label for="sv-code" class="sr">JSON-LD code</label><textarea id="sv-code" rows="8" spellcheck="false" placeholder='&lt;script type="application/ld+json"&gt;{ "@context": "https://schema.org", "@type": "LocalBusiness", … }&lt;/script&gt;'></textarea><button class="btn" type="button" id="sv-check" style="margin-top:12px">Validate code</button></details><div id="sv-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
   hosting: () => `<form class="ck-form" id="ho-form"><label for="ho-d" class="sr">Website address</label><input id="ho-d" type="text" inputmode="url" autocomplete="url" placeholder="anywebsite.co.uk" required><button class="btn" type="submit">Find the host</button></form><div id="ho-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
   email: (p) => `<form class="ck-form" id="em-form" data-t="${p.emailType}"><label for="em-d" class="sr">Domain name</label><input id="em-d" type="text" inputmode="url" autocomplete="url" placeholder="yourbusiness.co.uk" required>${p.emailType === "dkim" ? `<label for="em-s" class="sr">DKIM selector (optional)</label><input id="em-s" type="text" autocomplete="off" placeholder="Selector (optional)">` : ""}<button class="btn" type="submit">${{ mx: "Look up MX", spf: "Check SPF", dmarc: "Check DMARC", dkim: "Check DKIM" }[p.emailType]}</button></form><div id="em-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
   ssl: () => `<form class="ck-form" id="sl-form"><label for="sl-d" class="sr">Website address</label><input id="sl-d" type="text" inputmode="url" autocomplete="url" placeholder="yourbusiness.co.uk" required><button class="btn" type="submit">Check SSL</button></form><div id="sl-out" aria-live="polite"></div><script src="/assets/tools.js" defer></script>`,
@@ -444,6 +449,11 @@ const worker = {
       case "/api/meta": {
         if (await rateLimited(request, "meta", 600)) return Response.json({ error: "You've checked a lot of pages this hour – please try again later." }, { status: 429 });
         const r = await metaApi(url.searchParams, selfFetch(env, c));
+        return Response.json(r.body, { status: r.status, headers: { "cache-control": "no-store" } });
+      }
+      case "/api/onpage": {
+        if (await rateLimited(request, "onpage", 600)) return Response.json({ error: "You've checked a lot of pages this hour – please try again later." }, { status: 429 });
+        const r = await onPageApi(url.searchParams, selfFetch(env, c));
         return Response.json(r.body, { status: r.status, headers: { "cache-control": "no-store" } });
       }
       case "/api/hosting": {
