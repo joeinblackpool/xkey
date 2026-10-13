@@ -1,6 +1,6 @@
 // XKey (xkey.co.uk): free SEO & AI search check. Uses the same engine as IceWork's checker.
 import { PAGES, toolCards } from "./content.js";
-import { BRAND, SITE, UPDATED, esc, layout, send, FAVICON } from "./site.js";
+import { BRAND, SITE, UPDATED, esc, layout, send, FAVICON, SITE_JS, SITE_JS_PATH } from "./site.js";
 import { toolsApp } from "./tools-client.js";
 import { OG_PNG } from "./og.js";
 import { handleChecker, rateLimited, AUDIT_JS, REPORT_JS, COMPARE_JS, overOnce, cmpForm, over } from "../engine/checker-ui.js";
@@ -34,6 +34,7 @@ import { EXTRA_FORMS, EXTRA_INSTANT } from "./extra-pages.js";
 import { extraApp, qrMatrix } from "./tools-extra.js";
 import { siteReport } from "./site-report.js";
 import { siteDomain } from "./backlinks.js";
+import { FONT_FILES } from "./fonts.js";
 
 const BY_PATH = Object.fromEntries(PAGES.map((p) => [p.path, p]));
 const GUIDES = PAGES.filter((p) => p.path.startsWith("/guides/"));
@@ -241,11 +242,12 @@ const enginePage = (k) => BY_PATH[ENGINE_PAGE[k] || "/"];
 
 // ---------- static files
 const OG_BYTES = Uint8Array.from(atob(OG_PNG), (c) => c.charCodeAt(0));
+const FONT_BYTES = Object.fromEntries(Object.entries(FONT_FILES).map(([p, b]) => [p, Uint8Array.from(atob(b), (c) => c.charCodeAt(0))]));
 const INDEXED = PAGES.filter((p) => !p.noindex);
 const SITEMAP = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${INDEXED.map((p) => `<url><loc>${SITE}${p.path}</loc><lastmod>${UPDATED}</lastmod></url>`).join("\n")}\n</urlset>\n`;
 const ROBOTS = `User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /monitor/\nDisallow: /uptime/\nDisallow: /analytics/\n\nSitemap: ${SITE}/sitemap.xml\n`;
 const LLMS = `# ${BRAND.name}\n\n> Free SEO and AI search checker for UK websites, made by ${BRAND.maker} (${BRAND.makerUrl}), a web studio in ${BRAND.town}. No sign-up.\n\nXKey checks a page for Google readiness, AI search visibility (ChatGPT, Claude, Perplexity, Google AI Overviews), Core Web Vitals, structured data, security and local SEO, and gives a ranked list of fixes. It also crawls whole sites, compares competitors and monitors sites weekly.\n\n## Tools\n\n${INDEXED.filter((p) => !p.article && !["/about", "/contact", "/privacy"].includes(p.path)).map((p) => `- [${p.crumb === "Home" ? "Free SEO check" : p.crumb}](${SITE}${p.path}): ${p.desc}`).join("\n")}\n\n## Guides\n\n${GUIDES.map((p) => `- [${p.crumb}](${SITE}${p.path}): ${p.desc}`).join("\n")}\n\n## About\n\n- [About XKey](${SITE}/about)\n- [Contact](${SITE}/contact)\n- [Privacy](${SITE}/privacy)\n`;
-const MANIFEST = JSON.stringify({ name: BRAND.name, short_name: BRAND.name, start_url: "/", display: "browser", background_color: "#f6f8fb", theme_color: "#0e1726", icons: [{ src: "/favicon.svg", sizes: "any", type: "image/svg+xml" }] });
+const MANIFEST = JSON.stringify({ name: BRAND.name, short_name: BRAND.name, start_url: "/", display: "browser", background_color: "#faf8f3", theme_color: "#0f1011", icons: [{ src: "/favicon.svg", sizes: "any", type: "image/svg+xml" }] });
 
 // IndexNow: submit every page once per site version.
 const INDEXNOW_KEY = "7b3e9c41d2a84f06b5e1c8a9f0d36e72";
@@ -369,6 +371,8 @@ const worker = {
     const path = url.pathname;
     if (path.length > 1 && path.endsWith("/")) return Response.redirect(`${url.origin}${path.replace(/\/+$/, "")}${url.search}`, 301);
     if (path === "/index.html") return Response.redirect(`${url.origin}/`, 301);
+    if (FONT_BYTES[path]) return send(FONT_BYTES[path], "font/woff2", 200, "public, max-age=31536000, immutable");
+    if (path === SITE_JS_PATH) return send(SITE_JS, JS, 200, "public, max-age=31536000, immutable");
 
     switch (path) {
       case "/sitemap.xml": return send(SITEMAP, "application/xml; charset=utf-8");

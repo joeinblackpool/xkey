@@ -102,6 +102,12 @@ Free SEO & AI search checker for UK businesses, made by IceWork (icework.co.uk).
 - `src/` – XKey pages (`content.js`), shell/styles (`site.js`), routing + APIs (`index.js`), browser tools (`tools-client.js`, served as /assets/tools.js), page parser (`page-parse.js`), OG image (`og.js`).
 - `engine/` – SEO checker engine **shared with icework.co.uk** (repo joeinblackpool/ICEWORK, folder `src/`). `src/page-parse.js` is also copied to ICEWORK `src/` (it powers the competitor topic gap there). Keep the two copies identical: change it here, then copy the same files into ICEWORK `src/` and run its tests (`node test/check.mjs`, `node test/checker-unit.mjs`).
 
+## Look and feel (src/site.js)
+- Ink on unbleached canvas: no box-shadow, no gradients, no border-radius anywhere (a global reset enforces it, inline styles included). Sections are split by 1px hairlines (`--line`, rgba(15,16,17,.15)).
+- Headings use Fraunces, technical text (nav, buttons, labels, code) uses Geist Mono: self-hosted WOFF2 subsets in `src/fonts.js` (rebuild with `fonts/build.py`), `font-display: optional` and no preload, because preloading or swapping measurably slowed first paint. Fallbacks are Georgia / the system monospace.
+- Buttons, nav links and toggles have `transition: none` and invert instantly from outline to solid on hover/click.
+- `/assets/site-<hash>.js` (SITE_JS) runs after the load event: turns on the SVG grain overlay (`html.g`) and fades in blocks that start below the first screen (`.rv` → `.in`, easing cubic-bezier(.16,1,.3,1)). Content is never hidden before load or without JS, and reduced-motion users get no reveal.
+
 ## Before pushing – `node test/all.mjs` must pass
 - `test/check.mjs` – 0 problems on every page (titles ≤580px, descriptions 500–990px, unique titles, valid JSON-LD, no broken internal links; also runs XKey's own checker on every page).
 - `test/tools.mjs` – builds the Worker the way Cloudflare does (esbuild, keep-names on) and clicks through every tool in Chromium; fails on any script error or missing result. Add a scenario whenever a tool is added or changed.
