@@ -106,7 +106,7 @@ export async function siteReport(request, env, ctx, raw, limited) {
   const lead = r.found ? `Authority, global rank, the websites that link to ${d}, when it was registered and where it's hosted – free, from public data.` : `What we know about ${d}: its registration, links and hosting – free, from public data.`;
   const html = layout({ path: `/site/${d}`, crumb: d, parent: ["/website-report", "Website report"], title: title(d), desc, noindex: !index,
     body: `<div class="wrap hero" style="padding-bottom:24px"><span class="eyebrow">Website report</span><h1 style="overflow-wrap:anywhere">${esc(d)} website report</h1><p class="lead">${esc(lead)}</p></div>
-<section style="padding-top:0"><div class="wrap prose">${reportBody(d, r, m, w)}</div></section>${LIVE}` });
+<section class="pt0"><div class="wrap prose">${reportBody(d, r, m, w)}</div></section>${LIVE}` });
   const res = send(html, HTMLT, 200, "public, max-age=3600");
   if (cache && w) ctx.waitUntil(cache.put(key, new Response(html, { headers: { "content-type": HTMLT, "cache-control": "max-age=86400" } })).catch(() => {}));
   return res;

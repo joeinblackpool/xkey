@@ -1,6 +1,7 @@
 // XKey pages. Each page targets its own search phrase with original copy.
 // form: "check" | "audit" | "compare" | "monitor" | "title" | "robots" | "llms" | null
 // focus: report section to jump to after a check (matches the report's section ids).
+import { EMAIL_HTML } from "./site.js";
 import { SECTOR_GUIDES } from "./sector-guides.js";
 import { GUIDES_12 } from "./guides-12.js";
 import { BUILDER_GUIDES } from "./builder-guides.js";
@@ -96,12 +97,12 @@ import { COMPARE_PAGES } from "./compare-pages.js";
 
 export const PAGES = [
   {
-    path: "/", crumb: "Home", title: "Free SEO Check | No Sign-Up, No Email, Instant Report",
-    desc: "Free SEO check for any website – no sign-up, no email, no subscription. Google readiness, AI search, Core Web Vitals and local SEO, with a ranked fix list.",
-    h1: "Free SEO check – no sign-up, no email", eyebrow: "Free · Instant · Any website", app: "XKey free SEO check",
+    path: "/", crumb: "Home", title: "Free SEO Checker | No Sign-Up, No Email, Instant Report",
+    desc: "Free SEO checker for any website – no sign-up, no email, no subscription. Google readiness, AI search, Core Web Vitals and local SEO, with a ranked fix list.",
+    h1: "Free SEO checker – no sign-up, no email", eyebrow: "Free · Instant · Any website", app: "XKey free SEO check",
     lead: "Type in any web address and get a full SEO report in about 20 seconds – no account, no email, no daily limit. See how Google reads the page, whether AI assistants can find it, how fast it really is, and exactly what to fix first.",
     form: "check",
-    sections: `<div class="cta" style="margin-top:0"><p class="ct" style="font-size:24px">New: crawl your whole website free – up to 10,000 pages</p><p>Every page's title, description, headings, word count, links and prices in one spreadsheet, plus an SEO issues report and a score out of 100. Download as Excel or CSV, or compare with a competitor. No sign-up, no email.</p><a class="btn" href="/website-crawler">Try the website crawler</a></div>
+    sections: `<div class="cta first"><p class="ct big">New: crawl your whole website free – up to 10,000 pages</p><p>Every page's title, description, headings, word count, links and prices in one spreadsheet, plus an SEO issues report and a score out of 100. Download as Excel or CSV, or compare with a competitor. No sign-up, no email.</p><a class="btn" href="/website-crawler">Try the website crawler</a></div>
 <h2>What "free, no sign-up" means on XKey</h2>
 <p>Lots of SEO checkers call themselves free, then ask for an email before showing the report, stop you after a few checks a day or hide the useful parts behind a trial. Here's exactly what you get on XKey:</p>
 <div class="tablewrap"><table><thead><tr><th scope="col">What you might expect</th><th scope="col">On XKey</th></tr></thead><tbody>
@@ -112,9 +113,9 @@ export const PAGES = [
 <tr><td>Part of the report locked</td><td><strong>Nothing locked.</strong> Every check, score and fix is shown.</td></tr>
 <tr><td>Pay to download the report</td><td><strong>Free.</strong> Print it or save it as a PDF from the report page.</td></tr>
 <tr><td>A free trial that runs out</td><td><strong>No trial.</strong> It stays free.</td></tr>
-<tr><td>Sign up for the whole-site audit</td><td><p style="margin:0"><strong>No sign-up.</strong> The <a href="/website-audit">website audit</a> crawls up to 250 pages, and the <a href="/website-crawler">website crawler</a> up to 10,000.</p></td></tr>
+<tr><td>Sign up for the whole-site audit</td><td><p class="m0"><strong>No sign-up.</strong> The <a href="/website-audit">website audit</a> crawls up to 250 pages, and the <a href="/website-crawler">website crawler</a> up to 10,000.</p></td></tr>
 </tbody></table></div>
-<h2>What the free SEO check looks at</h2>
+<h2>What the free SEO checker looks at</h2>
 <p>XKey runs around 50 checks across ten areas, each weighted by how much it affects your rankings. You get an overall score out of 100, a score for each area and a "fix these first" list sorted by impact.</p>
 <div class="grid">
 <div class="card"><p class="ct">Indexing &amp; crawling</p><p>Status code, noindex, robots.txt rules, XML sitemap, canonical tag, redirect chains, www and https consistency.</p></div>
@@ -139,7 +140,7 @@ export const PAGES = [
 <li><strong>Check the whole site.</strong> A single page can look perfect while problems elsewhere hold you back – run a <a href="/website-audit">full website audit</a> next.</li></ol>
 <h2>What can't a free SEO check tell you?</h2>
 <p>No checker – free or paid – can see your actual Google rankings, the full list of sites linking to you, or how strong your competitors are for a particular search. For your rankings and indexing, set up Google Search Console (our <a href="/guides/google-search-console">step-by-step guide</a> shows how). If your site doesn't appear in Google at all, start with <a href="/guides/why-is-my-website-not-on-google">why isn't my website on Google?</a> And if you serve local customers, follow the <a href="/guides/local-seo-checklist">local SEO checklist</a>.</p>
-<h2>Is this SEO check really free?</h2>
+<h2>Is this SEO checker really free?</h2>
 <p>Yes, completely. No cost, no sign-up, no email address, no subscription, no trial that runs out and no "upgrade to see your results". You get the whole report straight away. The <a href="/seo-tools">instant tools</a> run in your browser and are unlimited; full checks only have a safety limit set far above normal use, to stop bots. XKey is made by <a href="https://icework.co.uk" rel="noopener">IceWork</a>, a small web studio in Blackpool, as a free tool for UK businesses – if you'd like the fixes done for you, IceWork can help, but you never have to.</p>`,
     faqs: [
       ["How accurate is the score?", "Every check is based on what Google and the AI providers document publicly, and title widths are measured in pixels the way Google displays them. The score is a guide to how well-prepared a page is – no tool can guarantee rankings, because Google also weighs links, competition and many other signals."],
@@ -1450,7 +1451,7 @@ Sitemap: https://yourdomain.co.uk/sitemap.xml</code></pre>
     path: "/contact", crumb: "Contact", title: "Contact XKey | Free SEO Checker Help & Feedback",
     desc: "Contact the team behind XKey, the free UK SEO and AI search checker. Email us any time – we aim to reply within 24 hours.",
     h1: "Contact XKey", lead: "Questions, feedback or found a bug? Email us any time – we aim to reply within 24 hours.",
-    sections: `<p><a class="btn" href="mailto:iceworks@f1rst.co.uk?subject=XKey">Email iceworks@f1rst.co.uk</a></p><p>XKey is run by IceWork, Blackpool, Lancashire, UK.</p>
+    sections: `<p><a class="btn" href="mailto:${EMAIL_HTML}?subject=XKey">Email ${EMAIL_HTML}</a></p><p>XKey is run by IceWork, Blackpool, Lancashire, UK.</p>
 <h2>What should I include when reporting a problem?</h2><p>The web address you checked, what you expected and what the report said. A screenshot helps. If a check seems wrong for your site, tell us – it's the fastest way for us to improve the tool.</p>
 <h2>What can I ask about?</h2><p>Anything to do with XKey: a check that gave a result you don't understand, a tool that didn't work, an idea for a new tool, or a question about what a report means for your site. We read every message ourselves – there's no ticket system and no chatbot – and we reply from the same address. We don't need an account, a phone number or any details beyond your email to help.</p>
 <h2>Is there a phone number?</h2><p>Not for XKey. Email lets us look at the page you're asking about before we reply, so you get a proper answer rather than a guess. If your question is about getting a website built or repaired, IceWork's own site has its contact details.</p>
@@ -1467,7 +1468,7 @@ Sitemap: https://yourdomain.co.uk/sitemap.xml</code></pre>
 <h2>Website analytics</h2><p>If you add our analytics script to your website, we count visits to that site without cookies or any other storage on your visitors' devices. We keep totals only: pages, the website a visitor came from, country (from the connection, not stored), screen size group and clicks on phone, email, outbound and goal links. To count unique visitors we make a one-way code from the connection's IP address, browser and a secret that changes daily; the IP address itself isn't stored and the code can't be linked between days. Visitor codes are deleted after 31 days and totals after 400 days.</p>
 <h2>Tools that run in your browser</h2><p>The rank tracker, SEO content editor and brand monitoring tool work in your browser. Search Console exports and drafts you use with them are kept in your browser's storage on your device and never sent to us.</p>
 <h2>Cookies and your browser</h2><p>XKey doesn't set advertising or tracking cookies. To show "Your recent checks", your browser keeps a short list of the addresses you checked and their scores – it stays on your device, is never sent to us, and you can clear it with one click.</p>
-<h2>Your rights</h2><p>You can contact us about your data at <a href="mailto:iceworks@f1rst.co.uk">iceworks@f1rst.co.uk</a>, or complain to the Information Commissioner's Office at <a href="https://ico.org.uk/" rel="noopener">ico.org.uk</a>.</p>`,
+<h2>Your rights</h2><p>You can contact us about your data at <a href="mailto:${EMAIL_HTML}">${EMAIL_HTML}</a>, or complain to the Information Commissioner's Office at <a href="https://ico.org.uk/" rel="noopener">ico.org.uk</a>.</p>`,
   },
   ...PRO_PAGES,
   ...BUNDLE5_PAGES,
