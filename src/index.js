@@ -1,6 +1,7 @@
 // XKey (xkey.co.uk): free SEO & AI search check. Uses the same engine as IceWork's checker.
 import { PAGES, toolCards } from "./content.js";
-import { BRAND, SITE, UPDATED, esc, layout, send, FAVICON } from "./site.js";
+import { BRAND, SITE, UPDATED, esc, layout, send, FAVICON, SITE_JS, SITE_JS_PATH, pageDates, pageHash } from "./site.js";
+import { relatedGuides } from "./related.js";
 import { toolsApp } from "./tools-client.js";
 import { OG_PNG } from "./og.js";
 import { handleChecker, rateLimited, AUDIT_JS, REPORT_JS, COMPARE_JS, overOnce, cmpForm, over } from "../engine/checker-ui.js";
@@ -36,6 +37,7 @@ import { EXTRA_FORMS, EXTRA_INSTANT } from "./extra-pages.js";
 import { extraApp, qrMatrix } from "./tools-extra.js";
 import { siteReport } from "./site-report.js";
 import { siteDomain } from "./backlinks.js";
+import { FONT_FILES } from "./fonts.js";
 
 const BY_PATH = Object.fromEntries(PAGES.map((p) => [p.path, p]));
 const GUIDES = PAGES.filter((p) => p.path.startsWith("/guides/"));
@@ -165,6 +167,18 @@ Café &amp; Bistro – Blackpool's Finest!</textarea>
 <label for="us-max">Maximum length</label><select id="us-max"><option value="0">No limit</option><option value="60" selected>60 characters</option><option value="40">40 characters</option></select>
 <label><input id="us-stop" type="checkbox" style="width:auto;margin-right:8px">Remove small words (a, the, and, of…)</label>
 <p style="margin:16px 0 6px;font-weight:600">Your slugs</p><pre class="out" id="us-out"></pre><button class="btn" type="button" id="us-copy">Copy</button></form><script src="/assets/tools.js" defer></script>`,
+  favgen: () => `<form class="tool" id="fg-form"><div class="row"><label style="flex:1 1 200px"><input type="radio" name="fg-mode" id="fg-m-text" value="text" checked style="width:auto;margin-right:8px">From letters</label><label style="flex:1 1 200px"><input type="radio" name="fg-mode" id="fg-m-img" value="img" style="width:auto;margin-right:8px">From an image or logo</label></div>
+<div id="fg-text"><label for="fg-t">Letters (1 to 3)</label><input id="fg-t" type="text" maxlength="3" value="S">
+<div class="row"><div style="flex:1 1 120px"><label for="fg-bg">Background</label><input id="fg-bg" type="color" value="#0b6e63" style="min-height:48px;padding:4px"></div><div style="flex:1 1 120px"><label for="fg-fg">Letter colour</label><input id="fg-fg" type="color" value="#ffffff" style="min-height:48px;padding:4px"></div><div style="flex:1 1 160px"><label for="fg-shape">Shape</label><select id="fg-shape"><option value="round">Rounded square</option><option value="circle">Circle</option><option value="square">Square</option></select></div></div></div>
+<div id="fg-img" hidden><label for="fg-file">Choose a square image (PNG or SVG works best, at least 512 × 512)</label><input id="fg-file" type="file" accept="image/*"></div>
+<div id="fg-prev" class="row" style="align-items:flex-end;margin:16px 0" aria-label="Preview"></div>
+<div id="fg-dl" class="row"></div>
+<p style="margin:16px 0 6px;font-weight:600">Paste this into your page's &lt;head&gt;</p><pre class="out" id="fg-code"></pre><button class="btn" type="button" id="fg-copy">Copy</button></form><script src="/assets/tools.js" defer></script>`,
+  hreflanggen: () => `<form class="tool" id="hg-form"><p class="small">One row for each language or country version of the page, including this one.</p><div id="hg-rows"></div><button class="btn ghost" type="button" id="hg-add">Add another version</button>
+<label for="hg-xd">x-default – the page for everyone else (optional)</label><input id="hg-xd" type="text" inputmode="url" value="https://smithplumbing.com/">
+<label for="hg-fmt">Format</label><select id="hg-fmt"><option value="html" selected>HTML &lt;link&gt; tags for the &lt;head&gt;</option><option value="xml">XML sitemap</option><option value="header">HTTP Link header (for PDFs)</option></select>
+<p style="margin:16px 0 6px;font-weight:600">Your hreflang tags</p><pre class="out" id="hg-out"></pre><button class="btn" type="button" id="hg-copy">Copy</button><div id="hg-notes" aria-live="polite"></div></form><script src="/assets/tools.js" defer></script>`,
+  emailheaders: () => `<form class="tool" id="eh-form"><label for="eh-in">Paste the full email headers</label><textarea id="eh-in" spellcheck="false" style="min-height:220px" placeholder="Received: from mail.example.co.uk …&#10;Authentication-Results: …&#10;From: …&#10;Subject: …"></textarea><div class="row" style="margin-top:12px"><button class="btn" type="submit">Analyse headers</button><button class="btn ghost" type="button" id="eh-sample">Try an example</button></div><p class="small">The headers are read in this browser tab and never sent anywhere.</p><div id="eh-out" aria-live="polite"></div></form><script src="/assets/tools.js" defer></script>`,
   caseconv: () => `<form class="tool" id="cc-form"><label for="cc-in">Your text</label><textarea id="cc-in" style="min-height:160px;font-family:inherit;font-size:16px">the quick brown fox jumps over the lazy dog. it was a sunny day in blackpool.</textarea>
 <div class="row" style="gap:8px;flex-wrap:wrap;margin:12px 0" id="cc-btns"><button class="btn ghost" type="button" data-c="sentence">Sentence case</button><button class="btn ghost" type="button" data-c="lower">lower case</button><button class="btn ghost" type="button" data-c="upper">UPPER CASE</button><button class="btn ghost" type="button" data-c="title">Title Case</button><button class="btn ghost" type="button" data-c="capital">Capitalise Each Word</button><button class="btn ghost" type="button" data-c="alt">aLtErNaTiNg</button><button class="btn ghost" type="button" data-c="camel">camelCase</button><button class="btn ghost" type="button" data-c="snake">snake_case</button><button class="btn ghost" type="button" data-c="kebab">kebab-case</button></div>
 <p class="small" id="cc-n" aria-live="polite"></p><button class="btn" type="button" id="cc-copy">Copy text</button><pre id="cc-hidden" style="display:none"></pre></form><script src="/assets/tools.js" defer></script>`,
@@ -218,24 +232,27 @@ function robotsTest(body) {
 
 // ---------- pages
 const faqs = (list) => list && list.length ? `<h2>Frequently asked questions</h2>${list.map(([q, a]) => `<details><summary><h3>${esc(q)}</h3></summary><p>${esc(a)}</p></details>`).join("")}` : "";
+const RELATED = relatedGuides(PAGES);
+const related = (p) => (RELATED[p.path] || []).length ? `<div class="wrap"><h2>Related guides</h2><div class="grid">${RELATED[p.path].map((g) => `<a class="card" href="${g.path}"><p class="ct">${esc(g.crumb)}</p><p>${esc(g.desc)}</p></a>`).join("")}</div></div>` : "";
 const guideCards = () => `<div class="grid">${GUIDES.map((g) => `<a class="card" href="${g.path}"><p class="ct">${esc(g.crumb)}</p><p>${esc(g.desc)}</p></a>`).join("")}</div>`;
 const CTA = `<div class="cta"><p class="ct" style="font-size:26px">Run a free SEO check now</p><p>About 50 checks covering Google, AI search, speed, security and local SEO. No sign-up.</p><form class="ck-form" action="/seo-checker" method="get" role="search"><label for="cta-url" class="sr">Website address</label><input id="cta-url" name="url" type="text" inputmode="url" placeholder="yourwebsite.co.uk" required><button class="btn" type="submit">Check my site</button></form></div>`;
 const MAKER = `<div class="maker"><p><strong>Want the fixes done for you?</strong> XKey is made by <a href="https://icework.co.uk/" rel="noopener">IceWork</a>, a web studio in ${BRAND.town}. IceWork builds fast, search-ready websites – a 3-page site including domain and a year's hosting is £${BRAND.price} all in.</p></div>`;
 
 Object.assign(FORMS, PRO_FORMS);
 Object.assign(FORMS, MORE_FORMS);
-const INSTANT = new Set([...PRO_INSTANT, ...MORE_INSTANT, ...EXTRA_INSTANT, "title", "robots", "llms", "meta", "og", "sitemap", "words", "keywords", "titles", "robotsgen", "schemagen", "localserp"]);
+const INSTANT = new Set([...PRO_INSTANT, ...MORE_INSTANT, ...EXTRA_INSTANT, "title", "robots", "llms", "meta", "og", "sitemap", "words", "keywords", "titles", "robotsgen", "schemagen", "localserp", "utm", "slug", "caseconv", "favgen", "hreflanggen", "emailheaders"]);
 Object.assign(FORMS, PRO_FORMS, A11Y_FORMS);
 const freeStrip = (f) => `<ul class="free" aria-label="What free means here"><li>No cost</li><li>No sign-up</li><li>No email</li><li>No Google sign-in</li><li>No subscription</li><li>${INSTANT.has(f) ? "Unlimited – runs in your browser" : "No limits for normal use"}</li></ul>`;
 function render(p) {
+  const dates = pageDates(p);
   const form = p.form ? FORMS[p.form](p) : "";
   const isTool = !p.article && p.path !== "/about" && p.path !== "/contact" && p.path !== "/privacy";
   const body = `<div class="wrap hero"${p.form ? "" : ' style="padding-bottom:24px"'}>${p.eyebrow ? `<span class="eyebrow">${esc(p.eyebrow)}</span>` : ""}<h1>${esc(p.h1)}</h1><p class="lead">${esc(p.lead)}</p>${form}${p.form ? freeStrip(p.form) : ""}</div>
-<section style="padding-top:0"><div class="wrap prose">${p.article ? `<p class="small">Last updated <time datetime="${UPDATED}">${new Date(UPDATED).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" })}</time> · By the XKey team</p>` : ""}${p.sections || ""}${faqs(p.faqs)}</div>
-${p.tools ? `<div class="wrap">${toolCards()}</div>` : ""}${p.guides ? `<div class="wrap">${guideCards()}</div>` : ""}
+<section style="padding-top:0"><div class="wrap prose">${p.article ? `<p class="small">Last updated <time datetime="${dates.modified}">${new Date(dates.modified).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" })}</time> · By the XKey team</p>` : ""}${p.sections || ""}${faqs(p.faqs)}</div>
+${related(p)}${p.tools ? `<div class="wrap">${toolCards()}</div>` : ""}${p.guides ? `<div class="wrap">${guideCards()}</div>` : ""}
 ${isTool && !p.tools && !p.guides ? `<div class="wrap"><h2>More free SEO tools</h2>${toolCards(p.path)}</div>` : ""}
 <div class="wrap">${p.form === "check" ? "" : CTA}${p.path === "/contact" || p.path === "/privacy" ? "" : MAKER}</div></section>`;
-  return layout({ ...p, body });
+  return layout({ ...p, ...dates, body });
 }
 const HTML = Object.fromEntries(PAGES.map((p) => [p.path, render(p)]));
 const NOT_FOUND = layout({ path: "/404", crumb: "Not found", title: "Page not found | XKey", desc: "That page doesn't exist.", noindex: true, body: `<div class="wrap hero"><h1>Page not found</h1><p class="lead">That page doesn't exist or has moved.</p><a class="btn" href="/">Run a free SEO check</a></div>` });
@@ -246,21 +263,29 @@ const enginePage = (k) => BY_PATH[ENGINE_PAGE[k] || "/"];
 
 // ---------- static files
 const OG_BYTES = Uint8Array.from(atob(OG_PNG), (c) => c.charCodeAt(0));
+const FONT_BYTES = Object.fromEntries(Object.entries(FONT_FILES).map(([p, b]) => [p, Uint8Array.from(atob(b), (c) => c.charCodeAt(0))]));
 const INDEXED = PAGES.filter((p) => !p.noindex);
-const SITEMAP = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${INDEXED.map((p) => `<url><loc>${SITE}${p.path}</loc><lastmod>${UPDATED}</lastmod></url>`).join("\n")}\n</urlset>\n`;
+const SITEMAP = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${INDEXED.map((p) => `<url><loc>${SITE}${p.path}</loc><lastmod>${pageDates(p).modified}</lastmod></url>`).join("\n")}\n</urlset>\n`;
 const ROBOTS = `User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /monitor/\nDisallow: /uptime/\nDisallow: /analytics/\n\nSitemap: ${SITE}/sitemap.xml\n`;
 const LLMS = `# ${BRAND.name}\n\n> Free SEO and AI search checker for UK websites, made by ${BRAND.maker} (${BRAND.makerUrl}), a web studio in ${BRAND.town}. No sign-up.\n\nXKey checks a page for Google readiness, AI search visibility (ChatGPT, Claude, Perplexity, Google AI Overviews), Core Web Vitals, structured data, security and local SEO, and gives a ranked list of fixes. It also crawls whole sites, compares competitors and monitors sites weekly.\n\n## Tools\n\n${INDEXED.filter((p) => !p.article && !["/about", "/contact", "/privacy"].includes(p.path)).map((p) => `- [${p.crumb === "Home" ? "Free SEO check" : p.crumb}](${SITE}${p.path}): ${p.desc}`).join("\n")}\n\n## Guides\n\n${GUIDES.map((p) => `- [${p.crumb}](${SITE}${p.path}): ${p.desc}`).join("\n")}\n\n## About\n\n- [About XKey](${SITE}/about)\n- [Contact](${SITE}/contact)\n- [Privacy](${SITE}/privacy)\n`;
-const MANIFEST = JSON.stringify({ name: BRAND.name, short_name: BRAND.name, start_url: "/", display: "browser", background_color: "#f6f8fb", theme_color: "#0e1726", icons: [{ src: "/favicon.svg", sizes: "any", type: "image/svg+xml" }] });
+const MANIFEST = JSON.stringify({ name: BRAND.name, short_name: BRAND.name, start_url: "/", display: "browser", background_color: "#faf8f3", theme_color: "#0f1011", icons: [{ src: "/favicon.svg", sizes: "any", type: "image/svg+xml" }] });
 
-// IndexNow: submit every page once per site version.
+// IndexNow (Bing, Yandex, Seznam, Naver …): the cron after each deploy submits the pages that are new or
+// whose content changed since the last submission (all pages the first time).
 const INDEXNOW_KEY = "7b3e9c41d2a84f06b5e1c8a9f0d36e72";
 const SITE_VERSION = (() => { let h = 2166136261; const t = JSON.stringify(PAGES); for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(16); })();
 async function submitIndexNow(env) {
   if (!env || !env.STATE) return "no KV binding";
   if ((await env.STATE.get("indexnow")) === SITE_VERSION) return "already submitted";
-  const res = await fetch("https://api.indexnow.org/indexnow", { method: "POST", headers: { "content-type": "application/json; charset=utf-8" }, body: JSON.stringify({ host: BRAND.domain, key: INDEXNOW_KEY, keyLocation: `${SITE}/${INDEXNOW_KEY}.txt`, urlList: INDEXED.map((p) => SITE + p.path) }) });
-  if (res.status === 200 || res.status === 202) { await env.STATE.put("indexnow", SITE_VERSION); return "submitted " + res.status; }
-  return "failed " + res.status;
+  const sent = (await env.STATE.get("indexnow-pages", "json")) || {}, now = Object.fromEntries(INDEXED.map((p) => [p.path, pageHash(p)]));
+  const changed = INDEXED.filter((p) => sent[p.path] !== now[p.path]).map((p) => SITE + p.path);
+  if (changed.length) {
+    const res = await (env.INDEXNOW_FETCH || fetch)("https://api.indexnow.org/indexnow", { method: "POST", headers: { "content-type": "application/json; charset=utf-8" }, body: JSON.stringify({ host: BRAND.domain, key: INDEXNOW_KEY, keyLocation: `${SITE}/${INDEXNOW_KEY}.txt`, urlList: changed }) });
+    if (res.status !== 200 && res.status !== 202) return "failed " + res.status;
+  }
+  await env.STATE.put("indexnow-pages", JSON.stringify(now));
+  await env.STATE.put("indexnow", SITE_VERSION);
+  return `submitted ${changed.length} changed page(s)`;
 }
 
 // A Worker can't fetch its own custom domain (HTTP 522), so checks of xkey.co.uk run in-process.
@@ -374,6 +399,8 @@ const worker = {
     const path = url.pathname;
     if (path.length > 1 && path.endsWith("/")) return Response.redirect(`${url.origin}${path.replace(/\/+$/, "")}${url.search}`, 301);
     if (path === "/index.html") return Response.redirect(`${url.origin}/`, 301);
+    if (FONT_BYTES[path]) return send(FONT_BYTES[path], "font/woff2", 200, "public, max-age=31536000, immutable");
+    if (path === SITE_JS_PATH) return send(SITE_JS, JS, 200, "public, max-age=31536000, immutable");
 
     switch (path) {
       case "/sitemap.xml": return send(SITEMAP, "application/xml; charset=utf-8");
@@ -572,4 +599,4 @@ const worker = {
   },
 };
 export default worker;
-export { PAGES, HTML, robotsTest, INDEXNOW_KEY, SITEMAP, LLMS };
+export { PAGES, HTML, robotsTest, INDEXNOW_KEY, SITEMAP, LLMS, submitIndexNow };

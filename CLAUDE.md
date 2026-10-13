@@ -70,6 +70,10 @@ Free SEO & AI search checker for UK businesses, made by IceWork (icework.co.uk).
 ## Browser-only text tools: UTM builder (/utm-builder), URL slug generator (/url-slug-generator), case converter (/case-converter)
 - All in tools-client.js, nothing sent to the server. Element id prefixes ut-, us-, cc- (sg- is taken by the schema generator).
 
+## Browser-only: favicon generator (/favicon-generator), hreflang generator (/hreflang-generator), email header analyzer (/email-header-analyzer)
+- All in tools-client.js, nothing uploaded (ids fg-, hg-, eh-). The favicon generator draws on a canvas and builds favicon.ico itself (16/32/48 PNGs in an ICO container), plus 180/192/512 PNGs, an SVG (letters only) and site.webmanifest. Upload tests use a scenario's `files` and the `png(w, h)` helper in test/tools.mjs.
+- Other threads own the image compressor/WebP converter and redirect map generator ideas – don't build those here.
+
 ## Rank tracker, content editor, backlink audit, ad checker, brand monitoring (src/pro-pages.js, src/pro-client.js)
 - Pages in `src/pro-pages.js` (`PRO_PAGES`, tool cards `PRO_TOOLS`, forms `PRO_FORMS`); browser code `src/pro-client.js` served as /assets/pro.js (loaded only on these pages). Element id prefixes rk-, ce-, ba-, ad-, bm-, an-.
 - /rank-tracker: reads Search Console Performance exports (the ZIP – unzipped in the browser with DecompressionStream – or a pasted table; comparison columns and Filters.csv country are understood). Snapshots per site + region in localStorage `xk-rank`. No Google sign-in, nothing sent to us.
@@ -102,10 +106,22 @@ Free SEO & AI search checker for UK businesses, made by IceWork (icework.co.uk).
 - Pages in `src/bundle5-pages.js`. Accessibility: `src/a11y.js` (`a11yCheck(html)` pure WCAG 2.2 checks from HTML; `GET /api/a11y?url=` via `getPage`), browser code `src/a11y-client.js` served as /assets/a11y.js (ids a11-). Says plainly it can't test contrast, keyboard or screen-reader flow.
 - Google updates: `src/google-updates.js` reads Google's public Search Status Dashboard feed (status.search.google.com/incidents.json), cached 1 h; index.js swaps the `<!--gsd-->` marker on the page. If the feed fails the page says so – never add unconfirmed updates. Tests: `env.GSD_FETCH` (`gsdStandIn()` in test/lib.mjs).
 - Course: 10 lessons linking to existing guides and tools; task ticks in localStorage `xk-course`.
+## State of UK websites study (/uk-website-study)
+- `study/run.mjs` picks the 500 most-linked .uk domains and a seeded sample of 1,000 ranked 500k–5M (Common Crawl ranks), runs XKey's check on each home page (own UA `XKeyResearch`, robots.txt obeyed), plus SPF/DMARC/MX, AI-crawler robots rules and the platform. Writes aggregates to `src/study-data.js`; per-site rows only as a 90-day run artifact – never publish results for individual sites.
+- Re-run with the "UK website study" Actions workflow (`.github/workflows/uk-study.yml`, run by hand on the branch to update; it commits only study-data.js). `src/study-page.js` reads every number from study-data.js.
 
 ## Layout
 - `src/` – XKey pages (`content.js`), shell/styles (`site.js`), routing + APIs (`index.js`), browser tools (`tools-client.js`, served as /assets/tools.js), page parser (`page-parse.js`), OG image (`og.js`).
+- `src/related.js` – the "Related guides" block on every tool and guide page: tools list their guides by hand in `TOOL_GUIDES`, guides share topics in `TOPICS`. Add new tools and guides there; unlisted pages still get guides picked automatically. check.mjs fails if a guide is linked from fewer than 2 pages.
+- `src/page-dates.js` – each page's [first published, last changed, content hash], used for sitemap lastmod, Article/WebApplication dates and "Last updated". Written by `node test/dates.mjs` (test/all.mjs runs it first): commit the file when it changes. A page missing from it or changed since counts as changed on `UPDATED`.
+- IndexNow: the 15-minute cron submits only pages that are new or changed since the last submission (per-page hashes in KV `indexnow-pages`). Google doesn't use IndexNow; it reads sitemap.xml (submitted in Search Console).
 - `engine/` – SEO checker engine **shared with icework.co.uk** (repo joeinblackpool/ICEWORK, folder `src/`). `src/page-parse.js` is also copied to ICEWORK `src/` (it powers the competitor topic gap there). Keep the two copies identical: change it here, then copy the same files into ICEWORK `src/` and run its tests (`node test/check.mjs`, `node test/checker-unit.mjs`).
+
+## Look and feel (src/site.js)
+- Ink on unbleached canvas: no box-shadow, no gradients, no border-radius anywhere (a global reset enforces it, inline styles included). Sections are split by 1px hairlines (`--line`, rgba(15,16,17,.15)).
+- Headings use Fraunces, technical text (nav, buttons, labels, code) uses Geist Mono: self-hosted WOFF2 subsets in `src/fonts.js` (rebuild with `fonts/build.py`), `font-display: optional` and no preload, because preloading or swapping measurably slowed first paint. Fallbacks are Georgia / the system monospace.
+- Buttons, nav links and toggles have `transition: none` and invert instantly from outline to solid on hover/click.
+- `/assets/site-<hash>.js` (SITE_JS) runs after the load event: turns on the SVG grain overlay (`html.g`) and fades in blocks that start below the first screen (`.rv` → `.in`, easing cubic-bezier(.16,1,.3,1)). Content is never hidden before load or without JS, and reduced-motion users get no reveal.
 
 ## Before pushing – `node test/all.mjs` must pass
 - `test/check.mjs` – 0 problems on every page (titles ≤580px, descriptions 500–990px, unique titles, valid JSON-LD, no broken internal links; also runs XKey's own checker on every page).
