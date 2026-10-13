@@ -75,6 +75,7 @@ export const BUNDLE5_PAGES = [
     lead: "Confirmed Google ranking updates, with the date each started and finished, read live from Google's own Search Status Dashboard. If your traffic dropped, check here first.",
     sections: `<h2>Confirmed updates</h2>${GSD_MARK}
 <p class="small">Source: <a href="https://status.search.google.com/" rel="noopener">Google Search Status Dashboard</a>, refreshed every hour. Only updates Google itself has announced are listed – Google changes its rankings every day, and most changes are never announced.</p>
+<p>For what each update and other search changes mean for a small business, read our <a href="/news">SEO news</a>.</p>
 <h2>Did an update hit my site?</h2>
 <ol><li><strong>Line up the dates.</strong> In <a href="/guides/google-search-console">Google Search Console</a>, open Performance, set the dates to cover the update and compare the weeks before and after.</li><li><strong>Wait for it to finish.</strong> Rankings bounce around during a rollout. Judge the result a week or two after Google says it's complete.</li><li><strong>Find what dropped.</strong> Compare pages and searches. A drop across the whole site points to an update; a drop on one page usually has a simpler cause.</li><li><strong>Rule out your own changes.</strong> A redesign, new addresses, a blocked robots.txt or a noindex tag cause far more drops than updates do – run the <a href="/">free SEO check</a> and the <a href="/broken-link-checker">broken link checker</a>.</li></ol>
 <h2>How to recover from a core update</h2>

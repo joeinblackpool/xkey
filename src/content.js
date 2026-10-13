@@ -8,6 +8,7 @@ import { BUILDER_GUIDES } from "./builder-guides.js";
 import { BEGINNER_GUIDES } from "./beginner-guides.js";
 import { TRADE_GUIDES } from "./trade-guides.js";
 import { GUIDES_13 } from "./guides-13.js";
+import { NEWS, NEWS_HUB } from "./news.js";
 import { PRO_PAGES, PRO_TOOLS } from "./pro-pages.js";
 import { BUNDLE5_PAGES } from "./bundle5-pages.js";
 import { STUDY_PAGE } from "./study-page.js";
@@ -1139,7 +1140,7 @@ export const PAGES = [
   {
     path: "/guides", crumb: "Guides", title: "Free SEO Guides | Plain-English Help From XKey",
     desc: "Free plain-English SEO guides for UK businesses: why a site isn't on Google, Search Console, title tags, local SEO, schema, AI search and more.",
-    h1: "SEO guides", eyebrow: "Plain English", lead: "Short, practical guides for business owners who want to understand their SEO report.", sections: `<h2>Who are these guides for?</h2><p>Business owners, marketers and anyone who has run an SEO check and wants to know what the results mean. Each guide explains one topic in plain English, says what matters and what doesn't, and links to the free tool that checks it. We update them when Google or the AI providers change their guidance.</p><h2>Where should I start?</h2><p>If you're new to SEO, read <a href="/guides/what-is-an-seo-check">what an SEO check is</a>, then follow the <a href="/guides/how-to-check-website-seo">10-minute routine</a>. If your site doesn't appear in Google at all, start with <a href="/guides/why-is-my-website-not-on-google">why isn't my website on Google?</a> To learn step by step, take the <a href="/learn-seo">free 10-lesson SEO course</a>, and look up any jargon in the <a href="/seo-glossary">SEO glossary</a>. If your traffic fell suddenly, check the <a href="/google-algorithm-updates">Google algorithm updates tracker</a> first.</p><h2>Guides for local businesses</h2><p>Serve customers in a particular town? The <a href="/guides/local-seo-checklist">local SEO checklist</a> and <a href="/guides/google-business-profile">Google Business Profile guide</a> cover the steps that put you in the map pack.</p><h2>Guides for AI search</h2><p>To get recommended by ChatGPT, Claude, Perplexity and Google's AI Overviews, read <a href="/guides/ai-search-optimisation">AI search optimisation</a>, then decide which crawlers to let in with our guide to <a href="/guides/block-ai-training-bots">blocking AI training bots</a>, and find out <a href="/guides/llms-txt">whether you need llms.txt</a>.</p>`, guides: true,
+    h1: "SEO guides", eyebrow: "Plain English", lead: "Short, practical guides for business owners who want to understand their SEO report.", sections: `<h2>Who are these guides for?</h2><p>Business owners, marketers and anyone who has run an SEO check and wants to know what the results mean. Each guide explains one topic in plain English, says what matters and what doesn't, and links to the free tool that checks it. We update them when Google or the AI providers change their guidance.</p><h2>Where should I start?</h2><p>If you're new to SEO, read <a href="/guides/what-is-an-seo-check">what an SEO check is</a>, then follow the <a href="/guides/how-to-check-website-seo">10-minute routine</a>. If your site doesn't appear in Google at all, start with <a href="/guides/why-is-my-website-not-on-google">why isn't my website on Google?</a> To learn step by step, take the <a href="/learn-seo">free 10-lesson SEO course</a>, and look up any jargon in the <a href="/seo-glossary">SEO glossary</a>. If your traffic fell suddenly, check the <a href="/google-algorithm-updates">Google algorithm updates tracker</a> first, and keep up with changes in our <a href="/news">SEO news</a>.</p><h2>Guides for local businesses</h2><p>Serve customers in a particular town? The <a href="/guides/local-seo-checklist">local SEO checklist</a> and <a href="/guides/google-business-profile">Google Business Profile guide</a> cover the steps that put you in the map pack.</p><h2>Guides for AI search</h2><p>To get recommended by ChatGPT, Claude, Perplexity and Google's AI Overviews, read <a href="/guides/ai-search-optimisation">AI search optimisation</a>, then decide which crawlers to let in with our guide to <a href="/guides/block-ai-training-bots">blocking AI training bots</a>, and find out <a href="/guides/llms-txt">whether you need llms.txt</a>.</p>`, guides: true,
   },
   {
     path: "/guides/what-is-an-seo-check", crumb: "What is an SEO check?", parent: ["/guides", "Guides"], article: true,
@@ -1494,6 +1495,8 @@ Sitemap: https://yourdomain.co.uk/sitemap.xml</code></pre>
   ...BUILDER_GUIDES,
   ...TRADE_GUIDES,
   ...GUIDES_13,
+  NEWS_HUB,
+  ...NEWS,
   {
     path: "/about", crumb: "About", title: "About XKey | Free UK SEO Checker",
     desc: "XKey is a free SEO and AI search checker made by IceWork, a small web studio in Blackpool, for UK businesses.",

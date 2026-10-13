@@ -245,13 +245,20 @@ Object.assign(FORMS, MORE_FORMS);
 const INSTANT = new Set([...PRO_INSTANT, ...MORE_INSTANT, ...EXTRA_INSTANT, "title", "robots", "llms", "meta", "og", "sitemap", "words", "keywords", "titles", "robotsgen", "schemagen", "localserp", "utm", "slug", "caseconv", "favgen", "hreflanggen", "emailheaders"]);
 Object.assign(FORMS, PRO_FORMS, A11Y_FORMS);
 const freeStrip = (f) => `<ul class="free" aria-label="What free means here"><li>No cost</li><li>No sign-up</li><li>No email</li><li>No Google sign-in</li><li>No subscription</li><li>${INSTANT.has(f) ? "Unlimited – runs in your browser" : "No limits for normal use"}</li></ul>`;
+// SEO news (src/news.js): posts newest first; the hub lists them all and counts as changed when a post is added.
+const NEWS_POSTS = PAGES.filter((p) => p.news).map((p, i) => ({ p, i, d: pageDates(p) })).sort((a, b) => b.d.published.localeCompare(a.d.published) || a.i - b.i).map((x) => x.p);
+const ukDate = (d) => new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+const datesOf = (p) => { const d = pageDates(p); return p.newsHub ? { ...d, modified: [d.modified, ...NEWS_POSTS.map((n) => pageDates(n).published)].sort().pop() } : d; };
+const newsCards = (list) => `<div class="grid">${list.map((n) => `<a class="card" href="${n.path}"><p class="small"><time datetime="${pageDates(n).published}">${ukDate(pageDates(n).published)}</time></p><p class="ct">${esc(n.h1)}</p><p>${esc(n.desc)}</p></a>`).join("")}</div>`;
+const newsBlock = (p) => p.newsHub ? `<div class="wrap mb40">${newsCards(NEWS_POSTS)}<p class="small">Follow along with the <a href="/news/rss.xml">RSS feed</a>. For every confirmed Google ranking update with its dates, see the <a href="/google-algorithm-updates">Google algorithm updates tracker</a>.</p></div>`
+  : p.news ? `<div class="wrap"><h2>More SEO news</h2>${newsCards(NEWS_POSTS.filter((n) => n !== p).slice(0, 3))}<p><a href="/news">All SEO news</a></p></div>` : "";
 function render(p) {
-  const dates = pageDates(p);
+  const dates = datesOf(p);
   const form = p.form ? FORMS[p.form](p) : "";
-  const isTool = !p.article && p.path !== "/about" && p.path !== "/contact" && p.path !== "/privacy";
+  const isTool = !p.article && !p.newsHub && p.path !== "/about" && p.path !== "/contact" && p.path !== "/privacy";
   const body = `<div class="wrap hero${p.form ? "" : " pb24"}">${p.eyebrow ? `<span class="eyebrow">${esc(p.eyebrow)}</span>` : ""}<h1>${esc(p.h1)}</h1><p class="lead">${esc(p.lead)}</p>${form}${p.form ? freeStrip(p.form) : ""}</div>
-<section class="pt0"><div class="wrap prose">${p.article ? `<p class="small">Last updated <time datetime="${dates.modified}">${new Date(dates.modified).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" })}</time> · By the XKey team</p>` : ""}${p.sections || ""}${faqs(p.faqs)}</div>
-${related(p)}${p.tools ? `<div class="wrap">${toolCards()}</div>` : ""}${p.guides ? `<div class="wrap">${guideCards()}</div>` : ""}
+<section class="pt0">${p.newsHub ? newsBlock(p) : ""}<div class="wrap prose">${p.article ? `<p class="small">Last updated <time datetime="${dates.modified}">${new Date(dates.modified).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" })}</time> · By the XKey team</p>` : ""}${p.sections || ""}${faqs(p.faqs)}</div>
+${p.news ? newsBlock(p) : ""}${related(p)}${p.tools ? `<div class="wrap">${toolCards()}</div>` : ""}${p.guides ? `<div class="wrap">${guideCards()}</div>` : ""}
 ${isTool && !p.tools && !p.guides ? `<div class="wrap"><h2>More free SEO tools</h2>${toolCards(p.path)}</div>` : ""}
 <div class="wrap">${p.form === "check" ? "" : CTA}${p.path === "/contact" || p.path === "/privacy" ? "" : MAKER}</div></section>`;
   return layout({ ...p, ...dates, body });
@@ -267,7 +274,9 @@ const enginePage = (k) => BY_PATH[ENGINE_PAGE[k] || "/"];
 const OG_BYTES = Uint8Array.from(atob(OG_PNG), (c) => c.charCodeAt(0));
 const FONT_BYTES = Object.fromEntries(Object.entries(FONT_FILES).map(([p, b]) => [p, Uint8Array.from(atob(b), (c) => c.charCodeAt(0))]));
 const INDEXED = PAGES.filter((p) => !p.noindex);
-const SITEMAP = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${INDEXED.map((p) => `<url><loc>${SITE}${p.path}</loc><lastmod>${pageDates(p).modified}</lastmod></url>`).join("\n")}\n</urlset>\n`;
+const SITEMAP = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${INDEXED.map((p) => `<url><loc>${SITE}${p.path}</loc><lastmod>${datesOf(p).modified}</lastmod></url>`).join("\n")}\n</urlset>\n`;
+const xmlEsc = (t) => String(t).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]);
+const RSS = `<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>XKey SEO news</title><link>${SITE}/news</link><description>${xmlEsc(BY_PATH["/news"].desc)}</description><language>en-gb</language><atom:link href="${SITE}/news/rss.xml" rel="self" type="application/rss+xml"/>${NEWS_POSTS.length ? `<lastBuildDate>${new Date(datesOf(BY_PATH["/news"]).modified).toUTCString()}</lastBuildDate>` : ""}\n${NEWS_POSTS.map((n) => `<item><title>${xmlEsc(n.h1)}</title><link>${SITE}${n.path}</link><guid isPermaLink="true">${SITE}${n.path}</guid><pubDate>${new Date(pageDates(n).published).toUTCString()}</pubDate><description>${xmlEsc(n.desc)}</description></item>`).join("\n")}\n</channel></rss>\n`;
 const ROBOTS = `User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /monitor/\nDisallow: /uptime/\nDisallow: /analytics/\n\nSitemap: ${SITE}/sitemap.xml\n`;
 const LLMS = `# ${BRAND.name}\n\n> Free SEO and AI search checker for UK websites, made by ${BRAND.maker} (${BRAND.makerUrl}), a web studio in ${BRAND.town}. No sign-up.\n\nXKey checks a page for Google readiness, AI search visibility (ChatGPT, Claude, Perplexity, Google AI Overviews), Core Web Vitals, structured data, security and local SEO, and gives a ranked list of fixes. It also crawls whole sites, compares competitors and monitors sites weekly.\n\n## Tools\n\n${INDEXED.filter((p) => !p.article && !["/about", "/contact", "/privacy"].includes(p.path)).map((p) => `- [${p.crumb === "Home" ? "Free SEO check" : p.crumb}](${SITE}${p.path}): ${p.desc}`).join("\n")}\n\n## Guides\n\n${GUIDES.map((p) => `- [${p.crumb}](${SITE}${p.path}): ${p.desc}`).join("\n")}\n\n## About\n\n- [About XKey](${SITE}/about)\n- [Contact](${SITE}/contact)\n- [Privacy](${SITE}/privacy)\n`;
 const MANIFEST = JSON.stringify({ name: BRAND.name, short_name: BRAND.name, start_url: "/", display: "browser", background_color: "#faf8f3", theme_color: "#0f1011", icons: [{ src: "/favicon.svg", sizes: "any", type: "image/svg+xml" }] });
@@ -417,6 +426,7 @@ const worker = {
 
     switch (path) {
       case "/sitemap.xml": return send(SITEMAP, "application/xml; charset=utf-8");
+      case "/news/rss.xml": return send(RSS, "application/rss+xml; charset=utf-8");
       case "/robots.txt": return send(ROBOTS, TXT);
       case "/llms.txt": return send(LLMS, TXT);
       case "/site.webmanifest": return send(MANIFEST, "application/manifest+json");
