@@ -105,6 +105,11 @@ Free SEO & AI search checker for UK businesses, made by IceWork (icework.co.uk).
 - `study/run.mjs` picks the 500 most-linked .uk domains and a seeded sample of 1,000 ranked 500k–5M (Common Crawl ranks), runs XKey's check on each home page (own UA `XKeyResearch`, robots.txt obeyed), plus SPF/DMARC/MX, AI-crawler robots rules and the platform. Writes aggregates to `src/study-data.js`; per-site rows only as a 90-day run artifact – never publish results for individual sites.
 - Re-run with the "UK website study" Actions workflow (`.github/workflows/uk-study.yml`, run by hand on the branch to update; it commits only study-data.js). `src/study-page.js` reads every number from study-data.js.
 
+## SEO news (/news, src/news.js)
+- Short original posts on real search events (Google updates, Search/Search Console changes, Google guidance or policy changes, UK regulator decisions such as the CMA). Each says what happened, what it means for a small UK business and what to do, links the matching XKey tools/guides, and ends with a Sources list (Google's or the regulator's own pages first). Add a post at the top of `POSTS`.
+- Pages are normal PAGES entries (`news: true` → NewsArticle markup, RSS link; hub `newsHub`). index.js renders the hub list, "More SEO news" on posts and `/news/rss.xml`; the hub's lastmod follows its newest post. Dates come from page-dates.js – never backdate a post to the event date; say the event date in the text.
+- A daily routine checks the sources and opens a `claude/news-<date>` PR only when there is real news not already covered. Never pad quiet days, never post rumours or unconfirmed updates, never rewrite another site's article, and never publish two posts on the same event (update the existing post instead).
+
 ## Layout
 - `src/` – XKey pages (`content.js`), shell/styles (`site.js`), routing + APIs (`index.js`), browser tools (`tools-client.js`, served as /assets/tools.js), page parser (`page-parse.js`), OG image (`og.js`).
 - `src/related.js` – the "Related guides" block on every tool and guide page: tools list their guides by hand in `TOOL_GUIDES`, guides share topics in `TOPICS`. Add new tools and guides there; unlisted pages still get guides picked automatically. check.mjs fails if a guide is linked from fewer than 2 pages.

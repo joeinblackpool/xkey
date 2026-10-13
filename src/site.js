@@ -112,7 +112,7 @@ footer{border-top:1px solid var(--line);margin-top:56px;padding:32px 0;color:var
 .out{white-space:pre-wrap;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:14px;overflow-x:auto}
 .recent{list-style:none;padding:0;margin:6px 0;display:flex;flex-direction:column;gap:2px}.recent a{display:inline-block;padding:8px 0;min-height:44px}
 .maker{background:var(--soft);border-radius:14px;padding:18px 20px;margin:24px 0}.maker p{margin:0}
-.pt0{padding-top:0}.hero.pb24{padding-bottom:24px}.cta.first{margin-top:0}.ct.big{font-size:24px}.m0{margin:0}
+.pt0{padding-top:0}.mb40{margin-bottom:40px}.hero.pb24{padding-bottom:24px}.cta.first{margin-top:0}.ct.big{font-size:24px}.m0{margin:0}
 ${CHECKER_CSS}
 ${MONITOR_CSS}
 .cmp-l input{font-weight:400}
@@ -168,7 +168,7 @@ function jsonld(p) {
     { "@type": "Organization", "@id": `${SITE}/#org`, name: BRAND.name, description: "Free SEO and AI search tools for UK businesses. Every tool is free, with no account, no email, no Google sign-in and no paid version.", url: `${SITE}/`, logo: `${SITE}/favicon.svg`, email: BRAND.email, address: { "@type": "PostalAddress", addressLocality: BRAND.town, addressRegion: "Lancashire", addressCountry: "GB" }, areaServed: "GB", parentOrganization: { "@type": "Organization", "@id": "https://icework.co.uk/#business", name: BRAND.maker, url: BRAND.makerUrl + "/" } },
     { "@type": "WebSite", "@id": `${SITE}/#site`, url: `${SITE}/`, name: BRAND.name, publisher: { "@id": `${SITE}/#org` }, inLanguage: "en-GB" },
     p.app ? { "@type": "WebApplication", "@id": `${url}#app`, name: p.app, url, applicationCategory: "BusinessApplication", operatingSystem: "Any (web browser)", isAccessibleForFree: true, dateModified: modified, offers: { "@type": "Offer", price: "0", priceCurrency: "GBP" }, publisher: { "@id": `${SITE}/#org` } }
-      : p.article ? { "@type": "Article", "@id": `${url}#page`, headline: p.h1, description: p.desc, url, dateModified: modified, datePublished: published, author: { "@id": `${SITE}/#org` }, publisher: { "@id": `${SITE}/#org` }, inLanguage: "en-GB" }
+      : p.article ? { "@type": p.news ? "NewsArticle" : "Article", "@id": `${url}#page`, headline: p.h1, description: p.desc, url, ...(p.news ? { image: `${SITE}/og.png`, mainEntityOfPage: url } : {}), dateModified: modified, datePublished: published, author: { "@id": `${SITE}/#org` }, publisher: { "@id": `${SITE}/#org` }, inLanguage: "en-GB" }
       : { "@type": "WebPage", "@id": `${url}#page`, url, name: p.title, description: p.desc, isPartOf: { "@id": `${SITE}/#site` }, dateModified: modified },
   ];
   if (p.itemList) g.push({ "@type": "ItemList", name: "Free SEO tools", itemListElement: p.itemList.map(([path, name], i) => ({ "@type": "ListItem", position: i + 1, name, url: SITE + path })) });
@@ -192,7 +192,7 @@ function page(p) {
 <meta name="robots" content="${p.noindex ? "noindex,follow" : "index,follow,max-image-preview:large"}">
 <meta property="og:type" content="${p.article ? "article" : "website"}">${p.article && p.modified ? `<meta property="article:published_time" content="${p.published}"><meta property="article:modified_time" content="${p.modified}">` : ""}<meta property="og:site_name" content="${BRAND.name}"><meta property="og:title" content="${esc(p.title)}"><meta property="og:description" content="${esc(p.desc)}"><meta property="og:url" content="${url}"><meta property="og:image" content="${SITE}/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:locale" content="en_GB">
 <meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="${SITE}/og.png">
-<link rel="icon" href="/favicon.svg" type="image/svg+xml"><meta name="theme-color" content="#0f1011">
+${p.news || p.newsHub ? `<link rel="alternate" type="application/rss+xml" title="XKey SEO news" href="${SITE}/news/rss.xml">` : ""}<link rel="icon" href="/favicon.svg" type="image/svg+xml"><meta name="theme-color" content="#0f1011">
 <style>${CSS}</style><script type="application/ld+json">${jsonld(p)}</script></head><body>
 <header class="top"><div class="wrap nav"><a class="logo" href="/" aria-label="XKey home">X<b>Key</b></a><ul>${nav}</ul></div></header>
 ${crumbs}<main>${p.body}${maker}</main>
@@ -201,7 +201,7 @@ ${crumbs}<main>${p.body}${maker}</main>
 <div><a class="logo" href="/">X<b>Key</b></a><p>${BRAND.tagline}. No cost, no sign-up, no email, no subscription. Built in the UK.</p><p class="small">Made by <a href="${BRAND.makerUrl}" rel="noopener">${BRAND.maker}</a>, ${BRAND.town}.</p></div>
 <div><strong>SEO checks</strong><ul><li><a href="/">Free SEO check</a></li><li><a href="/website-crawler">Website crawler</a></li><li><a href="/ai-seo-checker">AI SEO checker</a></li><li><a href="/website-audit">Website audit</a></li><li><a href="/backlink-checker">Backlink checker</a></li><li><a href="/seo-comparison">Competitor comparison</a></li><li><a href="/seo-monitoring">SEO monitoring</a></li></ul></div>
 <div><strong>Free tools</strong><ul><li><a href="/title-tag-checker">Title tag checker</a></li><li><a href="/robots-txt-tester">robots.txt tester</a></li><li><a href="/llms-txt-generator">llms.txt generator</a></li><li><a href="/meta-tag-generator">Meta tag generator</a></li><li><a href="/xml-sitemap-generator">Sitemap generator</a></li><li><a href="/keyword-generator">Keyword generator</a></li><li><a href="/ai-meta-description-generator">AI description writer</a></li><li><a href="/keyword-difficulty-checker">Keyword difficulty</a></li><li><a href="/plagiarism-checker">Plagiarism checker</a></li><li><a href="/word-counter">Word counter</a></li><li><a href="/seo-tools">All 32 SEO tools</a></li></ul></div>
-<div><strong>XKey</strong><ul><li><a href="/guides">SEO guides</a></li><li><a href="/learn-seo">Free SEO course</a></li><li><a href="/seo-glossary">SEO glossary</a></li><li><a href="/google-algorithm-updates">Google updates</a></li><li><a href="/uk-business-directories">UK directories</a></li><li><a href="/uk-website-study">UK website study</a></li><li><a href="/about">About</a></li><li><a href="/contact">Contact</a></li><li><a href="mailto:${EMAIL_HTML}">${EMAIL_HTML}</a></li><li><a href="/privacy">Privacy</a></li></ul></div>
+<div><strong>XKey</strong><ul><li><a href="/guides">SEO guides</a></li><li><a href="/learn-seo">Free SEO course</a></li><li><a href="/seo-glossary">SEO glossary</a></li><li><a href="/news">SEO news</a></li><li><a href="/google-algorithm-updates">Google updates</a></li><li><a href="/uk-business-directories">UK directories</a></li><li><a href="/uk-website-study">UK website study</a></li><li><a href="/about">About</a></li><li><a href="/contact">Contact</a></li><li><a href="mailto:${EMAIL_HTML}">${EMAIL_HTML}</a></li><li><a href="/privacy">Privacy</a></li></ul></div>
 </div><p class="small">© ${UPDATED.slice(0, 4)} ${BRAND.name}. Scores are a guide, not a guarantee of rankings.</p></div></footer><script src="${SITE_JS_PATH}" async></script></body></html>`;
 }
 
