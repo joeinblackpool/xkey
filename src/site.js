@@ -28,6 +28,7 @@ export const BRAND = { name: "XKey", fullName: "XKey", domain: "xkey.co.uk", tag
     "Indexable": ["/guides/why-is-my-website-not-on-google", "why isn't my website on Google?"],
     "Title tag": ["/guides/title-tags", "how to write title tags"],
     "Meta description": ["/guides/meta-descriptions", "how to write meta descriptions"],
+    "Open Graph & social cards": ["/guides/does-social-media-help-seo", "does social media help SEO?"],
     "Image alt text": ["/guides/image-seo", "image SEO"],
     "Images": ["/guides/image-seo", "image SEO"],
     "Internal linking": ["/guides/internal-linking", "internal linking"],
