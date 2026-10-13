@@ -37,6 +37,9 @@ const TOOLS = [
   ["/email-header-analyzer", "Email header analyzer", "Paste email headers to check SPF, DKIM and DMARC, trace the route and spot fakes."],
   ["/website-technology-checker", "Website technology checker", "What is a site built with? CMS, theme, plugins, analytics, hosting and email."],
   ["/dns-lookup", "DNS lookup", "A, MX, TXT, NS and other records, plus SPF and DMARC email checks."],
+  ["/dns-propagation-checker", "DNS propagation checker", "Has your DNS change spread? Ten public DNS services and your own name server."],
+  ["/reverse-dns-lookup", "Reverse DNS lookup", "The hostname (PTR record) of any IP address, and whether it points back."],
+  ["/meta-tag-checker", "Meta tag checker", "Every meta tag on a live page, with a Google preview and plain fixes."],
   ["/mx-lookup", "MX lookup", "Which mail servers receive a domain's email, in priority order, and who provides them."],
   ["/spf-checker", "SPF checker", "Check an SPF record, every include and the 10-DNS-lookup limit."],
   ["/dmarc-checker", "DMARC checker", "Look up a DMARC policy tag by tag and see if it stops fake email."],
@@ -613,6 +616,63 @@ export const PAGES = [
 <h2>What it can't tell you</h2>
 <ul><li><strong>Changes made in the last few minutes or hours.</strong> We ask public resolvers (Cloudflare's 1.1.1.1, with Google as a backup), which may hold the old answer until its TTL runs out.</li><li><strong>DKIM.</strong> DKIM keys live under a "selector" name only your email provider knows. The <a href="/dkim-checker">DKIM checker</a> tries the common ones, or the one you enter.</li><li><strong>Private or internal names</strong> that only resolve inside your network.</li></ul>`,
     faqs: [["Is the DNS lookup free?", "Yes. No sign-up, no email and no subscription, with only a fair-use limit to stop bots."], ["How long do DNS changes take?", "Usually minutes, but resolvers can keep an old answer for as long as its TTL (time to live), shown next to every record. Lower the TTL a day before a planned move."], ["Why does my site work but show no A record?", "Check you typed the exact address people use. The site may run on www only, which is a CNAME to your host – the lookup shows www separately."], ["Do DNS settings affect SEO?", "Only indirectly: if DNS fails, Google can't reach your pages, and slow DNS adds a little to every first visit."]],
+  },
+  {
+    path: "/dns-propagation-checker", crumb: "DNS propagation checker", parent: ["/seo-tools", "SEO tools"], title: "DNS Propagation Checker | Has My DNS Change Spread?",
+    desc: "Free DNS propagation checker: see whether 10 public DNS services worldwide and your own name server give the new A, MX, CNAME, NS or TXT record.",
+    h1: "DNS propagation checker", eyebrow: "Any domain · Free · No sign-up", app: "XKey DNS propagation checker", form: "propagation",
+    lead: "Changed your DNS? Enter the domain to see whether ten big public DNS services, and your own name server, already give the new answer, and how long saved copies of the old one can last.",
+    sections: `<h2>What the propagation checker does</h2>
+<div class="grid">
+<div class="card"><p class="ct">Your name server</p><p>We ask the domain's own name server directly. That's the source of truth: once your change shows there, it's saved correctly.</p></div>
+<div class="card"><p class="ct">Ten public DNS services</p><p>Cloudflare, Google, OpenDNS, NextDNS, AdGuard, Control D, DNS.SB, LibreDNS, IIJ and AliDNS, run by companies in the United States, Europe, Canada, Japan and China.</p></div>
+<div class="card"><p class="ct">Same or different</p><p>Each answer is compared with your name server, with the time left on saved copies, so you know whether to wait or fix something.</p></div>
+</div>
+<h2>What is DNS propagation?</h2>
+<p>When you change a DNS record, such as pointing your domain at a new website host or moving your email to Microsoft 365, the change is saved straight away on your domain's name server. But DNS services and broadband providers keep a copy of the old answer for a while to save time, and only ask again when that copy expires. The expiry time is the record's TTL (time to live). "Propagation" is simply the old copies running out, which is why one person sees your new website while another still sees the old one.</p>
+<h2>How long does DNS propagation take?</h2>
+<p>Usually minutes to a few hours, and up to 48 hours at most. It depends on the TTL the old record had, not the new one. Changing your name servers (moving DNS to a new company) takes longest, because the registry for .uk or .com saves those for up to two days. If you're planning a move, lower the TTL to 300 seconds a day beforehand, so the switch spreads in minutes.</p>
+<h2>If your change isn't showing</h2>
+<ul><li><strong>Your own name server shows the old answer:</strong> the change isn't saved where it counts. You may have edited DNS at the wrong company: check where your name servers point with our <a href="/dns-lookup">DNS lookup</a>.</li><li><strong>Some services differ:</strong> they still have the old copy. Wait for the TTL shown, then check again.</li><li><strong>"No record":</strong> check the record type and the host name. "@" means the bare domain, "www" the www version.</li><li><strong>Website still old on your own computer:</strong> your browser and router save DNS too. Try a private window, or your phone on mobile data.</li></ul>
+<h2>What it can't check</h2>
+<p>Big public DNS services answer from the server nearest our checker, so this shows whether the main services have your change, not the cache of every broadband provider. Some name servers don't answer outside requests; then we compare the public services with each other instead.</p>`,
+    faqs: [["Is the DNS propagation checker free?", "Yes. No sign-up, no email and no subscription, with only a fair-use limit to stop bots."], ["Can I speed up DNS propagation?", "Not once the change is made: old copies expire on their own. Next time, lower the TTL a day before the change. You can clear your own computer's copy by restarting your browser or router."], ["Why does my site work on my phone but not my laptop?", "Each device and network saves DNS separately. Your laptop or home router still has the old answer; it will update when that copy expires."], ["Does DNS propagation affect SEO?", "Only briefly. While the change spreads, Google may reach the old server. Keep the old site running until propagation finishes so no visitor or crawler sees an error."]],
+  },
+  {
+    path: "/reverse-dns-lookup", crumb: "Reverse DNS lookup", parent: ["/seo-tools", "SEO tools"], title: "Reverse DNS Lookup | Find the Hostname of an IP",
+    desc: "Free reverse DNS lookup: find the PTR record and hostname of any IPv4 or IPv6 address, or every address of a domain, and check it points back.",
+    h1: "Reverse DNS lookup", eyebrow: "IPv4 and IPv6 · Free · No sign-up", app: "XKey reverse DNS lookup", form: "ptr",
+    lead: "Enter IP addresses or a domain name to find each address's hostname (its PTR record) and check that the hostname points back to the same address, as mail servers expect.",
+    sections: `<h2>What is reverse DNS?</h2>
+<p>Normal DNS turns a name into an address: smithplumbing.co.uk → 192.0.2.10. Reverse DNS goes the other way, turning an IP address back into a hostname through a PTR record. It's set by whoever owns the IP address, usually your hosting company or broadband provider, not in your domain's own DNS settings.</p>
+<h2>Why reverse DNS matters</h2>
+<ul><li><strong>Email delivery.</strong> Gmail, Outlook and most mail servers check the reverse DNS of the server sending to them. No PTR record, or a hostname that doesn't point back to the same address, and your email is likely to be rejected or sent to spam.</li><li><strong>Spotting who's connecting.</strong> Hostnames often show the company behind an address, such as a hosting firm, a cloud service or a broadband provider, which helps when reading server logs.</li><li><strong>Checking crawlers.</strong> A real Googlebot visit comes from an address whose reverse DNS ends in googlebot.com or google.com, and that hostname points back to the same address. Anything else claiming to be Googlebot is a fake.</li></ul>
+<h2>What "points back" means</h2>
+<p>Anyone who controls an IP address can give it any hostname, even one that isn't theirs. So mail servers do a second check: they look up the hostname's own address and make sure it's the same IP. This is called forward-confirmed reverse DNS (FCrDNS). We do the same check and show the result for each address.</p>
+<h2>How to fix a missing or wrong PTR record</h2>
+<p>If you run your own mail server, ask your hosting company or ISP to set the PTR record of its IP address to your mail server's hostname, such as mail.yourbusiness.co.uk, and make sure that hostname has an A record pointing to the same IP. Most cloud hosts (AWS, Google Cloud, DigitalOcean, Hetzner) let you set it in their control panel. If you use Microsoft 365, Google Workspace or another email service, they handle reverse DNS for you. Check the rest of your email setup with our <a href="/spf-checker">SPF checker</a> and <a href="/dmarc-checker">DMARC checker</a>.</p>`,
+    faqs: [["Is the reverse DNS lookup free?", "Yes. No sign-up, no email and no subscription, with only a fair-use limit to stop bots."], ["Can I look up several IP addresses at once?", "Yes. Enter up to 10 addresses or domain names, separated by spaces or commas."], ["Why does my IP have no reverse DNS?", "Many addresses, especially home broadband and some cloud servers, simply have no PTR record. It only matters for servers that send email."], ["Can I set reverse DNS in my domain's DNS settings?", "No. The PTR record lives with whoever owns the IP address: your host, cloud provider or ISP. Ask them, or look for a reverse DNS setting in their control panel."]],
+  },
+  {
+    path: "/meta-tag-checker", crumb: "Meta tag checker", parent: ["/seo-tools", "SEO tools"], title: "Meta Tag Checker | Analyse Any Page's Meta Tags",
+    desc: "Free meta tag checker: analyse the title, meta description, robots, viewport, canonical and social tags of any live page, with a Google preview.",
+    h1: "Meta tag checker", eyebrow: "Any page · Free · No sign-up", app: "XKey meta tag checker", form: "metacheck",
+    lead: "Enter any page address to see its title and description as Google shows them, and check every meta tag that affects search, phones and sharing, with a plain list of fixes.",
+    sections: `<h2>What the meta tag checker looks at</h2>
+<div class="grid">
+<div class="card"><p class="ct">Search tags</p><p>The title and meta description measured in pixels, the way Google cuts them, plus robots tags that can hide a page from search.</p></div>
+<div class="card"><p class="ct">Technical tags</p><p>The viewport tag phones need, the canonical address, the page language and the favicon link.</p></div>
+<div class="card"><p class="ct">Everything else</p><p>Open Graph and X tags for social sharing, duplicate tags, and leftovers such as meta keywords, listed in one table.</p></div>
+</div>
+<h2>Which meta tags matter for SEO?</h2>
+<ul><li><strong>Title tag.</strong> The single most important on-page tag: it's the clickable headline in Google. Put your main service and town first and keep it under about 580 pixels (roughly 55 to 60 characters).</li><li><strong>Meta description.</strong> Doesn't change rankings, but it's your advert in the results. A clear benefit and a reason to click win more visitors than a ranking one place higher.</li><li><strong>Robots.</strong> A stray "noindex" left on from building the site is one of the most common reasons a page never appears in Google.</li><li><strong>Viewport.</strong> Without it, phones show a tiny desktop page, and Google ranks pages by how they work on phones.</li><li><strong>Canonical.</strong> Tells Google which address is the main one when the same page can be reached several ways.</li></ul>
+<h2>Meta tags Google ignores</h2>
+<p>The meta keywords tag has been ignored by Google since 2009, and a meta tag named "title" does nothing: only the real &lt;title&gt; tag counts. Neither does harm, but meta keywords hands your target words to competitors, so many sites remove it.</p>
+<h2>How to change your meta tags</h2>
+<p>On WordPress, install Yoast SEO or Rank Math and edit the title and description in the box under each page. Wix, Squarespace and Shopify have an "SEO" or "Search engine listing" section in each page's settings. Draft them first with our <a href="/meta-tag-generator">meta tag generator</a> or <a href="/title-tag-checker">title tag checker</a>, then run this check again on the live page.</p>
+<h2>What it can't check</h2>
+<p>We read the HTML as it arrives. Tags added later by JavaScript may not show here. Google also rewrites some titles and descriptions to match a search, so the preview is a close guide rather than a promise.</p>`,
+    faqs: [["Is the meta tag checker free?", "Yes. No sign-up, no email and no subscription, with only a fair-use limit to stop bots."], ["How long should a meta description be?", "Aim for 120 to 155 characters. Google measures in pixels, cutting desktop snippets at about 990 pixels, so the checker shows the exact width."], ["Why does Google show a different title from mine?", "Google rewrites titles that are too long, stuffed with keywords or don't match the page. A clear, accurate title under 580 pixels is usually kept."], ["Is this different from the title tag checker?", "The title tag checker lets you draft and preview text before it goes live. This checker reads a live page and checks all its meta tags at once."]],
   },
   {
     path: "/mx-lookup", crumb: "MX lookup", parent: ["/seo-tools", "SEO tools"], title: "MX Lookup | Check a Domain's Mail Servers Free",

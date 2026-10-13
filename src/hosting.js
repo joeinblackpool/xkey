@@ -21,7 +21,7 @@ async function timed(env, url, ms = 8000) {
 }
 
 const v4num = (ip) => ip.split(".").reduce((n, x) => n * 256 + Number(x), 0);
-function v6big(ip) {
+export function v6big(ip) {
   let [a, b = ""] = ip.toLowerCase().split("::");
   const A = a ? a.split(":") : [], B = b ? b.split(":") : [];
   const parts = ip.includes("::") ? [...A, ...Array(8 - A.length - B.length).fill("0"), ...B] : A;
@@ -55,7 +55,7 @@ export function parseIpRdap(j) {
   return { org, network: j.name || "", country: j.country || "", range };
 }
 
-const ptrName = (ip) => {
+export const ptrName = (ip) => {
   if (!ip.includes(":")) return ip.split(".").reverse().join(".") + ".in-addr.arpa";
   return v6big(ip).toString(16).padStart(32, "0").split("").reverse().join(".") + ".ip6.arpa";
 };
