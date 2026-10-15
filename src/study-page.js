@@ -9,7 +9,7 @@ const bad = (g, name) => ck(g, name, "warn") + ck(g, name, "fail");
 const date = new Date(STUDY.generated).toLocaleDateString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" });
 const noDmarc = (g) => g.email.dmarc.missing + g.email.dmarc.none;
 const row = (label, a, b) => `<tr><td>${label}</td><td>${a}</td><td>${b}</td></tr>`;
-const table = (rows) => `<div class="tablewrap"><table><thead><tr><th></th><th>Everyday .uk sites</th><th>Top 500 .uk sites</th></tr></thead><tbody>${rows.join("")}</tbody></table></div>`;
+const table = (rows) => `<div class="tablewrap"><table><thead><tr><th>What we checked</th><th>Everyday .uk sites</th><th>Top 500 .uk sites</th></tr></thead><tbody>${rows.join("")}</tbody></table></div>`;
 const cms = E.cms.top.slice(0, 8);
 
 export const STUDY_PAGE = {

@@ -311,6 +311,7 @@ const S = [
   { name: "WHOIS lookup", path: "/whois-lookup", fill: [["wh-d", "https://www.example.com/page"]], click: "#wh-form button[type=submit]", expect: ["#wh-out", /example\.com[\s\S]*\d+ years[\s\S]*Assigned Numbers[\s\S]*a\.iana-servers\.net[\s\S]*client transfer prohibited[\s\S]*Signed/] },
   { name: "WHOIS lookup – WHOIS fallback, opened from a link", path: "/whois-lookup?d=smith.ie", expect: ["#wh-out", /smith\.ie[\s\S]*Blacknight[\s\S]*Registry WHOIS record[\s\S]*whois\.weare\.ie/] },
   { name: "WHOIS lookup – not registered", path: "/whois-lookup", fill: [["wh-d", "nothing-here.co.uk"]], click: "#wh-form button[type=submit]", expect: ["#wh-out", /isn't registered/] },
+  { name: "Home page – your recent checks", path: "/", storage: { seo_recent: JSON.stringify([{ u: "https://www.smithplumbing.co.uk/", s: 82, t: Date.now() - 3 * 3600_000 }]) }, expect: ["#recent", /Your recent checks[\s\S]*smithplumbing\.co\.uk[\s\S]*82[\s\S]*3 h ago/] },
   { name: "SEO score badge", path: "/seo-badge", fill: [["bd-site", "xkey.co.uk"]], expect: ["#bd-code", /badge\.svg\?site=xkey\.co\.uk/] },
 ];
 
@@ -328,6 +329,7 @@ for (const s of RUN) {
   try {
     // routes: [[RegExp, (url) => json]] answers API calls in the browser with fake data (for pages we can't host locally)
     for (const [re, fn] of s.routes || []) await page.route(re, (r) => r.fulfill({ json: fn(new URL(r.request().url())) }));
+    if (s.storage) await page.addInitScript((kv) => { for (const k in kv) localStorage.setItem(k, kv[k]); }, s.storage); // e.g. earlier results kept in this browser
     await page.goto(site.url + s.path, { waitUntil: "load" });
     for (const sel of s.before || []) await page.locator(sel).first().click(); // e.g. open a <details> before filling it
     for (const [id, file] of s.files || []) await page.setInputFiles("#" + id, file); // { name, mimeType, buffer }
