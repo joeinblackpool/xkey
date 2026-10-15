@@ -4,6 +4,7 @@ import { MONITOR_CSS } from "../engine/monitor.js";
 import { FONT_PATHS } from "./fonts.js";
 import { GUIDE_FOR } from "./builder-guides.js";
 import { DATES } from "./page-dates.js";
+import { crewApp } from "./crew-client.js";
 
 export const BRAND = { name: "XKey", fullName: "XKey", domain: "xkey.co.uk", tagline: "Free SEO & AI search check", maker: "IceWork", makerUrl: "https://icework.co.uk", email: "iceworks@f1rst.co.uk", price: 350, town: "Blackpool",
   // SEO report extras (engine/checker-ui.js): the authority & backlinks section, and our free tool for each fix
@@ -86,7 +87,7 @@ a{color:inherit}a:hover{color:var(--brand)}img,svg{max-width:100%}
 .wrap{max-width:1100px;margin:0 auto;padding:0 20px}
 header.top{border-bottom:1px solid var(--line);background:var(--bg)}
 .nav{display:flex;align-items:center;gap:20px;min-height:64px;flex-wrap:wrap}
-.logo{font-weight:900;font-size:24px;text-decoration:none;letter-spacing:-.03em;display:inline-block;padding:8px 0;min-height:44px}.logo b{color:var(--brand)}
+.logo{font-weight:900;font-size:24px;text-decoration:none;letter-spacing:-.03em;display:inline-block;padding:8px 0;min-height:44px}.logo b{color:var(--brand);display:inline-block}
 .nav ul{display:flex;gap:4px 18px;list-style:none;margin:0 0 0 auto;padding:0;flex-wrap:wrap}.nav ul a{text-decoration:none;color:var(--mute);font-size:15px;display:inline-block;padding:10px 0}.nav ul a:hover,.nav ul a[aria-current]{color:var(--fg)}
 .btn{display:inline-block;background:var(--brand);color:var(--brand-ink);padding:12px 22px;border-radius:12px;text-decoration:none;font-weight:700;border:0;cursor:pointer;font:inherit;font-weight:700}.btn:hover{color:var(--brand-ink);filter:brightness(1.08)}
 .btn.ghost{background:transparent;color:var(--fg);border:1px solid var(--line)}
@@ -148,7 +149,12 @@ a.card:hover{border-color:var(--fg)}a.card .ct::after{color:var(--fg)}
 
 // After the page has loaded: grain texture on, and blocks below the first screen drift in as they're scrolled to.
 // External file (report pages' CSP blocks inline scripts); the path carries a hash so it can be cached for good.
-export const SITE_JS = "(function(){var run=function(){var d=document;d.documentElement.classList.add(\"g\");if(!window.IntersectionObserver||matchMedia(\"(prefers-reduced-motion: reduce)\").matches)return;var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add(\"in\");io.unobserve(e.target)}})},{rootMargin:\"0px 0px -8% 0px\"});d.querySelectorAll(\".prose>h2,.prose>p,.prose>ul,.prose>details,.grid>*,.cta,.maker\").forEach(function(el){if(el.getBoundingClientRect().top>innerHeight){el.classList.add(\"rv\");io.observe(el)}});addEventListener(\"beforeprint\",function(){d.querySelectorAll(\".rv\").forEach(function(el){el.classList.add(\"in\")})})};if(document.readyState===\"complete\")run();else addEventListener(\"load\",run)})();\n";
+// The crew (src/crew-client.js): decorative figures loaded when the browser is idle after load,
+// never for reduced-motion or data-saver visitors.
+export const CREW_JS = "var __name=function(f){return f};(" + crewApp.toString().replace(/^\s*\/\/.*\n/gm, "") + ")();\n";
+let crewHash = 2166136261; for (const c of CREW_JS) crewHash = Math.imul(crewHash ^ c.charCodeAt(0), 16777619) >>> 0;
+export const CREW_JS_PATH = `/assets/crew-${crewHash.toString(36)}.js`;
+export const SITE_JS = "(function(){var run=function(){var d=document;d.documentElement.classList.add(\"g\");if(window.matchMedia&&!matchMedia(\"(prefers-reduced-motion: reduce)\").matches&&!(navigator.connection&&navigator.connection.saveData)){var go=function(){var s=d.createElement(\"script\");s.src=\"" + CREW_JS_PATH + "\";s.async=true;d.body.appendChild(s)};if(window.requestIdleCallback)requestIdleCallback(go,{timeout:4000});else setTimeout(go,1500)}if(!window.IntersectionObserver||matchMedia(\"(prefers-reduced-motion: reduce)\").matches)return;var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add(\"in\");io.unobserve(e.target)}})},{rootMargin:\"0px 0px -8% 0px\"});d.querySelectorAll(\".prose>h2,.prose>p,.prose>ul,.prose>details,.grid>*,.cta,.maker\").forEach(function(el){if(el.getBoundingClientRect().top>innerHeight){el.classList.add(\"rv\");io.observe(el)}});addEventListener(\"beforeprint\",function(){d.querySelectorAll(\".rv\").forEach(function(el){el.classList.add(\"in\")})})};if(document.readyState===\"complete\")run();else addEventListener(\"load\",run)})();\n";
 let jsHash = 2166136261; for (const c of SITE_JS) jsHash = Math.imul(jsHash ^ c.charCodeAt(0), 16777619) >>> 0;
 export const SITE_JS_PATH = `/assets/site-${jsHash.toString(36)}.js`;
 
