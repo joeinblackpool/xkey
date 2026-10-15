@@ -1560,20 +1560,6 @@ export function toolsApp() {
     });
   }
 
-  // ---- your recent checks (stored only in this browser)
-  var rc = $("recent");
-  if (rc) {
-    var list = []; try { list = JSON.parse(localStorage.getItem("seo_recent") || "[]"); } catch (e) {}
-    if (list.length) {
-      var ago = function (t) { var m = Math.round((Date.now() - t) / 60000); return m < 60 ? m + " min ago" : m < 1440 ? Math.round(m / 60) + " h ago" : Math.round(m / 1440) + " days ago"; };
-      rc.innerHTML = '<p class="ct" style="font-size:17px;margin-top:18px">Your recent checks</p><ul class="recent">' + list.slice(0, 6).map(function (x) {
-        var host = x.u; try { host = new URL(x.u).hostname.replace(/^www\./, ""); } catch (e) {}
-        return '<li><a href="/seo-checker?url=' + encodeURIComponent(x.u) + '">' + esc(host) + '</a> <b style="color:' + col(x.s >= 90, x.s >= 70) + '">' + x.s + '</b> <span class="small">' + ago(x.t) + "</span></li>";
-      }).join("") + '</ul><p class="small">Saved only in this browser. <a href="#" id="recent-clear">Clear</a></p>';
-      $("recent-clear").addEventListener("click", function (ev) { ev.preventDefault(); try { localStorage.removeItem("seo_recent"); } catch (e) {} rc.innerHTML = ""; });
-    }
-  }
-
   // ---- local Google results link (opens in the visitor's own browser)
   live("ls-form", function () {
     var q = val("ls-q"), town = val("ls-town"), region = $("ls-region").value, a = $("ls-go");
@@ -1646,4 +1632,27 @@ export function toolsApp() {
     $("bd-code").textContent = code;
   });
   copyBtn("bd-copy", "bd-code");
+}
+
+// The SEO check pages (home page and the six focused checkers) only need the "your recent checks"
+// list, so they load this small script (/assets/check.js) instead of the whole tools bundle.
+export function recentApp() {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var esc = function (s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
+  var col = function (ok, near) { return ok ? "#1a7f37" : near ? "#9a6700" : "#cf222e"; };
+
+  // your recent checks (stored only in this browser)
+  var rc = $("recent");
+  if (rc) {
+    var list = []; try { list = JSON.parse(localStorage.getItem("seo_recent") || "[]"); } catch (e) {}
+    if (list.length) {
+      var ago = function (t) { var m = Math.round((Date.now() - t) / 60000); return m < 60 ? m + " min ago" : m < 1440 ? Math.round(m / 60) + " h ago" : Math.round(m / 1440) + " days ago"; };
+      rc.innerHTML = '<p class="ct" style="font-size:17px;margin-top:18px">Your recent checks</p><ul class="recent">' + list.slice(0, 6).map(function (x) {
+        var host = x.u; try { host = new URL(x.u).hostname.replace(/^www\./, ""); } catch (e) {}
+        return '<li><a href="/seo-checker?url=' + encodeURIComponent(x.u) + '">' + esc(host) + '</a> <b style="color:' + col(x.s >= 90, x.s >= 70) + '">' + x.s + '</b> <span class="small">' + ago(x.t) + "</span></li>";
+      }).join("") + '</ul><p class="small">Saved only in this browser. <a href="#" id="recent-clear">Clear</a></p>';
+      $("recent-clear").addEventListener("click", function (ev) { ev.preventDefault(); try { localStorage.removeItem("seo_recent"); } catch (e) {} rc.innerHTML = ""; });
+    }
+  }
 }

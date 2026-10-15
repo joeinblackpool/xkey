@@ -2,7 +2,7 @@
 import { PAGES, toolCards } from "./content.js";
 import { BRAND, SITE, UPDATED, esc, layout, send, FAVICON, SITE_JS, SITE_JS_PATH, pageDates, pageHash, ASSET_V, assetHash } from "./site.js";
 import { relatedGuides } from "./related.js";
-import { toolsApp } from "./tools-client.js";
+import { toolsApp, recentApp } from "./tools-client.js";
 import { OG_PNG } from "./og.js";
 import { handleChecker, rateLimited, AUDIT_JS, REPORT_JS, COMPARE_JS, overOnce, cmpForm, over } from "../engine/checker-ui.js";
 import { createMonitor, runMonitor, getMonitor, validId, dashboard, runDueMonitors } from "../engine/monitor.js";
@@ -54,14 +54,15 @@ const MORE_JS = `var redirectPairs=${redirectPairs.toString()};var redirectRules
 const EXTRA_JS = `var qrMatrix=${qrMatrix.toString()};(${extraApp.toString()})();`;
 const TOOLS_JS = `var W=${JSON.stringify(W)};(${toolsApp.toString()})();`;
 const PRO_JS = `(${proApp.toString()})();`;
+const CHECK_JS = `(${recentApp.toString()})();`;
 const A11Y_JS = `(${a11yApp.toString()})();`;
-const ASSETS = Object.fromEntries(Object.entries({ audit: AUDIT_JS, compare: COMPARE_JS, report: REPORT_JS, tools: TOOLS_JS, more: MORE_JS, pro: PRO_JS, a11y: A11Y_JS, extra: EXTRA_JS }).map(([n, js]) => [n, NAME_SHIM + js]));
+const ASSETS = Object.fromEntries(Object.entries({ audit: AUDIT_JS, compare: COMPARE_JS, report: REPORT_JS, tools: TOOLS_JS, check: CHECK_JS, more: MORE_JS, pro: PRO_JS, a11y: A11Y_JS, extra: EXTRA_JS }).map(([n, js]) => [n, NAME_SHIM + js]));
 for (const [n, js] of Object.entries(ASSETS)) ASSET_V[n] = assetHash(js);
 
 // ---------- forms
 const input = (id, name, ph, extra = "") => `<label for="${id}" class="sr">Website address</label><input id="${id}" name="${name}" type="text" inputmode="url" autocomplete="url" placeholder="${ph}" required${extra}>`;
 const FORMS = {
-  check: (p) => `<form class="ck-form" action="/seo-checker" method="get" role="search">${input("ck-url", "url", "yourwebsite.co.uk")}${p.focus ? `<input type="hidden" name="focus" value="${p.focus}">` : ""}<button class="btn" type="submit">${p.path === "/" ? "Check my site" : "Run free check"}</button></form><p class="small">Free, no sign-up. Checks one page in about 20 seconds. We fetch it like a search engine and don't keep your content.</p><div id="recent"></div><script src="/assets/tools.js" defer></script>`,
+  check: (p) => `<form class="ck-form" action="/seo-checker" method="get" role="search">${input("ck-url", "url", "yourwebsite.co.uk")}${p.focus ? `<input type="hidden" name="focus" value="${p.focus}">` : ""}<button class="btn" type="submit">${p.path === "/" ? "Check my site" : "Run free check"}</button></form><p class="small">Free, no sign-up. Checks one page in about 20 seconds. We fetch it like a search engine and don't keep your content.</p><div id="recent"></div><script src="/assets/check.js" defer></script>`,
   audit: () => `<form class="ck-form" action="/site-audit" method="get" role="search">${input("au-url", "url", "yourwebsite.co.uk")}<button class="btn" type="submit">Audit my site</button></form><p class="small">Crawls up to 250 pages. Keep the tab open while it runs (usually one to three minutes).</p>`,
   compare: (p) => cmpForm(esc, p.prefill || []),
   monitor: () => `<form class="ck-form" action="/api/monitor" method="post">${input("mo-url", "url", "yourwebsite.co.uk")}<button class="btn" type="submit">Start free monitoring</button></form><p class="small">No account or email needed – you'll get a private dashboard link to bookmark.</p>`,
