@@ -103,6 +103,14 @@ if (process.argv.includes("site")) {
   const bad = [];
   for (let i = 0; i < urls.length; i += 8) await Promise.all(urls.slice(i, i + 8).map(async (u) => { const r = await fetch(u, { headers: { "user-agent": "xkey live check" } }).catch(() => null); const h = r ? await r.text() : ""; if (!r || r.status !== 200 || !/<title>[^<]{10,}<\/title>/.test(h)) bad.push(`${u} ${r ? r.status : "no answer"}`); }));
   check(`pages: all ${urls.length} sitemap pages load with a title`, urls.length > 50 && !bad.length, bad.slice(0, 10).join("; "));
+  // the crew: the home page links the site script, which loads the crew script (decoration only)
+  const home = await (await fetch("https://xkey.co.uk/")).text();
+  const siteJs = (home.match(/src="(\/assets\/site-[a-z0-9]+\.js)"/) || [])[1];
+  const sj = siteJs ? await (await fetch("https://xkey.co.uk" + siteJs)).text() : "";
+  const crewJs = (sj.match(/\/assets\/crew-[a-z0-9]+\.js/) || [])[0];
+  const cr = crewJs ? await fetch("https://xkey.co.uk" + crewJs) : null;
+  const ct = cr ? await cr.text() : "";
+  check("crew: site script loads the crew script", !!cr && cr.status === 200 && ct.includes("xkc-f"), `${siteJs} → ${crewJs} ${cr ? cr.status : "none"}`);
   [s, j] = await api("/api/whois?d=bbc.co.uk,github.com,rte.ie,google.de");
   const w = j.results || [];
   for (const r of w) console.log(JSON.stringify(r).slice(0, 300));
