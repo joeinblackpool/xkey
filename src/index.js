@@ -1,6 +1,6 @@
 // XKey (xkey.co.uk): free SEO & AI search check. Uses the same engine as IceWork's checker.
 import { PAGES, toolCards } from "./content.js";
-import { BRAND, SITE, UPDATED, esc, layout, send, FAVICON, SITE_JS, SITE_JS_PATH, pageDates, pageHash, ASSET_V, assetHash } from "./site.js";
+import { BRAND, SITE, UPDATED, esc, layout, send, FAVICON, SITE_JS, SITE_JS_PATH, CREW_JS, CREW_JS_PATH, pageDates, pageHash, ASSET_V, assetHash } from "./site.js";
 import { relatedGuides } from "./related.js";
 import { toolsApp, recentApp } from "./tools-client.js";
 import { OG_PNG } from "./og.js";
@@ -421,6 +421,7 @@ const worker = {
     if (path !== tidy) return Response.redirect(`${url.origin}${tidy}${url.search}`, 301);
     if (FONT_BYTES[path]) return send(FONT_BYTES[path], "font/woff2", 200, "public, max-age=31536000, immutable");
     if (path === SITE_JS_PATH) return send(SITE_JS, JS, 200, "public, max-age=31536000, immutable");
+    if (path === CREW_JS_PATH) return send(CREW_JS, JS, 200, "public, max-age=31536000, immutable");
     const asset = path.match(/^\/assets\/([a-z0-9]+)\.js$/);
     // A link carrying the current hash can be cached for a year; old or bare links get an hour.
     if (asset && ASSETS[asset[1]]) return send(ASSETS[asset[1]], JS, 200, url.searchParams.get("v") === ASSET_V[asset[1]] ? "public, max-age=31536000, immutable" : "public, max-age=3600");
