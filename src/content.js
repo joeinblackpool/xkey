@@ -1,7 +1,7 @@
 // XKey pages. Each page targets its own search phrase with original copy.
 // form: "check" | "audit" | "compare" | "monitor" | "title" | "robots" | "llms" | null
 // focus: report section to jump to after a check (matches the report's section ids).
-import { EMAIL_HTML } from "./site.js";
+import { CONTACT_BOX } from "./site.js";
 import { SECTOR_GUIDES } from "./sector-guides.js";
 import { GUIDES_12 } from "./guides-12.js";
 import { BUILDER_GUIDES } from "./builder-guides.js";
@@ -1514,7 +1514,7 @@ Sitemap: https://yourdomain.co.uk/sitemap.xml</code></pre>
     path: "/contact", crumb: "Contact", title: "Contact XKey | Free SEO Checker Help & Feedback",
     desc: "Contact the team behind XKey, the free UK SEO and AI search checker. Email us any time – we aim to reply within 24 hours.",
     h1: "Contact XKey", lead: "Questions, feedback or found a bug? Email us any time – we aim to reply within 24 hours.",
-    sections: `<p><a class="btn" href="mailto:${EMAIL_HTML}?subject=XKey">Email ${EMAIL_HTML}</a></p><p>XKey is run by IceWork, Blackpool, Lancashire, UK.</p>
+    sections: `${CONTACT_BOX}<p>XKey is run by IceWork, Blackpool, Lancashire, UK.</p>
 <h2>What should I include when reporting a problem?</h2><p>The web address you checked, what you expected and what the report said. A screenshot helps. If a check seems wrong for your site, tell us – it's the fastest way for us to improve the tool.</p>
 <h2>What can I ask about?</h2><p>Anything to do with XKey: a check that gave a result you don't understand, a tool that didn't work, an idea for a new tool, or a question about what a report means for your site. We read every message ourselves – there's no ticket system and no chatbot – and we reply from the same address. We don't need an account, a phone number or any details beyond your email to help.</p>
 <h2>Is there a phone number?</h2><p>Not for XKey. Email lets us look at the page you're asking about before we reply, so you get a proper answer rather than a guess. If your question is about getting a website built or repaired, IceWork's own site has its contact details.</p>
@@ -1531,7 +1531,7 @@ Sitemap: https://yourdomain.co.uk/sitemap.xml</code></pre>
 <h2>Website analytics</h2><p>If you add our analytics script to your website, we count visits to that site without cookies or any other storage on your visitors' devices. We keep totals only: pages, the website a visitor came from, country (from the connection, not stored), screen size group and clicks on phone, email, outbound and goal links. To count unique visitors we make a one-way code from the connection's IP address, browser and a secret that changes daily; the IP address itself isn't stored and the code can't be linked between days. Visitor codes are deleted after 31 days and totals after 400 days.</p>
 <h2>Tools that run in your browser</h2><p>The rank tracker, SEO content editor and brand monitoring tool work in your browser. Search Console exports and drafts you use with them are kept in your browser's storage on your device and never sent to us.</p>
 <h2>Cookies and your browser</h2><p>XKey doesn't set advertising or tracking cookies. To show "Your recent checks", your browser keeps a short list of the addresses you checked and their scores – it stays on your device, is never sent to us, and you can clear it with one click.</p>
-<h2>Your rights</h2><p>You can contact us about your data at <a href="mailto:${EMAIL_HTML}">${EMAIL_HTML}</a>, or complain to the Information Commissioner's Office at <a href="https://ico.org.uk/" rel="noopener">ico.org.uk</a>.</p>`,
+<h2>Your rights</h2><p>You can contact us about your data through the <a href="/contact#contact">contact form</a>, or complain to the Information Commissioner's Office at <a href="https://ico.org.uk/" rel="noopener">ico.org.uk</a>.</p>`,
   },
   ...PRO_PAGES,
   ...BUNDLE5_PAGES,
