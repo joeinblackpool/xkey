@@ -4,7 +4,6 @@ import { MONITOR_CSS } from "../engine/monitor.js";
 import { FONT_PATHS } from "./fonts.js";
 import { GUIDE_FOR } from "./builder-guides.js";
 import { DATES } from "./page-dates.js";
-import { crewApp } from "./crew-client.js";
 
 export const BRAND = { name: "XKey", fullName: "XKey", domain: "xkey.co.uk", tagline: "Free SEO & AI search check", maker: "IceWork", makerUrl: "https://icework.co.uk", price: 350, town: "Blackpool",
   // SEO report extras (engine/checker-ui.js): the authority & backlinks section, and our free tool for each fix
@@ -150,12 +149,7 @@ a.card:hover{border-color:var(--fg)}a.card .ct::after{color:var(--fg)}
 
 // After the page has loaded: grain texture on, and blocks below the first screen drift in as they're scrolled to.
 // External file (report pages' CSP blocks inline scripts); the path carries a hash so it can be cached for good.
-// The crew (src/crew-client.js): decorative figures loaded when the browser is idle after load,
-// never for reduced-motion or data-saver visitors.
-export const CREW_JS = "var __name=function(f){return f};(" + crewApp.toString().replace(/^\s*\/\/.*\n/gm, "") + ")();\n";
-let crewHash = 2166136261; for (const c of CREW_JS) crewHash = Math.imul(crewHash ^ c.charCodeAt(0), 16777619) >>> 0;
-export const CREW_JS_PATH = `/assets/crew-${crewHash.toString(36)}.js`;
-export const SITE_JS = "(function(){var run=function(){var d=document;d.documentElement.classList.add(\"g\");if(window.matchMedia&&!matchMedia(\"(prefers-reduced-motion: reduce)\").matches&&!(navigator.connection&&navigator.connection.saveData)){var go=function(){var s=d.createElement(\"script\");s.src=\"" + CREW_JS_PATH + "\";s.async=true;d.body.appendChild(s)};if(window.requestIdleCallback)requestIdleCallback(go,{timeout:4000});else setTimeout(go,1500)}if(!window.IntersectionObserver||matchMedia(\"(prefers-reduced-motion: reduce)\").matches)return;var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add(\"in\");io.unobserve(e.target)}})},{rootMargin:\"0px 0px -8% 0px\"});d.querySelectorAll(\".prose>h2,.prose>p,.prose>ul,.prose>details,.grid>*,.cta,.maker\").forEach(function(el){if(el.getBoundingClientRect().top>innerHeight){el.classList.add(\"rv\");io.observe(el)}});addEventListener(\"beforeprint\",function(){d.querySelectorAll(\".rv\").forEach(function(el){el.classList.add(\"in\")})})};if(document.readyState===\"complete\")run();else addEventListener(\"load\",run)})();\n";
+export const SITE_JS = "(function(){var run=function(){var d=document;d.documentElement.classList.add(\"g\");if(!window.IntersectionObserver||matchMedia(\"(prefers-reduced-motion: reduce)\").matches)return;var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add(\"in\");io.unobserve(e.target)}})},{rootMargin:\"0px 0px -8% 0px\"});d.querySelectorAll(\".prose>h2,.prose>p,.prose>ul,.prose>details,.grid>*,.cta,.maker\").forEach(function(el){if(el.getBoundingClientRect().top>innerHeight){el.classList.add(\"rv\");io.observe(el)}});addEventListener(\"beforeprint\",function(){d.querySelectorAll(\".rv\").forEach(function(el){el.classList.add(\"in\")})})};if(document.readyState===\"complete\")run();else addEventListener(\"load\",run)})();\n";
 let jsHash = 2166136261; for (const c of SITE_JS) jsHash = Math.imul(jsHash ^ c.charCodeAt(0), 16777619) >>> 0;
 export const SITE_JS_PATH = `/assets/site-${jsHash.toString(36)}.js`;
 
