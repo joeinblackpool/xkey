@@ -6,6 +6,24 @@
 // /news/rss.xml. Dates come from src/page-dates.js like every other page.
 const POSTS = [
   {
+    slug: "google-november-2026-core-update", crumb: "November 2026 core update",
+    title: "Google's November 2026 Core Update Is Rolling Out",
+    desc: "Google started its November 2026 core update on 10 November. It covers every country and may take two weeks to roll out. What it means and what to do.",
+    h1: "Google's November 2026 core update is rolling out",
+    lead: "Google released its November 2026 core update on 10 November 2026. It applies globally and to all languages, UK searches included, and Google says the rollout may take up to two weeks to complete. Here is what a core update is, why your rankings may move, and what to do (and not do) while it settles.",
+    body: `<h2>What happened?</h2>
+<p>Google's Search Status Dashboard logged the November 2026 core update at 10:07 Pacific time on 10 November 2026 (6:07 pm in the UK). Google's note says it "applies globally and to all languages" and that "the rollout may take up to 2 weeks to complete". It is Google's third core update of 2026, after the March and May updates. Google hasn't published a blog post or any new advice with it.</p>
+<h2>What is a core update?</h2>
+<p>Several times a year Google makes what it calls "significant, broad changes" to how it ranks results. Core updates don't target particular sites or break any rule you can fix. They change how Google judges which pages are most helpful and reliable for a search, so some pages move up and others move down. Google's own example is a list of the top 20 restaurants: one that drops out "isn't necessarily bad", there are just others that now make the list. Google also says most sites "don't need to worry about core updates and may not even realize one has happened."</p>
+<h2>What should a small UK business do now?</h2>
+<p>For the next two weeks, mostly nothing. Rankings often jump around while an update rolls out, and changing pages in a panic makes it harder to see what really happened. Google recommends waiting until the dashboard shows the rollout is complete, then waiting "at least a full week" before looking at Search Console.</p>
+<p>Then compare a week after the update with a week before 10 November in <a href="/guides/google-search-console">Search Console</a>'s Performance report, looking at web search on its own. Small drops usually need no action, and Google advises against changing content that is already doing well. If a drop is large and lasts, rule out the ordinary causes first (a site change, a noindex tag, broken pages) with the <a href="/">free SEO check</a> and our guide to <a href="/guides/why-has-my-website-traffic-dropped">why website traffic drops</a>.</p>
+<h2>How do you recover from a core update?</h2>
+<p>There is no quick fix. Google points site owners to its self-assessment questions: is your site as a whole, not just one page, helpful, reliable and written for people first? For a local business that means real prices, photos of your own work, clear details of who you are and where you work, and pages that answer what customers actually ask. Our guide to <a href="/guides/what-is-eeat">E-E-A-T</a> covers what Google looks for.</p>
+<p>Google says some improvements can show within days, but it can take months for its systems to see that a site has improved, and sometimes the change only shows at the next core update. The dates of every confirmed update are on our <a href="/google-algorithm-updates">Google algorithm updates tracker</a>, and we'll update this post when the rollout finishes.</p>`,
+    sources: [["Google Search Status Dashboard: November 2026 core update", "https://status.search.google.com/incidents/WLxcJyC6jMWMfryxsKMc"], ["Google Search Central: core updates and your site", "https://developers.google.com/search/docs/appearance/core-updates"]],
+  },
+  {
     slug: "google-september-2026-spam-update-finished", crumb: "September 2026 spam update finished",
     title: "Google's September 2026 Spam Update Has Finished",
     desc: "Google's September 2026 spam update finished rolling out on 8 October after two weeks. What it targeted, how to tell if it hit your site, and what to do.",

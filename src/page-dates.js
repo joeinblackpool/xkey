@@ -140,6 +140,7 @@ export const DATES = {
   "/mx-lookup": ["2026-10-12","2026-10-12","aaf317a"],
   "/news": ["2026-10-13","2026-10-13","e9cd8479"],
   "/news/cma-search-choice-screens-ai-assistants": ["2026-10-13","2026-10-13","269fbac5"],
+  "/news/google-november-2026-core-update": ["2026-11-11","2026-11-11","2abf232f"],
   "/news/google-review-snippets-fake-reviews-rule": ["2026-10-13","2026-10-13","c9b6759d"],
   "/news/google-september-2026-spam-update-finished": ["2026-10-13","2026-10-13","7bb8a949"],
   "/news/google-updates-ai-content-guidance": ["2026-10-13","2026-10-13","36b0f0e8"],
