@@ -45,9 +45,11 @@ new Function((await (await get("/assets/tools.js")).text())); // parses
 new Function((await (await get("/assets/extra.js")).text()));
 const sm = await (await get("/sitemap.xml")).text(), locs = [...sm.matchAll(/<loc>(.*?)<\/loc>/g)].map((m) => m[1]);
 if (new Set(locs).size !== locs.length || locs.length !== PAGES.length) fail("sitemap URLs");
-// sitemap lastmod = each page's own last-changed date; FAQ markup matches the questions on the page
+// sitemap lastmod = each page's own last-changed date (the /news hub: its newest post's date if later);
+// FAQ markup matches the questions on the page
+const lastmod = (p) => p.newsHub ? [pageDates(p).modified, ...PAGES.filter((n) => n.news).map((n) => pageDates(n).published)].sort().pop() : pageDates(p).modified;
 for (const p of PAGES) {
-  if (!sm.includes(`<loc>${O}${p.path}</loc><lastmod>${pageDates(p).modified}</lastmod>`)) fail(`${p.path} sitemap lastmod`);
+  if (!sm.includes(`<loc>${O}${p.path}</loc><lastmod>${lastmod(p)}</lastmod>`)) fail(`${p.path} sitemap lastmod`);
   const ld = JSON.parse(HTML[p.path].match(/<script type="application\/ld\+json">(.*?)<\/script>/)[1])["@graph"];
   const faq = ld.find((x) => x["@type"] === "FAQPage");
   if ((p.faqs || []).length !== (faq ? faq.mainEntity.length : 0)) fail(`${p.path} FAQPage markup`);
